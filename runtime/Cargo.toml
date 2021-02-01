@@ -1,10 +1,10 @@
 [package]
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
+authors = ['DEIP world <https://github.com/substrate-developer-hub>']
 edition = '2018'
-homepage = 'https://substrate.dev'
+homepage = 'https://deip.world/'
 license = 'Unlicense'
 name = 'node-template-runtime'
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
+repository = 'https://github.com/DEIPworld/deip-polkadot'
 version = '2.0.1'
 
 [package.metadata.docs.rs]
@@ -26,6 +26,7 @@ serde = { features = ['derive'], optional = true, version = '1.0.119' }
 
 # local dependencies
 pallet-template = { path = '../pallets/template', default-features = false, version = '2.0.1' }
+pallet-deip-projects = { path = "../pallets/deip-projects", default-features = false }
 
 # Substrate dependencies
 frame-benchmarking = { default-features = false, optional = true, version = '2.0.1' }
@@ -79,6 +80,7 @@ std = [
     'pallet-randomness-collective-flip/std',
     'pallet-sudo/std',
     'pallet-template/std',
+    'pallet-deip-projects/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
