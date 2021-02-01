@@ -47,6 +47,12 @@ subcommands:
 
 The `make run` command will launch a temporary node and its state will be discarded after you
 terminate the process. After the project has been built, there are other ways to launch the node.
+## Connect UI
+
+There are 2 options: 
+
+1. Use [Substrate Front End Template](https://github.com/substrate-developer-hub/substrate-front-end-template). Follow instrations in the repo.
+2. Use this [link](https://polkadot.js.org/apps/#/extrinsics?rpc=ws://127.0.0.1:9944) to open the Polkadot JS Apps UI and automatically configure the UI to connect to the local node.
 
 ### Single-Node Development Chain
 
