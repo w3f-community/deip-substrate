@@ -1,9 +1,10 @@
 {
     "Domain": "H160",
+    "ProjectId": "H160",
     "Project": {
       "is_private": "bool",
-      "external_id": "H160",
-      "team": "H160",
+      "external_id": "ProjectId",
+      "team": "AccountId",
       "description": "Hash",
       "domains": "Vec<Domain>",
       "members": "Vec<AccountId>"

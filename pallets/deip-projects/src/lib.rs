@@ -3,14 +3,13 @@
 use frame_support::{
     codec::{Decode, Encode}, debug, ensure,
     decl_module, decl_storage, decl_event, decl_error, 
-    StorageMap
+    StorageMap,
+    dispatch::{ DispatchResult }
 };
 use frame_system::{ self as system, ensure_signed };
 use sp_std::vec::Vec;
-use sp_std::vec;
 use sp_runtime::{ RuntimeDebug };
 use sp_core::{ H160 };
-
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
@@ -21,19 +20,20 @@ pub trait Trait: frame_system::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
+type ProjectId = H160;
+type Domain = H160;
+type ProjectOf<T> = Project<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
+
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
-pub struct Project<Hash, H160, Domain, AccountId> {
+pub struct Project<Hash, AccountId> {
     is_private: bool,
-    external_id: H160,
-    team: H160,
+    external_id: ProjectId,
+    team_id: AccountId,
     description: Hash,
     domains: Vec<Domain>,
     members: Vec<AccountId>
     
 }
-
-type Domain = H160;
-type ProjectOf<T> = Project<<T as system::Trait>::Hash, H160, Domain, <T as system::Trait>::AccountId>;
 
 // Pallets use events to inform users when important changes are made.
 // Event documentation should end with an array that provides descriptive names for parameters.
@@ -42,13 +42,14 @@ decl_event! {
     pub enum Event<T> 
     where 
         AccountId = <T as frame_system::Trait>::AccountId,
-        // Hash = <T as system::Trait>::Hash,
         Project = ProjectOf<T>
     {
         /// Event emitted when a project has been created. [BelongsTo, Project]
         ProjectCreated(AccountId, Project),
         /// Event emitted when a project is removed by the owner. [BelongsTo, Project]
         ProjectRemoved(AccountId, Project),
+        /// Event emitted when a project is removed by the owner. [BelongsTo, ProjectId]
+        ProjectUpdated(AccountId, ProjectId),
 
         /// Added a domain. [Creator, Domain]
 		DomainAdded(AccountId, Domain),
@@ -58,21 +59,28 @@ decl_event! {
 // Errors inform users that something went wrong.
 decl_error! {
     pub enum Error for Module<T: Trait> {
-        // ==== Projects ===
+        // ==== Projects ====
         
-        /// The project does not exist, so it cannot be removed.
+        /// The project does not exist.
         NoSuchProject,
         /// The project is created by another account, so caller can't remove it.
         NotProjectOwner,
         /// Cannot add domain into the porject because this domain not exists
         DomainNotExists,
+        /// Cannot add a project because a project with this ID is already a exists
+		ProjectAlreadyExists,
 
-        // ==== Domains ===
+        // ==== Domains ====
         
         /// Cannot add another domain because the limit is already reached
         DomianLimitReached,
         /// Cannot add domain because this domain is already a exists
-        DomainAlreadyExists,     
+        DomainAlreadyExists,
+        
+        
+        // ==== General =====
+
+        NoPermission,
     }
 }
 
@@ -81,8 +89,10 @@ decl_error! {
 decl_storage! {
     trait Store for Module<T: Trait> as DeipProjects {
         /// The storage item for our projects.
-        /// It maps a projects to the user who created the them.
-        Projects get(fn projects): map hasher(blake2_128_concat) T::AccountId => Vec<ProjectOf<T>>;
+        ProjectMap get(fn get_project): map hasher(identity) ProjectId => ProjectOf<T>;
+        
+        /// This storage map of  ProjectId and Creator
+        Projects get(fn project): Vec<(ProjectId, T::AccountId)>;
 
         // The set of all Domains.
         Domains get(fn domains): map hasher(blake2_128_concat) Domain => ();
@@ -102,10 +112,10 @@ decl_module! {
 
         // Events must be initialized if they are used by the pallet.
         fn deposit_event() = default;
-
-        /// Allow a user to create full project.
+       
+        /// Allow a user to create project.
         #[weight = 10_000]
-        fn create_project_full(origin, project: ProjectOf<T>) {
+        fn create_project(origin, project: ProjectOf<T>) {
             // Check that the extrinsic was signed and get the signer.
             // This function will return an error if the extrinsic is not signed.
             // https://substrate.dev/docs/en/knowledgebase/runtime/origin
@@ -115,16 +125,61 @@ decl_module! {
                 ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
             }
 
-            let mut projects = Projects::<T>::get(&account);
+            let mut projects = Projects::<T>::get();
 
-            // Modify Projects List via adding new Project
-            projects.push(project.clone());
+            // We don't want to add duplicate projects, so we check whether the potential new
+			// project is already present in the list. Because the list is always ordered, we can
+			// leverage the binary search which makes this check O(log n).
+			match projects.binary_search_by_key(&project.external_id, |&(a,_)| a) {
+				// If the search succeeds, the caller is already a member, so just return
+				Ok(_) => return Err(Error::<T>::ProjectAlreadyExists.into()),
+				// If the search fails, the project is not a exists and we learned the index where
+				// they should be inserted
+				Err(index) => {
+					projects.insert(index, (project.external_id, project.team_id.clone()));
+					Projects::<T>::put(projects);
+				}
+			};
 
             // Store the projects related to account
-            Projects::<T>::insert(&account, projects);
+            ProjectMap::<T>::insert(project.external_id, project.clone());
 
             // Emit an event that the project was created.
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
+        }
+
+        /// Allow a user to update project.
+        #[weight = 10_000]
+        fn update_project(origin, project_id: ProjectId, description: Option<T::Hash>, is_private: Option<bool>, members: Option<Vec<T::AccountId>>) -> DispatchResult {
+            // Check that the extrinsic was signed and get the signer.
+            // This function will return an error if the extrinsic is not signed.
+            // https://substrate.dev/docs/en/knowledgebase/runtime/origin
+            let account = ensure_signed(origin)?;
+
+            ProjectMap::<T>::mutate_exists(project_id, |maybe_project| -> DispatchResult {
+                let project = maybe_project.as_mut().ok_or(Error::<T>::NoSuchProject)?;
+
+                ensure!(project.team_id == account, Error::<T>::NoPermission);
+
+                if let Some(value) = description  {
+                    project.description = value;
+                }
+
+                if let Some(value) = is_private  {
+                    project.is_private = value;
+                }
+                
+                if let Some(value) = members  {
+                    project.members = value;
+                }
+
+                Ok(())
+            })?;
+
+            // Emit an event that the project was updated.
+            Self::deposit_event(RawEvent::ProjectUpdated(account, project_id));
+
+            Ok(())
         }
         
         /// Allow a user to create domains.
@@ -145,6 +200,5 @@ decl_module! {
             DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
             Self::deposit_event(RawEvent::DomainAdded(account, doamin));
         }
-
     }
 }
