@@ -3545,7 +3545,7 @@ dependencies = [
  "hex-literal",
  "pallet-aura",
  "pallet-balances",
- "pallet-deip-projects",
+ "pallet-deip",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -3774,7 +3774,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-deip-projects"
+name = "pallet-deip"
 version = "2.0.1"
 dependencies = [
  "frame-support",

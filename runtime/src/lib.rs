@@ -266,7 +266,7 @@ impl pallet_template::Trait for Runtime {
 	type Event = Event;
 }
 
-impl pallet_deip_projects::Trait for Runtime {
+impl pallet_deip::Trait for Runtime {
     type Event = Event;
 }
 
@@ -287,7 +287,7 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the template pallet in the runtime.
 		TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
-		DeipProjects: pallet_deip_projects::{Module, Call, Storage, Event<T>},
+		Deip: pallet_deip::{Module, Call, Storage, Event<T>},
 	}
 );
 

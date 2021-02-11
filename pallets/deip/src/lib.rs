@@ -121,7 +121,7 @@ decl_error! {
 // The pallet's runtime storage items.
 // https://substrate.dev/docs/en/knowledgebase/runtime/storage
 decl_storage! {
-    trait Store for Module<T: Trait> as DeipProjects {
+    trait Store for Module<T: Trait> as Deip {
         /// The storage item for our projects.
         ProjectMap get(fn get_project): map hasher(identity) ProjectId => ProjectOf<T>;
         /// This storage map of ProjectId and Creator
