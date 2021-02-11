@@ -22,8 +22,11 @@ pub trait Trait: frame_system::Trait {
 
 type ProjectId = H160;
 type Domain = H160;
+type ProjectContentId = H160;
 type ProjectOf<T> = Project<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
+type ProjectContentOf<T> = ProjectContent<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
 
+// TODO add is_finished calculated state field
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct Project<Hash, AccountId> {
     is_private: bool,
@@ -32,6 +35,19 @@ pub struct Project<Hash, AccountId> {
     description: Hash,
     domains: Vec<Domain>,
     members: Vec<AccountId>
+}
+
+
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+pub struct ProjectContent<Hash, AccountId> {
+    external_id: ProjectContentId,
+    project_external_id: ProjectId,
+    team_id: AccountId,
+    content_type: u8,
+    description: Hash,
+    content: Hash,
+    authors: Vec<AccountId>,
+    references: Option<Vec<ProjectContentId>>
     
 }
 
@@ -42,14 +58,22 @@ decl_event! {
     pub enum Event<T> 
     where 
         AccountId = <T as frame_system::Trait>::AccountId,
-        Project = ProjectOf<T>
+        Project = ProjectOf<T>,
+        // Content = ProjectContentOf<T>
     {
+        // ==== Projects ====
+
         /// Event emitted when a project has been created. [BelongsTo, Project]
         ProjectCreated(AccountId, Project),
         /// Event emitted when a project is removed by the owner. [BelongsTo, Project]
         ProjectRemoved(AccountId, Project),
         /// Event emitted when a project is removed by the owner. [BelongsTo, ProjectId]
         ProjectUpdated(AccountId, ProjectId),
+
+        // ==== Project Content ====
+       
+        /// Event emitted when a project contnet has been created. [BelongsTo, ProjectContentId]
+        ProjectContnetCreated(AccountId, ProjectContentId),
 
         /// Added a domain. [Creator, Domain]
 		DomainAdded(AccountId, Domain),
@@ -69,6 +93,16 @@ decl_error! {
         DomainNotExists,
         /// Cannot add a project because a project with this ID is already a exists
 		ProjectAlreadyExists,
+
+        // ==== Project Content ====
+       
+        /// Cannot add a project content because a project content with this ID is already a exists.
+        ProjectContentAlreadyExists,
+        /// Project does not belong to the team.
+        ProjectNotBelongToTeam,
+        /// The Reference does not exist.
+        NoSuchReference, 
+
 
         // ==== Domains ====
         
@@ -90,9 +124,11 @@ decl_storage! {
     trait Store for Module<T: Trait> as DeipProjects {
         /// The storage item for our projects.
         ProjectMap get(fn get_project): map hasher(identity) ProjectId => ProjectOf<T>;
-        
-        /// This storage map of  ProjectId and Creator
+        /// This storage map of ProjectId and Creator
         Projects get(fn project): Vec<(ProjectId, T::AccountId)>;
+
+        ProjectContentMap get(fn get_project_conentn): map hasher(identity) ProjectContentId => ProjectContentOf<T>;
+        ProjectsContent get(fn project_content): Vec<(ProjectContentId, ProjectId, T::AccountId)>;
 
         // The set of all Domains.
         Domains get(fn domains): map hasher(blake2_128_concat) Domain => ();
@@ -131,7 +167,7 @@ decl_module! {
 			// project is already present in the list. Because the list is always ordered, we can
 			// leverage the binary search which makes this check O(log n).
 			match projects.binary_search_by_key(&project.external_id, |&(a,_)| a) {
-				// If the search succeeds, the caller is already a member, so just return
+				// If the search succeeds, the project is already a exists, so just return
 				Ok(_) => return Err(Error::<T>::ProjectAlreadyExists.into()),
 				// If the search fails, the project is not a exists and we learned the index where
 				// they should be inserted
@@ -161,6 +197,7 @@ decl_module! {
 
                 ensure!(project.team_id == account, Error::<T>::NoPermission);
 
+                // TODO make sure that we don't lose first 2 bytes of the hash
                 if let Some(value) = description  {
                     project.description = value;
                 }
@@ -180,6 +217,40 @@ decl_module! {
             Self::deposit_event(RawEvent::ProjectUpdated(account, project_id));
 
             Ok(())
+        }
+
+        /// Allow a user to create project content.
+        #[weight = 10_000]
+        fn create_project_content(origin, content: ProjectContentOf<T>) {
+            let account = ensure_signed(origin)?;
+
+            let mut project_content = ProjectsContent::<T>::get();
+
+            let index_to_insert_content = project_content.binary_search_by_key(&content.external_id, |&(a,_, _)| a)
+                .err().ok_or(Error::<T>::ProjectContentAlreadyExists)?;
+
+            let project = ProjectMap::<T>::get(content.project_external_id);
+
+            ensure!(!project.external_id.is_zero(), Error::<T>::NoSuchProject);
+            ensure!(project.team_id == content.team_id, Error::<T>::ProjectNotBelongToTeam);
+
+
+            if let Some(references) = &content.references {
+                let is_all_references_exists = references
+                    .iter()
+                    .all(|&reference| project_content.binary_search_by_key(&reference,|&(id,_, _)| id).is_ok());
+
+                ensure!(is_all_references_exists, Error::<T>::NoSuchReference);
+            }
+
+            project_content.insert(index_to_insert_content, (content.external_id, content.project_external_id,  content.team_id.clone()));
+            ProjectsContent::<T>::put(project_content);
+
+            // Store the content
+            ProjectContentMap::<T>::insert(content.external_id, content.clone());
+
+            // Emit an event that the content was created.
+            Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
         
         /// Allow a user to create domains.
