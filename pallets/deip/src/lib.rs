@@ -20,11 +20,11 @@ pub trait Trait: frame_system::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
-type ProjectId = H160;
-type Domain = H160;
-type ProjectContentId = H160;
-type ProjectOf<T> = Project<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
-type ProjectContentOf<T> = ProjectContent<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
+pub type ProjectId = H160;
+pub type Domain = H160;
+pub type ProjectContentId = H160;
+pub type ProjectOf<T> = Project<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
+pub type ProjectContentOf<T> = ProjectContent<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
 
 // TODO add is_finished calculated state field
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -36,7 +36,6 @@ pub struct Project<Hash, AccountId> {
     domains: Vec<Domain>,
     members: Vec<AccountId>
 }
-
 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct ProjectContent<Hash, AccountId> {
@@ -123,18 +122,18 @@ decl_error! {
 decl_storage! {
     trait Store for Module<T: Trait> as Deip {
         /// The storage item for our projects.
-        ProjectMap get(fn get_project): map hasher(identity) ProjectId => ProjectOf<T>;
+        ProjectMap get(fn project): map hasher(identity) ProjectId => ProjectOf<T>;
         /// This storage map of ProjectId and Creator
-        Projects get(fn project): Vec<(ProjectId, T::AccountId)>;
+        Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
 
-        ProjectContentMap get(fn get_project_conentn): map hasher(identity) ProjectContentId => ProjectContentOf<T>;
-        ProjectsContent get(fn project_content): Vec<(ProjectContentId, ProjectId, T::AccountId)>;
+        ProjectContentMap get(fn project_content_entity): map hasher(identity) ProjectContentId => ProjectContentOf<T>;
+        ProjectsContent get(fn project_content_list): Vec<(ProjectContentId, ProjectId, T::AccountId)>;
 
         // The set of all Domains.
-        Domains get(fn domains): map hasher(blake2_128_concat) Domain => ();
+        Domains get(fn domains) config(): map hasher(blake2_128_concat) Domain => ();
         // The total number of domains stored in the map.
         // Because the map does not store its size, we must store it separately
-        DomainCount: u32;
+        pub DomainCount: u32;
     }
 }
 
