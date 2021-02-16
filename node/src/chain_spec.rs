@@ -159,6 +159,7 @@ fn testnet_genesis(
 		}),
 		pallet_deip: Some(DeipConfig {
 			domains: domains.iter().cloned().map(|k|(k, ())).collect(),
+			domain_count: domains.len() as u32,
 		}),
 		pallet_aura: Some(AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),

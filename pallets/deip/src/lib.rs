@@ -133,7 +133,7 @@ decl_storage! {
         Domains get(fn domains) config(): map hasher(blake2_128_concat) Domain => ();
         // The total number of domains stored in the map.
         // Because the map does not store its size, we must store it separately
-        pub DomainCount: u32;
+        pub DomainCount config(domain_count): u32;
     }
 }
 
