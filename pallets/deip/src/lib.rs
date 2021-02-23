@@ -14,6 +14,37 @@ use sp_core::{ H160 };
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
 
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+enum ResearchContentType {
+    Announcemen,
+    FinalResul,
+    MilestoneArticl,
+    MilestoneBoo,
+    MilestoneChapte,
+    MilestoneCod,
+    MilestoneConferencePape,
+    MilestoneCoverPag,
+    MilestoneDat,
+    MilestoneExperimentFindings,
+    MilestoneMethod,
+    MilestoneNegativeResults,
+    MilestonePatent,
+    MilestonePoster,
+    MilestonePreprint,
+    MilestonePresentation,
+    MilestoneRawData,
+    MilestoneResearchProposal,
+    MilestoneTechnicalReport,
+    MilestoneThesis,
+}
+
+// start_milestone_type = ResearchContentType::MilestoneArticle as isize,
+// last_milestone_type = ResearchContentType::MilestoneThesis as isize,
+
+impl Default for ResearchContentType {
+    fn default() -> ResearchContentType { ResearchContentType::Announcemen}
+}
+
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
     /// Because this pallet emits events, it depends on the runtime's definition of an event.
@@ -42,7 +73,7 @@ pub struct ProjectContent<Hash, AccountId> {
     external_id: ProjectContentId,
     project_external_id: ProjectId,
     team_id: AccountId,
-    content_type: u8,
+    content_type: ResearchContentType,
     description: Hash,
     content: Hash,
     authors: Vec<AccountId>,
@@ -101,6 +132,8 @@ decl_error! {
         ProjectNotBelongToTeam,
         /// The Reference does not exist.
         NoSuchReference, 
+        /// Cannot add a project content because a project with this ID is already a finished
+		ProjectAlreadyFinished,
 
 
         // ==== Domains ====
@@ -126,7 +159,7 @@ decl_storage! {
         /// This storage map of ProjectId and Creator
         Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
 
-        ProjectContentMap get(fn project_content_entity): map hasher(identity) ProjectContentId => ProjectContentOf<T>;
+        ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
         ProjectsContent get(fn project_content_list): Vec<(ProjectContentId, ProjectId, T::AccountId)>;
 
         // The set of all Domains.
@@ -232,6 +265,7 @@ decl_module! {
 
             ensure!(!project.external_id.is_zero(), Error::<T>::NoSuchProject);
             ensure!(project.team_id == content.team_id, Error::<T>::ProjectNotBelongToTeam);
+            ensure!(!Self::is_project_finished(&project.external_id), Error::<T>::ProjectAlreadyFinished);
 
 
             if let Some(references) = &content.references {
@@ -246,7 +280,7 @@ decl_module! {
             ProjectsContent::<T>::put(project_content);
 
             // Store the content
-            ProjectContentMap::<T>::insert(content.external_id, content.clone());
+            ProjectContentMap::<T>::insert(project.external_id, content.external_id, content.clone());
 
             // Emit an event that the content was created.
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
@@ -271,4 +305,11 @@ decl_module! {
             Self::deposit_event(RawEvent::DomainAdded(account, doamin));
         }
     }
+}
+
+impl<T: Trait> Module<T> {
+	fn is_project_finished(project_id: &ProjectId) -> bool {
+		ProjectContentMap::<T>::iter_prefix_values(project_id)
+            .any(|x| x.content_type == ResearchContentType::FinalResul)
+	}
 }
