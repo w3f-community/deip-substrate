@@ -1,8 +1,10 @@
 use sp_core::{Pair, Public, sr25519};
+use std::{str::FromStr};
 use node_template_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
-	SudoConfig, SystemConfig, WASM_BINARY, Signature
+	SudoConfig, SystemConfig, WASM_BINARY, Signature, DeipConfig
 };
+use pallet_deip::{ Domain };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{Verify, IdentifyAccount};
@@ -62,6 +64,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 				get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 				get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 			],
+			vec![],
 			true,
 		),
 		// Bootnodes
@@ -110,6 +113,16 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 				get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 				get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 			],
+			vec![
+				Domain::from_str("6c4bb3bcf1a88e3b51de88576d592f1f980c5bbb").unwrap(), // Common
+				Domain::from_str("7c3d37cbfea2513a7e03e674448bbeee8ae3d862").unwrap(), // Biology
+				Domain::from_str("9f0224709d86e02b9625b5ebf2786b80ba6bed17").unwrap(), // Physics
+				Domain::from_str("6a8b20f002a7dedf7b873dbc86e0b0051d4fa898").unwrap(), // Chemistry
+				Domain::from_str("a47bf84ac30d0843accb737d5924434ef3ed0517").unwrap(), // Earth sciences
+				Domain::from_str("8e2a3711649993a87848337b9b401dcf64425e2d").unwrap(), // Space sciences
+				Domain::from_str("721e75eb0535e152669b0c3fbbb9e21675483553").unwrap(), // Medicine and health
+				Domain::from_str("2519ef55e1b69f1a7e13275e3273950cce7e26a8").unwrap() // Aquaculture
+			],
 			true,
 		),
 		// Bootnodes
@@ -131,6 +144,7 @@ fn testnet_genesis(
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
+	domains: Vec<Domain>,
 	_enable_println: bool,
 ) -> GenesisConfig {
 	GenesisConfig {
@@ -142,6 +156,10 @@ fn testnet_genesis(
 		pallet_balances: Some(BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.
 			balances: endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
+		}),
+		pallet_deip: Some(DeipConfig {
+			domains: domains.iter().cloned().map(|k|(k, ())).collect(),
+			domain_count: domains.len() as u32,
 		}),
 		pallet_aura: Some(AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
