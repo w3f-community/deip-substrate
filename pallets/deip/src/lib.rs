@@ -15,16 +15,16 @@ use sp_core::{ H160 };
 pub const MAX_DOMAINS: u32 = 100;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
-enum ResearchContentType {
-    Announcemen,
-    FinalResul,
-    MilestoneArticl,
-    MilestoneBoo,
-    MilestoneChapte,
-    MilestoneCod,
-    MilestoneConferencePape,
-    MilestoneCoverPag,
-    MilestoneDat,
+enum ProjectContentType {
+    Announcement,
+    FinalResult,
+    MilestoneArticle,
+    MilestoneBook,
+    MilestoneChapter,
+    MilestoneCode,
+    MilestoneConferencePaper,
+    MilestoneCoverPage,
+    MilestoneData,
     MilestoneExperimentFindings,
     MilestoneMethod,
     MilestoneNegativeResults,
@@ -38,11 +38,9 @@ enum ResearchContentType {
     MilestoneThesis,
 }
 
-// start_milestone_type = ResearchContentType::MilestoneArticle as isize,
-// last_milestone_type = ResearchContentType::MilestoneThesis as isize,
 
-impl Default for ResearchContentType {
-    fn default() -> ResearchContentType { ResearchContentType::Announcemen}
+impl Default for ProjectContentType {
+    fn default() -> ProjectContentType { ProjectContentType::Announcement}
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -56,8 +54,6 @@ pub type Domain = H160;
 pub type ProjectContentId = H160;
 pub type ProjectOf<T> = Project<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
-
-// TODO add is_finished calculated state field
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct Project<Hash, AccountId> {
     is_private: bool,
@@ -73,7 +69,7 @@ pub struct ProjectContent<Hash, AccountId> {
     external_id: ProjectContentId,
     project_external_id: ProjectId,
     team_id: AccountId,
-    content_type: ResearchContentType,
+    content_type: ProjectContentType,
     description: Hash,
     content: Hash,
     authors: Vec<AccountId>,
@@ -310,6 +306,6 @@ decl_module! {
 impl<T: Trait> Module<T> {
 	fn is_project_finished(project_id: &ProjectId) -> bool {
 		ProjectContentMap::<T>::iter_prefix_values(project_id)
-            .any(|x| x.content_type == ResearchContentType::FinalResul)
+            .any(|x| x.content_type == ProjectContentType::FinalResult)
 	}
 }

@@ -12,7 +12,7 @@
       "domains": "Vec<Domain>",
       "members": "Vec<AccountId>"
     },
-    "ResearchContentType": {
+    "ProjectContentType": {
       "_enum": [
         "Announcement", 
         "FinalResult",
@@ -40,7 +40,7 @@
       "external_id": "ProjectContentId",
       "project_external_id": "ProjectId",
       "team_id": "AccountId",
-      "content_type": "ResearchContentType",
+      "content_type": "ProjectContentType",
       "description": "Hash",
       "content": "Hash",
       "authors": "Vec<AccountId>",

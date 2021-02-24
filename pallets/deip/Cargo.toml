@@ -1,5 +1,5 @@
 [package]
-authors = ['DEIP world <https://github.com/substrate-developer-hub>']
+authors = ['DEIP world <https://github.com/DEIPworld>']
 description = 'FRAME pallet defined DEIP porjects'
 edition = '2018'
 homepage = 'https://deip.world/'
