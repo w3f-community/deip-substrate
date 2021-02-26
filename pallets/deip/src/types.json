@@ -2,8 +2,28 @@
     "Domain": "H160",
     "ProjectId": "H160",
     "ProjectContentId": "H160",
+    "NdaAccessRequestId": "H160",
+    "NdaId": "H160",
+    "NdaOf": "Nda",
+    "NdaAccessRequestOf": "NdaAccessRequest",
     "ProjectOf": "Project",
     "ProjectContentOf": "ProjectContent",
+    "Nda": {
+      "contract_creator": "AccountId",
+      "external_id": "NdaId",
+      "end_date": "Moment",
+      "start_date": "Option<Moment>",
+      "contract_hash": "Hash",
+      "parties": "Vec<AccountId>",
+      "projects": "Vec<ProjectId>"
+    },
+    "NdaAccessRequest": {
+      "external_id": "NdaAccessRequestId",
+      "nda_external_id": "NdaId",
+      "requester": "AccountId",
+      "encrypted_payload_hash": "Hash",
+      "encrypted_payload_iv": "Text"
+    },
     "Project": {
       "is_private": "bool",
       "external_id": "ProjectId",
