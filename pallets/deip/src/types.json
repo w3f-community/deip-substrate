@@ -12,11 +12,35 @@
       "domains": "Vec<Domain>",
       "members": "Vec<AccountId>"
     },
+    "ProjectContentType": {
+      "_enum": [
+        "Announcement", 
+        "FinalResult",
+        "MilestoneArticle",
+        "MilestoneBook",
+        "MilestoneChapter",
+        "MilestoneCode",
+        "MilestoneConferencePaper",
+        "MilestoneCoverPage",
+        "MilestoneData",
+        "MilestoneExperimentFindings",
+        "MilestoneMethod",
+        "MilestoneNegativeResults",
+        "MilestonePatent",
+        "MilestonePoster",
+        "MilestonePreprint",
+        "MilestonePresentation",
+        "MilestoneRawData",
+        "MilestoneResearchProposal",
+        "MilestoneTechnicalReport",
+        "MilestoneThesis"
+      ]
+    },
     "ProjectContent": {
       "external_id": "ProjectContentId",
       "project_external_id": "ProjectId",
       "team_id": "AccountId",
-      "content_type": "u8",
+      "content_type": "ProjectContentType",
       "description": "Hash",
       "content": "Hash",
       "authors": "Vec<AccountId>",
