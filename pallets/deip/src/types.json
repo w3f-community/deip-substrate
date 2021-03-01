@@ -17,12 +17,23 @@
       "parties": "Vec<AccountId>",
       "projects": "Vec<ProjectId>"
     },
+    "NdaAccessRequestStatus": {
+      "_enum": [
+        "Pending",
+        "Fulfilled",
+        "Rejected"
+      ]
+    },
     "NdaAccessRequest": {
       "external_id": "NdaAccessRequestId",
       "nda_external_id": "NdaId",
       "requester": "AccountId",
       "encrypted_payload_hash": "Hash",
-      "encrypted_payload_iv": "Text"
+      "encrypted_payload_iv": "Text",
+      "status": "NdaAccessRequestStatus",
+      "grantor": "Option<AccountId>",
+      "encrypted_payload_encryption_key": "Option<Text>",
+      "proof_of_encrypted_payload_encryption_key": "Option<Text>"
     },
     "Project": {
       "is_private": "bool",

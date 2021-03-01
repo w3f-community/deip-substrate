@@ -40,7 +40,7 @@ enum ProjectContentType {
 
 
 impl Default for ProjectContentType {
-    fn default() -> ProjectContentType { ProjectContentType::Announcement}
+    fn default() -> ProjectContentType { ProjectContentType::Announcement }
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -91,6 +91,18 @@ pub struct Nda<Hash, AccountId, Moment>  {
     projects: Vec<ProjectId>,
 }
 
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+enum NdaAccessRequestStatus {
+    Pending,
+    Fulfilled,
+    Rejected,
+}
+
+
+impl Default for NdaAccessRequestStatus {
+    fn default() -> NdaAccessRequestStatus { NdaAccessRequestStatus::Pending }
+}
+
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct NdaAccessRequest<Hash, AccountId>  {
     external_id: NdaAccessRequestId,
@@ -98,6 +110,10 @@ pub struct NdaAccessRequest<Hash, AccountId>  {
     requester: AccountId,
     encrypted_payload_hash: Hash,
     encrypted_payload_iv: Vec<u8>,
+    status: NdaAccessRequestStatus,
+    grantor: Option<AccountId>,
+    encrypted_payload_encryption_key: Option<Vec<u8>>,
+    proof_of_encrypted_payload_encryption_key: Option<Vec<u8>>,
 }
 
 // Pallets use events to inform users when imporFtant changes are made.
@@ -130,6 +146,10 @@ decl_event! {
         NdaCreated(AccountId, NdaId),
         /// Event emitted when a NDA Access request has been created. [BelongsTo, NdaAccessRequestId]
         NdaAccessRequestCreated(AccountId, NdaAccessRequestId),
+        //  /// Event emitted when a NDA Access request has been fulfilled. [BelongsTo, NdaAccessRequestId]
+        NdaAccessRequestFulfilled(AccountId, NdaAccessRequestId),
+        //  /// Event emitted when a NDA Access request has been rejected. [BelongsTo, NdaAccessRequestId]
+        NdaAccessRequestRejected(AccountId, NdaAccessRequestId),
 
         /// Added a domain. [Creator, Domain]
 		DomainAdded(AccountId, Domain),
@@ -175,6 +195,7 @@ decl_error! {
         NdaAlreadyExists,
         NdaAccessRequestsAlreadyExists,
         NoSuchNda,
+        NoSuchNdaAccessRequest,
         NdaContractIsNotActiveYet,
         NdaStartDateMustBeLaterOrEqualCurrentMoment,
         NdaEndDateMustBeLaterCurrentMoment,
@@ -391,28 +412,97 @@ decl_module! {
 
         /// Create request to access NDA content
         #[weight = 10_000]
-        fn create_nda_content_access_request(origin, nda_request: NdaAccessRequestOf<T>) {
+        fn create_nda_content_access_request(
+            origin, 
+            external_id: NdaAccessRequestId,
+            nda_external_id: NdaId,
+            encrypted_payload_hash: T::Hash,
+            encrypted_payload_iv: Vec<u8>,
+        ) {
             let account = ensure_signed(origin)?;
             let timestamp = pallet_timestamp::Module::<T>::get();
 
-            let nda = NdaMap::<T>::get(nda_request.nda_external_id);
+            let nda = NdaMap::<T>::get(nda_external_id);
             
             ensure!(!nda.external_id.is_zero(), Error::<T>::NoSuchNda);
             ensure!(nda.start_date <= Some(timestamp), Error::<T>::NdaContractIsNotActiveYet);
 
             let mut nda_requests = NdaAccessRequests::<T>::get();
 
-            let index_to_insert_nda_request = nda_requests.binary_search_by_key(&nda_request.external_id, |&NdaAccessRequest {external_id, ..}| external_id)
+            let index_to_insert_nda_request = nda_requests.binary_search_by_key(&external_id, |&NdaAccessRequest {external_id, ..}| external_id)
                 .err().ok_or(Error::<T>::NdaAccessRequestsAlreadyExists)?;
+            
+            let nda_request = NdaAccessRequest {
+                external_id,
+                nda_external_id, 
+                requester: account.clone(),
+                encrypted_payload_hash,
+                encrypted_payload_iv,
+                status: NdaAccessRequestStatus::Pending,
+                grantor: None,
+                encrypted_payload_encryption_key: None,
+                proof_of_encrypted_payload_encryption_key: None,
+            };
 
-            nda_requests.insert(index_to_insert_nda_request, nda_request.clone());
+            nda_requests.insert(index_to_insert_nda_request, nda_request);
             NdaAccessRequests::<T>::put(nda_requests);
 
             // Emit an event that the NDA was created.
-            Self::deposit_event(RawEvent::NdaAccessRequestCreated(account, nda_request.external_id));
+            Self::deposit_event(RawEvent::NdaAccessRequestCreated(account, external_id));
             
 
         }
+        
+        /// Fulfill NDA access request
+        #[weight = 10_000]
+        fn fulfill_nda_content_access_request(
+            origin, 
+            external_id: NdaAccessRequestId,
+            encrypted_payload_encryption_key: Vec<u8>,
+            proof_of_encrypted_payload_encryption_key: Vec<u8>,
+        ) {
+            let account = ensure_signed(origin)?;
+
+            NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
+                let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
+
+                ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
+
+                nda_access_request.status = NdaAccessRequestStatus::Fulfilled;
+                nda_access_request.grantor = Some(account.clone());
+                nda_access_request.encrypted_payload_encryption_key = Some(encrypted_payload_encryption_key);
+                nda_access_request.proof_of_encrypted_payload_encryption_key = Some(proof_of_encrypted_payload_encryption_key);
+
+                Ok(())
+            })?;
+
+            // Emit an event that the NDA was fulfilled.
+            Self::deposit_event(RawEvent::NdaAccessRequestFulfilled(account, external_id));
+
+        }
+
+         /// Reject NDA access request
+         #[weight = 10_000]
+         fn reject_nda_content_access_request(
+             origin, 
+             external_id: NdaAccessRequestId,
+         ) {
+             let account = ensure_signed(origin)?;
+ 
+             NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
+                 let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
+ 
+                 ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
+ 
+                 nda_access_request.status = NdaAccessRequestStatus::Rejected;
+                 
+                 Ok(())
+             })?;
+ 
+             // Emit an event that the NDA was rejected.
+             Self::deposit_event(RawEvent::NdaAccessRequestRejected(account, external_id));
+ 
+         }
         
         /// Allow a user to create domains.
         #[weight = 10_000]
