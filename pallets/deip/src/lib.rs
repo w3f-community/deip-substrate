@@ -116,7 +116,7 @@ pub struct NdaAccessRequest<Hash, AccountId>  {
     proof_of_encrypted_payload_encryption_key: Option<Vec<u8>>,
 }
 
-// Pallets use events to inform users when imporFtant changes are made.
+// Pallets use events to inform users when important changes are made.
 // Event documentation should end with an array that provides descriptive names for parameters.
 // https://substrate.dev/docs/en/knowledgebase/runtime/events
 decl_event! {
@@ -193,7 +193,7 @@ decl_error! {
         
         /// Cannot add a NDA because a NDA with this ID is already a exists.
         NdaAlreadyExists,
-        NdaAccessRequestsAlreadyExists,
+        NdaAccessRequestAlreadyExists,
         NoSuchNda,
         NoSuchNdaAccessRequest,
         NdaContractIsNotActiveYet,
@@ -201,6 +201,7 @@ decl_error! {
         NdaEndDateMustBeLaterCurrentMoment,
         NdaStartDateMustBeLessThanEndDate,
         TeamOfAllProjectsMustSpecifiedAsParty,
+        NdaAccessRequestAlreadyFinalized,
 
         
         
@@ -225,7 +226,7 @@ decl_storage! {
         Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
         NdaMap get(fn nda): map hasher(identity) NdaId => NdaOf<T>;
         
-        NdaAccessRequests get(fn nda_requests): Vec<NdaAccessRequestOf<T>>;
+        NdaAccessRequests get(fn nda_requests): Vec<(NdaAccessRequestId, NdaId, T::AccountId)>;
         NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
         // The set of all Domains.
@@ -429,12 +430,13 @@ decl_module! {
 
             let mut nda_requests = NdaAccessRequests::<T>::get();
 
-            let index_to_insert_nda_request = nda_requests.binary_search_by_key(&external_id, |&NdaAccessRequest {external_id, ..}| external_id)
-                .err().ok_or(Error::<T>::NdaAccessRequestsAlreadyExists)?;
+            let index_to_insert_nda_request = nda_requests.binary_search_by_key(&external_id, |&(external_id, ..)| external_id)
+                .err().ok_or(Error::<T>::NdaAccessRequestAlreadyExists)?;
             
             let nda_request = NdaAccessRequest {
                 external_id,
                 nda_external_id, 
+
                 requester: account.clone(),
                 encrypted_payload_hash,
                 encrypted_payload_iv,
@@ -443,9 +445,10 @@ decl_module! {
                 encrypted_payload_encryption_key: None,
                 proof_of_encrypted_payload_encryption_key: None,
             };
-
-            nda_requests.insert(index_to_insert_nda_request, nda_request);
+            nda_requests.insert(index_to_insert_nda_request, (external_id, nda_external_id, account.clone()));
             NdaAccessRequests::<T>::put(nda_requests);
+
+            NdaAccessRequestMap::<T>::insert(nda_request.external_id, nda_request);
 
             // Emit an event that the NDA was created.
             Self::deposit_event(RawEvent::NdaAccessRequestCreated(account, external_id));
@@ -466,6 +469,7 @@ decl_module! {
             NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
                 let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
 
+                ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
                 ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
 
                 nda_access_request.status = NdaAccessRequestStatus::Fulfilled;
@@ -490,13 +494,15 @@ decl_module! {
              let account = ensure_signed(origin)?;
  
              NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
-                 let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
+                let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
+                
+                
+                ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
+                ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
  
-                 ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
- 
-                 nda_access_request.status = NdaAccessRequestStatus::Rejected;
+                nda_access_request.status = NdaAccessRequestStatus::Rejected;
                  
-                 Ok(())
+                Ok(())
              })?;
  
              // Emit an event that the NDA was rejected.
