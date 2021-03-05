@@ -40,11 +40,11 @@ enum ProjectContentType {
 
 
 impl Default for ProjectContentType {
-    fn default() -> ProjectContentType { ProjectContentType::Announcement}
+    fn default() -> ProjectContentType { ProjectContentType::Announcement }
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
-pub trait Trait: frame_system::Trait {
+pub trait Trait: frame_system::Trait + pallet_timestamp::Trait {
     /// Because this pallet emits events, it depends on the runtime's definition of an event.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
@@ -52,7 +52,11 @@ pub trait Trait: frame_system::Trait {
 pub type ProjectId = H160;
 pub type Domain = H160;
 pub type ProjectContentId = H160;
+pub type NdaId = H160;
+pub type NdaAccessRequestId = H160;
 pub type ProjectOf<T> = Project<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
+pub type NdaOf<T> = Nda<<T as system::Trait>::Hash, <T as system::Trait>::AccountId, <T as pallet_timestamp::Trait>::Moment>;
+pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct Project<Hash, AccountId> {
@@ -75,6 +79,41 @@ pub struct ProjectContent<Hash, AccountId> {
     authors: Vec<AccountId>,
     references: Option<Vec<ProjectContentId>>
     
+}
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+pub struct Nda<Hash, AccountId, Moment>  {
+    contract_creator: AccountId,
+    external_id: NdaId,
+    end_date: Moment,
+    start_date: Option<Moment>,
+    contract_hash: Hash,
+    parties: Vec<AccountId>,
+    projects: Vec<ProjectId>,
+}
+
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+enum NdaAccessRequestStatus {
+    Pending,
+    Fulfilled,
+    Rejected,
+}
+
+
+impl Default for NdaAccessRequestStatus {
+    fn default() -> NdaAccessRequestStatus { NdaAccessRequestStatus::Pending }
+}
+
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+pub struct NdaAccessRequest<Hash, AccountId>  {
+    external_id: NdaAccessRequestId,
+    nda_external_id: NdaId,
+    requester: AccountId,
+    encrypted_payload_hash: Hash,
+    encrypted_payload_iv: Vec<u8>,
+    status: NdaAccessRequestStatus,
+    grantor: Option<AccountId>,
+    encrypted_payload_encryption_key: Option<Vec<u8>>,
+    proof_of_encrypted_payload_encryption_key: Option<Vec<u8>>,
 }
 
 // Pallets use events to inform users when important changes are made.
@@ -100,6 +139,17 @@ decl_event! {
        
         /// Event emitted when a project contnet has been created. [BelongsTo, ProjectContentId]
         ProjectContnetCreated(AccountId, ProjectContentId),
+
+        // ==== NDA ====
+       
+        /// Event emitted when a NDA has been created. [BelongsTo, NdaId]
+        NdaCreated(AccountId, NdaId),
+        /// Event emitted when a NDA Access request has been created. [BelongsTo, NdaAccessRequestId]
+        NdaAccessRequestCreated(AccountId, NdaAccessRequestId),
+        //  /// Event emitted when a NDA Access request has been fulfilled. [BelongsTo, NdaAccessRequestId]
+        NdaAccessRequestFulfilled(AccountId, NdaAccessRequestId),
+        //  /// Event emitted when a NDA Access request has been rejected. [BelongsTo, NdaAccessRequestId]
+        NdaAccessRequestRejected(AccountId, NdaAccessRequestId),
 
         /// Added a domain. [Creator, Domain]
 		DomainAdded(AccountId, Domain),
@@ -138,6 +188,21 @@ decl_error! {
         DomianLimitReached,
         /// Cannot add domain because this domain is already a exists
         DomainAlreadyExists,
+
+        // ==== NDA ====
+        
+        /// Cannot add a NDA because a NDA with this ID is already a exists.
+        NdaAlreadyExists,
+        NdaAccessRequestAlreadyExists,
+        NoSuchNda,
+        NoSuchNdaAccessRequest,
+        NdaContractIsNotActiveYet,
+        NdaStartDateMustBeLaterOrEqualCurrentMoment,
+        NdaEndDateMustBeLaterCurrentMoment,
+        NdaStartDateMustBeLessThanEndDate,
+        TeamOfAllProjectsMustSpecifiedAsParty,
+        NdaAccessRequestAlreadyFinalized,
+
         
         
         // ==== General =====
@@ -157,6 +222,12 @@ decl_storage! {
 
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
         ProjectsContent get(fn project_content_list): Vec<(ProjectContentId, ProjectId, T::AccountId)>;
+
+        Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
+        NdaMap get(fn nda): map hasher(identity) NdaId => NdaOf<T>;
+        
+        NdaAccessRequests get(fn nda_requests): Vec<(NdaAccessRequestId, NdaId, T::AccountId)>;
+        NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
         // The set of all Domains.
         Domains get(fn domains) config(): map hasher(blake2_128_concat) Domain => ();
@@ -281,6 +352,163 @@ decl_module! {
             // Emit an event that the content was created.
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
+
+        /// Allow a user to create NDA.
+        #[weight = 10_000]
+        fn create_project_nda(origin,  
+            external_id: NdaId,
+            end_date: T::Moment,
+            contract_hash: T::Hash,
+            maybe_start_date: Option<T::Moment>,
+            parties: Vec<T::AccountId>,
+            projects: Vec<ProjectId>
+        ) {
+            let mut projects = projects;
+            projects.dedup();
+            let contract_creator = ensure_signed(origin)?;
+            let timestamp = pallet_timestamp::Module::<T>::get();
+
+            ensure!(end_date > timestamp, Error::<T>::NdaEndDateMustBeLaterCurrentMoment);
+
+            if let Some(start_date) = maybe_start_date {
+                ensure!(start_date >= timestamp, Error::<T>::NdaStartDateMustBeLaterOrEqualCurrentMoment);
+                ensure!(end_date > start_date, Error::<T>::NdaStartDateMustBeLessThanEndDate);
+            }
+            
+            projects.iter()
+                .try_for_each(|id| -> DispatchResult {
+                    let project = ProjectMap::<T>::get(id);
+
+                    ensure!(!project.external_id.is_zero(), Error::<T>::NoSuchProject);
+                    ensure!(parties.contains(&project.team_id), Error::<T>::TeamOfAllProjectsMustSpecifiedAsParty);
+
+                    Ok(())
+                })?;
+
+            let mut nda_list = Ndas::<T>::get();
+
+            let index_to_insert_nda = nda_list.binary_search_by_key(&external_id, |&(external_id, ..)| external_id)
+                .err().ok_or(Error::<T>::NdaAlreadyExists)?;
+            
+               
+            let nda = Nda {
+                contract_creator: contract_creator.clone(),
+                external_id,
+                end_date,
+                start_date: maybe_start_date,
+                contract_hash,
+                parties,
+                projects
+            };
+            
+            nda_list.insert(index_to_insert_nda, (nda.external_id, contract_creator.clone()));
+            Ndas::<T>::put(nda_list);
+
+            NdaMap::<T>::insert(nda.external_id, nda);
+
+            // Emit an event that the NDA was created.
+            Self::deposit_event(RawEvent::NdaCreated(contract_creator, external_id));
+
+        }
+
+        /// Create request to access NDA content
+        #[weight = 10_000]
+        fn create_nda_content_access_request(
+            origin, 
+            external_id: NdaAccessRequestId,
+            nda_external_id: NdaId,
+            encrypted_payload_hash: T::Hash,
+            encrypted_payload_iv: Vec<u8>,
+        ) {
+            let account = ensure_signed(origin)?;
+            let timestamp = pallet_timestamp::Module::<T>::get();
+
+            let nda = NdaMap::<T>::get(nda_external_id);
+            
+            ensure!(!nda.external_id.is_zero(), Error::<T>::NoSuchNda);
+            ensure!(nda.start_date <= Some(timestamp), Error::<T>::NdaContractIsNotActiveYet);
+
+            let mut nda_requests = NdaAccessRequests::<T>::get();
+
+            let index_to_insert_nda_request = nda_requests.binary_search_by_key(&external_id, |&(external_id, ..)| external_id)
+                .err().ok_or(Error::<T>::NdaAccessRequestAlreadyExists)?;
+            
+            let nda_request = NdaAccessRequest {
+                external_id,
+                nda_external_id, 
+
+                requester: account.clone(),
+                encrypted_payload_hash,
+                encrypted_payload_iv,
+                status: NdaAccessRequestStatus::Pending,
+                grantor: None,
+                encrypted_payload_encryption_key: None,
+                proof_of_encrypted_payload_encryption_key: None,
+            };
+            nda_requests.insert(index_to_insert_nda_request, (external_id, nda_external_id, account.clone()));
+            NdaAccessRequests::<T>::put(nda_requests);
+
+            NdaAccessRequestMap::<T>::insert(nda_request.external_id, nda_request);
+
+            // Emit an event that the NDA was created.
+            Self::deposit_event(RawEvent::NdaAccessRequestCreated(account, external_id));
+            
+
+        }
+        
+        /// Fulfill NDA access request
+        #[weight = 10_000]
+        fn fulfill_nda_content_access_request(
+            origin, 
+            external_id: NdaAccessRequestId,
+            encrypted_payload_encryption_key: Vec<u8>,
+            proof_of_encrypted_payload_encryption_key: Vec<u8>,
+        ) {
+            let account = ensure_signed(origin)?;
+
+            NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
+                let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
+
+                ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
+                ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
+
+                nda_access_request.status = NdaAccessRequestStatus::Fulfilled;
+                nda_access_request.grantor = Some(account.clone());
+                nda_access_request.encrypted_payload_encryption_key = Some(encrypted_payload_encryption_key);
+                nda_access_request.proof_of_encrypted_payload_encryption_key = Some(proof_of_encrypted_payload_encryption_key);
+
+                Ok(())
+            })?;
+
+            // Emit an event that the NDA was fulfilled.
+            Self::deposit_event(RawEvent::NdaAccessRequestFulfilled(account, external_id));
+
+        }
+
+         /// Reject NDA access request
+         #[weight = 10_000]
+         fn reject_nda_content_access_request(
+             origin, 
+             external_id: NdaAccessRequestId,
+         ) {
+             let account = ensure_signed(origin)?;
+ 
+             NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
+                let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
+                
+                
+                ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
+                ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
+ 
+                nda_access_request.status = NdaAccessRequestStatus::Rejected;
+                 
+                Ok(())
+             })?;
+ 
+             // Emit an event that the NDA was rejected.
+             Self::deposit_event(RawEvent::NdaAccessRequestRejected(account, external_id));
+ 
+         }
         
         /// Allow a user to create domains.
         #[weight = 10_000]
