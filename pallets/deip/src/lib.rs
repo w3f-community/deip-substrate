@@ -44,9 +44,9 @@ impl Default for ProjectContentType {
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
-pub trait Trait: frame_system::Trait + pallet_timestamp::Trait {
+pub trait Config: frame_system::Config + pallet_timestamp::Config {
     /// Because this pallet emits events, it depends on the runtime's definition of an event.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
 
 pub type ProjectId = H160;
@@ -54,10 +54,10 @@ pub type Domain = H160;
 pub type ProjectContentId = H160;
 pub type NdaId = H160;
 pub type NdaAccessRequestId = H160;
-pub type ProjectOf<T> = Project<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
-pub type NdaOf<T> = Nda<<T as system::Trait>::Hash, <T as system::Trait>::AccountId, <T as pallet_timestamp::Trait>::Moment>;
-pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
-pub type ProjectContentOf<T> = ProjectContent<<T as system::Trait>::Hash, <T as system::Trait>::AccountId>;
+pub type ProjectOf<T> = Project<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
+pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
+pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
+pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct Project<Hash, AccountId> {
     is_private: bool,
@@ -122,7 +122,7 @@ pub struct NdaAccessRequest<Hash, AccountId>  {
 decl_event! {
     pub enum Event<T> 
     where 
-        AccountId = <T as frame_system::Trait>::AccountId,
+        AccountId = <T as frame_system::Config>::AccountId,
         Project = ProjectOf<T>,
         // Content = ProjectContentOf<T>
     {
@@ -158,7 +158,7 @@ decl_event! {
 
 // Errors inform users that something went wrong.
 decl_error! {
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         // ==== Projects ====
         
         /// The project does not exist.
@@ -214,7 +214,7 @@ decl_error! {
 // The pallet's runtime storage items.
 // https://substrate.dev/docs/en/knowledgebase/runtime/storage
 decl_storage! {
-    trait Store for Module<T: Trait> as Deip {
+    trait Store for Module<T: Config> as Deip {
         /// The storage item for our projects.
         ProjectMap get(fn project): map hasher(identity) ProjectId => ProjectOf<T>;
         /// This storage map of ProjectId and Creator
@@ -241,7 +241,7 @@ decl_storage! {
 // These functions materialize as "extrinsics", which are often compared to transactions.
 // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         // Errors must be initialized if they are used by the pallet.
         type Error = Error<T>;
 
@@ -531,7 +531,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
 	fn is_project_finished(project_id: &ProjectId) -> bool {
 		ProjectContentMap::<T>::iter_prefix_values(project_id)
             .any(|x| x.content_type == ProjectContentType::FinalResult)

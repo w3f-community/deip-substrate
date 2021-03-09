@@ -6,7 +6,7 @@ homepage = 'https://deip.world/'
 license = 'Unlicense'
 name = 'pallet-deip'
 repository = 'https://github.com/DEIPworld/deip-polkadot'
-version = '2.0.1'
+version = '3.0.0'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
@@ -16,20 +16,20 @@ targets = ['x86_64-unknown-linux-gnu']
 default-features = false
 features = ['derive']
 package = 'parity-scale-codec'
-version = '1.3.4'
+version = '2.0.0'
 
 [dependencies]
-frame-support = { default-features = false, version = '2.0.1' }
-pallet-timestamp = { default-features = false, version = '2.0.1' }
-frame-system = { default-features = false, version = '2.0.1' }
-sp-std = { default-features = false, version = '2.0.1' }
-sp-runtime = { version = '2.0.1', default-features = false }
-sp-core = { default-features = false, version = '2.0.1' }
+frame-support = { default-features = false, version = '3.0.0' }
+pallet-timestamp = { default-features = false, version = '3.0.0' }
+frame-system = { default-features = false, version = '3.0.0' }
+sp-std = { default-features = false, version = '3.0.0' }
+sp-runtime = { version = '3.0.0', default-features = false }
+sp-core = { default-features = false, version = '3.0.0' }
 serde = { version = "1.0.123", optional = true, features = ["derive"]}
 
 [dev-dependencies]
-sp-io = { default-features = false, version = '2.0.1' }
-sp-runtime = { default-features = false, version = '2.0.1' }
+sp-io = { default-features = false, version = '3.0.0' }
+sp-runtime = { default-features = false, version = '3.0.0' }
 
 [features]
 default = ['std']
