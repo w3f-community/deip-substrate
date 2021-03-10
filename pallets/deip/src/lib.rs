@@ -11,6 +11,12 @@ use sp_std::vec::Vec;
 use sp_runtime::{ RuntimeDebug };
 use sp_core::{ H160 };
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
 
@@ -233,7 +239,7 @@ decl_storage! {
         Domains get(fn domains) config(): map hasher(blake2_128_concat) Domain => ();
         // The total number of domains stored in the map.
         // Because the map does not store its size, we must store it separately
-        pub DomainCount config(domain_count): u32;
+        DomainCount get(fn domain_count) config(): u32;
     }
 }
 
@@ -512,21 +518,21 @@ decl_module! {
         
         /// Allow a user to create domains.
         #[weight = 10_000]
-        fn add_domain(origin, doamin: Domain) {
+        fn add_domain(origin, domain: Domain) {
             let account = ensure_signed(origin)?;
         
             let domain_count = DomainCount::get();
             ensure!(domain_count < MAX_DOMAINS, Error::<T>::DomianLimitReached);
         
-            // We don't want to add duplicate doamins, so we check whether the potential new
+            // We don't want to add duplicate domains, so we check whether the potential new
             // domain is already present in the list. Because the domains is stored as a hash
             // map this check is constant time O(1)
-            ensure!(!Domains::contains_key(&doamin), Error::<T>::DomainAlreadyExists);
+            ensure!(!Domains::contains_key(&domain), Error::<T>::DomainAlreadyExists);
         
             // Insert the new domin and emit the event
-            Domains::insert(&doamin, ());
+            Domains::insert(&domain, ());
             DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
-            Self::deposit_event(RawEvent::DomainAdded(account, doamin));
+            Self::deposit_event(RawEvent::DomainAdded(account, domain));
         }
     }
 }
