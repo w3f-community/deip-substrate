@@ -3,12 +3,36 @@ use crate::{mock::*};
 use sp_core::H256;
 use frame_support::{assert_ok, assert_noop};
 
+const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
+
+fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountId>) 
+	-> (ProjectOf<Test>, ProjectId, Domain, <Test as system::Config>::AccountId, ) {
+	let domain = Domain::random();
+	let account_id: <Test as system::Config>::AccountId = maybe_account_id.unwrap_or(DEFAULT_ACCOUNT_ID);
+	let project_id = ProjectId::random();
+	
+	assert_ok!(Deip::add_domain(Origin::signed(account_id), domain.clone()));
+
+	let project = Project {
+		is_private: false,
+		external_id: project_id,
+		team_id: account_id,
+		description: H256::random(),
+		domains: vec![domain],
+		members: vec![account_id],
+	};
+	
+	assert_ok!(Deip::create_project(Origin::signed(account_id), project.clone()));
+
+	(project, project_id, domain, account_id)
+}
+
 #[test]
 fn add_domain() {
 	new_test_ext().execute_with(|| {
 		let domain = Domain::random();
 		// Dispatch a signed add domian extrinsic.
-		assert_ok!(Deip::add_domain(Origin::signed(1), domain.clone()));
+		assert_ok!(Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), domain.clone()));
 		
 		// Read pallet storage and assert an expected result.
 		assert_eq!(Deip::domain_count(), 1);
@@ -25,10 +49,10 @@ fn cant_add_duplicate_domain() {
 	new_test_ext().execute_with(|| {
 		let domain = Domain::random();
 		
-		assert_ok!(Deip::add_domain(Origin::signed(1), domain.clone()));
+		assert_ok!(Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), domain.clone()));
 
 		assert_noop!(
-			Deip::add_domain(Origin::signed(1), domain.clone()),
+			Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), domain.clone()),
 			Error::<Test>::DomainAlreadyExists
 		);
 	})
@@ -37,22 +61,7 @@ fn cant_add_duplicate_domain() {
 #[test]
 fn add_project() {
 	new_test_ext().execute_with(|| {
-		let domain = Domain::random();
-		let account_id: u64 = 2;
-		let project_id = ProjectId::random();
-		
-		assert_ok!(Deip::add_domain(Origin::signed(1), domain.clone()));
-
-		let project = Project {
-			is_private: false,
-			external_id: project_id,
-			team_id: account_id,
-			description: H256::random(),
-			domains: vec![domain],
-			members: vec![account_id],
-		};
-		
-		assert_ok!(Deip::create_project(Origin::signed(1), project.clone()));
+		let (project ,project_id, ..) = create_ok_project(None);
 
 		
 		// TODO Add event check
@@ -92,7 +101,7 @@ fn add_project() {
 fn cant_add_project_with_non_exixsted_domain() {
 	new_test_ext().execute_with(|| {
 		let domain = Domain::random();
-		let account_id = 2;
+		let account_id = DEFAULT_ACCOUNT_ID;
 		
 		let project = Project {
 			is_private: false,
@@ -104,7 +113,7 @@ fn cant_add_project_with_non_exixsted_domain() {
 		};
 		
 		assert_noop!(
-			Deip::create_project(Origin::signed(1), project.clone()),
+			Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID), project.clone()),
 			Error::<Test>::DomainNotExists
 		);
 	})
@@ -113,25 +122,10 @@ fn cant_add_project_with_non_exixsted_domain() {
 #[test]
 fn cant_add_duplicated_project() {
 	new_test_ext().execute_with(|| {
-		let domain = Domain::random();
-		let account_id = 2;
-		let project_id = ProjectId::random();
-		
-		assert_ok!(Deip::add_domain(Origin::signed(1), domain.clone()));
-
-		let project = Project {
-			is_private: false,
-			external_id: project_id,
-			team_id: account_id,
-			description: H256::random(),
-			domains: vec![domain],
-			members: vec![account_id],
-		};
-		
-		assert_ok!(Deip::create_project(Origin::signed(1), project.clone()));
+		let (project, ..) = create_ok_project(None);
 
 		assert_noop!(
-			Deip::create_project(Origin::signed(1), project.clone()),
+			Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID), project.clone()),
 			Error::<Test>::ProjectAlreadyExists
 		);
 
@@ -142,27 +136,12 @@ fn cant_add_duplicated_project() {
 #[test]
 fn update_project() {
 	new_test_ext().execute_with(|| {
-		let domain = Domain::random();
-		let account_id: u64 = 1;
-		let project_id = ProjectId::random();
-		
-		assert_ok!(Deip::add_domain(Origin::signed(1), domain.clone()));
-
-		let project = Project {
-			is_private: false,
-			external_id: project_id,
-			team_id: account_id,
-			description: H256::random(),
-			domains: vec![domain],
-			members: vec![account_id],
-		};
+		let (_ ,project_id, ..) = create_ok_project(None);
 
 		let new_description = H256::random();
 		let new_members = vec![1,2];
-		
-		assert_ok!(Deip::create_project(Origin::signed(1), project.clone()));
 
-		assert_ok!(Deip::update_project(Origin::signed(1), project_id, Some(new_description), Some(true), Some(new_members.clone())));
+		assert_ok!(Deip::update_project(Origin::signed(DEFAULT_ACCOUNT_ID), project_id, Some(new_description), Some(true), Some(new_members.clone())));
 
 
 		let project_stored = ProjectMap::<Test>::get(project_id);
@@ -179,28 +158,16 @@ fn update_project() {
 #[test]
 fn cant_update_project_not_belonged_to_your_signature() {
 	new_test_ext().execute_with(|| {
-		let domain = Domain::random();
 		let account_id: u64 = 2;
-		let project_id = ProjectId::random();
-		
-		assert_ok!(Deip::add_domain(Origin::signed(1), domain.clone()));
+		let wrong_account_id = 1;
 
-		let project = Project {
-			is_private: false,
-			external_id: project_id,
-			team_id: account_id,
-			description: H256::random(),
-			domains: vec![domain],
-			members: vec![account_id],
-		};
+		let (_ ,project_id, ..) = create_ok_project(Some(account_id));
 
 		let new_description = H256::random();
 		let new_members = vec![1,2];
-		
-		assert_ok!(Deip::create_project(Origin::signed(1), project.clone()));
 
 		assert_noop!(
-			Deip::update_project(Origin::signed(1), project_id, Some(new_description), Some(true), Some(new_members.clone())),
+			Deip::update_project(Origin::signed(wrong_account_id), project_id, Some(new_description), Some(true), Some(new_members.clone())),
 			Error::<Test>::NoPermission
 		);
 	})
@@ -212,7 +179,7 @@ fn cant_update_not_existed_project() {
 		let project_id = ProjectId::random();
 
 		assert_noop!(
-			Deip::update_project(Origin::signed(1), project_id, None, None, None),
+			Deip::update_project(Origin::signed(DEFAULT_ACCOUNT_ID), project_id, None, None, None),
 			Error::<Test>::NoSuchProject
 		);
 	})
