@@ -77,17 +77,12 @@ fn add_project() {
 
 		assert!(
 			<ProjectMap<Test>>::contains_key(project_id),
-			"Domains did not contain domain, value was `{}`",
+			"Project Map did not contain the project, value was `{}`",
             project_id
 		);
 
 		assert_eq!(project, project_stored);
 
-		assert!(
-			projects.binary_search_by_key(&project_id, |&(external_id, ..)| external_id).is_ok(),
-			"Projects did not contain project, value was `{}`",
-            project_id
-		);
 		assert!(
 			projects.binary_search_by_key(&project_id, |&(external_id, ..)| external_id).is_ok(),
 			"Projects did not contain project, value was `{}`",
@@ -190,9 +185,10 @@ fn cant_update_not_existed_project() {
 fn create_project_content() {
 	new_test_ext().execute_with(|| {
 		let (_ ,project_id, ..) = create_ok_project(None);
+		let project_content_id =  ProjectContentId::random();
 
 		let project_content = ProjectContentOf::<Test> {
-			external_id: ProjectContentId::random(),
+			external_id: project_content_id,
 			project_external_id: project_id,
 			team_id: DEFAULT_ACCOUNT_ID,
 			content_type: ProjectContentType::Announcement,
@@ -204,9 +200,26 @@ fn create_project_content() {
 		};
 		
 
-		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content));
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content.clone()));
 
+		let project_content_list = ProjectsContent::<Test>::get();
+		let project_content_stored = ProjectContentMap::<Test>::get(project_id, project_content_id);
 
+		assert!(
+			<ProjectContentMap<Test>>::contains_key(project_id, project_content_id),
+			"Project Content Map did not contain key, value was `{}{}`",
+            project_id,
+			project_content_id
+
+		);
+
+		assert_eq!(project_content, project_content_stored);
+
+		assert!(
+			project_content_list.binary_search_by_key(&project_content_id, |&(external_id, ..)| external_id).is_ok(),
+			"Projects Contntent List did not contain the content, value was `{}`",
+            project_content_id
+		);
 
 	})
 }
@@ -378,6 +391,3 @@ fn cant_add_project_content_with_wrong_references() {
 
 	})
 }
-
-
-
