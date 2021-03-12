@@ -13,7 +13,7 @@ fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountI
 	
 	assert_ok!(Deip::add_domain(Origin::signed(account_id), domain.clone()));
 
-	let project = Project {
+	let project = ProjectOf::<Test> {
 		is_private: false,
 		external_id: project_id,
 		team_id: account_id,
@@ -65,7 +65,7 @@ fn add_project() {
 
 		
 		// TODO Add event check
-		// let expected_event = mock::Event::pallet_deip(crate::Event::ProjectCreated(account_id, project)::<u64, Project<H256, u64>>);
+		// let expected_event = mock::Event::pallet_deip(crate::Event::ProjectCreated(account_id, project)::<<Test as system::Config>::AccountId, ProjectOf<Test>>);
 
 		// assert_eq!(
 		// 	System::events()[0].event,
@@ -184,3 +184,200 @@ fn cant_update_not_existed_project() {
 		);
 	})
 }
+
+
+#[test]
+fn create_project_content() {
+	new_test_ext().execute_with(|| {
+		let (_ ,project_id, ..) = create_ok_project(None);
+
+		let project_content = ProjectContentOf::<Test> {
+			external_id: ProjectContentId::random(),
+			project_external_id: project_id,
+			team_id: DEFAULT_ACCOUNT_ID,
+			content_type: ProjectContentType::Announcement,
+			description: H256::random(),
+			content: H256::random(),
+			authors: vec![DEFAULT_ACCOUNT_ID],
+			references: None
+			
+		};
+		
+
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content));
+
+
+
+	})
+}
+
+#[test]
+fn create_project_content_with_references() {
+	new_test_ext().execute_with(|| {
+		let (_ ,project_id, ..) = create_ok_project(None);
+		let project_content_id = ProjectContentId::random();
+
+		let project_content = ProjectContentOf::<Test> {
+			external_id: project_content_id,
+			project_external_id: project_id,
+			team_id: DEFAULT_ACCOUNT_ID,
+			content_type: ProjectContentType::Announcement,
+			description: H256::random(),
+			content: H256::random(),
+			authors: vec![DEFAULT_ACCOUNT_ID],
+			references: None	
+		};
+		
+
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content.clone()));
+
+		let project_content_with_reference = ProjectContentOf::<Test> {
+			references: Some(vec![project_content_id]),
+			external_id: ProjectContentId::random(),
+			..project_content.clone()
+		};
+
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content_with_reference));
+
+	})
+}
+
+#[test]
+fn cant_add_duplicated_project_content() {
+	new_test_ext().execute_with(|| {
+		let (_ ,project_id, ..) = create_ok_project(None);
+
+		let project_content = ProjectContentOf::<Test> {
+			external_id: ProjectContentId::random(),
+			project_external_id: project_id,
+			team_id: DEFAULT_ACCOUNT_ID,
+			content_type: ProjectContentType::Announcement,
+			description: H256::random(),
+			content: H256::random(),
+			authors: vec![DEFAULT_ACCOUNT_ID],
+			references: None
+			
+		};
+		
+
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content.clone()));
+
+		assert_noop!(
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
+			Error::<Test>::ProjectContentAlreadyExists
+		);
+
+	})
+}
+
+
+#[test]
+fn cant_add_project_content_with_wrong_project_reference() {
+	new_test_ext().execute_with(|| {
+		let project_content = ProjectContentOf::<Test> {
+			external_id: ProjectContentId::random(),
+			project_external_id: ProjectId::random(),
+			team_id: DEFAULT_ACCOUNT_ID,
+			content_type: ProjectContentType::Announcement,
+			description: H256::random(),
+			content: H256::random(),
+			authors: vec![DEFAULT_ACCOUNT_ID],
+			references: None
+			
+		};
+
+		assert_noop!(
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
+			Error::<Test>::NoSuchProject
+		);
+
+	})
+}
+
+#[test]
+fn cant_add_project_content_to_incorrect_team() {
+	new_test_ext().execute_with(|| {
+		let (_ ,project_id, ..) = create_ok_project(None);
+		let wrong_account_id = 234;
+
+		let project_content = ProjectContentOf::<Test> {
+			external_id: ProjectContentId::random(),
+			project_external_id: project_id,
+			team_id: wrong_account_id,
+			content_type: ProjectContentType::Announcement,
+			description: H256::random(),
+			content: H256::random(),
+			authors: vec![DEFAULT_ACCOUNT_ID],
+			references: None
+		};
+		
+
+		assert_noop!(
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
+			Error::<Test>::ProjectNotBelongToTeam
+		);
+
+	})
+}
+
+#[test]
+fn cant_add_project_content_to_finished_project() {
+	new_test_ext().execute_with(|| {
+		let (_ ,project_id, ..) = create_ok_project(None);
+
+		let project_content = ProjectContentOf::<Test> {
+			external_id: ProjectContentId::random(),
+			project_external_id: project_id,
+			team_id: DEFAULT_ACCOUNT_ID,
+			content_type: ProjectContentType::FinalResult,
+			description: H256::random(),
+			content: H256::random(),
+			authors: vec![DEFAULT_ACCOUNT_ID],
+			references: None
+			
+		};
+
+		let another_proeject_content = ProjectContentOf::<Test> {
+			external_id: ProjectContentId::random(),
+			content_type: ProjectContentType::MilestoneCode,
+			..project_content.clone()
+		};
+		
+
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content));
+
+		assert_noop!(
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), another_proeject_content),
+			Error::<Test>::ProjectAlreadyFinished
+		);
+	})
+}
+
+
+#[test]
+fn cant_add_project_content_with_wrong_references() {
+	new_test_ext().execute_with(|| {
+		let (_ ,project_id, ..) = create_ok_project(None);
+		
+		let project_content = ProjectContentOf::<Test> {
+			external_id: ProjectContentId::random(),
+			project_external_id: project_id,
+			team_id: DEFAULT_ACCOUNT_ID,
+			content_type: ProjectContentType::Announcement,
+			description: H256::random(),
+			content: H256::random(),
+			authors: vec![DEFAULT_ACCOUNT_ID],
+			references: Some(vec![ProjectContentId::random()])
+			
+		};
+
+		assert_noop!(
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
+			Error::<Test>::NoSuchReference
+		);
+
+	})
+}
+
+
+
