@@ -244,13 +244,34 @@ fn create_project_content_with_references() {
 
 		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content.clone()));
 
+		let project_content_with_reference_id =  ProjectContentId::random();
+
 		let project_content_with_reference = ProjectContentOf::<Test> {
 			references: Some(vec![project_content_id]),
-			external_id: ProjectContentId::random(),
+			external_id: project_content_with_reference_id,
 			..project_content.clone()
 		};
 
-		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content_with_reference));
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content_with_reference.clone()));
+
+		let project_content_list = ProjectsContent::<Test>::get();
+		let project_content_stored = ProjectContentMap::<Test>::get(project_id, project_content_with_reference_id);
+
+		assert!(
+			<ProjectContentMap<Test>>::contains_key(project_id, project_content_with_reference_id),
+			"Project Content Map did not contain key, value was `{}{}`",
+            project_id,
+			project_content_with_reference_id
+
+		);
+
+		assert_eq!(project_content_with_reference, project_content_stored);
+
+		assert!(
+			project_content_list.binary_search_by_key(&project_content_with_reference_id, |&(external_id, ..)| external_id).is_ok(),
+			"Projects Contntent List did not contain the content, value was `{}`",
+            project_content_with_reference_id
+		);
 
 	})
 }
