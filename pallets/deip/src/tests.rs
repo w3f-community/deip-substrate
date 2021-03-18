@@ -2,11 +2,13 @@ use crate::*;
 use crate::{mock::*};
 use sp_core::H256;
 use frame_support::{assert_ok, assert_noop};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
+const DAY_IN_MILLIS: u64 = 86400000;
 
 fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountId>) 
-	-> (ProjectOf<Test>, ProjectId, Domain, <Test as system::Config>::AccountId, ) {
+	-> (ProjectId, ProjectOf<Test>, Domain, <Test as system::Config>::AccountId, ) {
 	let domain = Domain::random();
 	let account_id: <Test as system::Config>::AccountId = maybe_account_id.unwrap_or(DEFAULT_ACCOUNT_ID);
 	let project_id = ProjectId::random();
@@ -24,7 +26,47 @@ fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountI
 	
 	assert_ok!(Deip::create_project(Origin::signed(account_id), project.clone()));
 
-	(project, project_id, domain, account_id)
+	(project_id, project, domain, account_id)
+}
+
+fn create_ok_nda() -> (NdaId, NdaOf<Test>) {
+	let (project_id, ..) = create_ok_project(None);
+	let project_nda_id =  NdaId::random();
+	let now = SystemTime::now()
+		.duration_since(UNIX_EPOCH)
+		.expect("Time went backwards :)").as_millis() as u64;
+	
+	let end_date = now + DAY_IN_MILLIS;
+	let contract_hash = H256::random();
+	let maybe_start_date = None;
+	let parties = vec![DEFAULT_ACCOUNT_ID];
+	let projects = vec![project_id];
+	
+
+	assert_ok!(
+		Deip::create_project_nda(
+			Origin::signed(DEFAULT_ACCOUNT_ID), 
+			project_nda_id, 
+			end_date, 
+			contract_hash, 
+			maybe_start_date,
+			parties.clone(),
+			projects.clone()
+		)
+	);
+
+	let expected_nda  = Nda {
+		contract_creator: DEFAULT_ACCOUNT_ID,
+		external_id: project_nda_id,
+		end_date,
+		start_date: maybe_start_date,
+		contract_hash,
+		parties,
+		projects
+	};
+
+	(project_nda_id, expected_nda)
+		
 }
 
 #[test]
@@ -61,7 +103,7 @@ fn cant_add_duplicate_domain() {
 #[test]
 fn add_project() {
 	new_test_ext().execute_with(|| {
-		let (project ,project_id, ..) = create_ok_project(None);
+		let (project_id ,project, ..) = create_ok_project(None);
 
 		
 		// TODO Add event check
@@ -117,7 +159,7 @@ fn cant_add_project_with_non_exixsted_domain() {
 #[test]
 fn cant_add_duplicated_project() {
 	new_test_ext().execute_with(|| {
-		let (project, ..) = create_ok_project(None);
+		let (_, project, ..) = create_ok_project(None);
 
 		assert_noop!(
 			Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID), project.clone()),
@@ -131,7 +173,7 @@ fn cant_add_duplicated_project() {
 #[test]
 fn update_project() {
 	new_test_ext().execute_with(|| {
-		let (_ ,project_id, ..) = create_ok_project(None);
+		let (project_id, ..) = create_ok_project(None);
 
 		let new_description = H256::random();
 		let new_members = vec![1,2];
@@ -156,7 +198,7 @@ fn cant_update_project_not_belonged_to_your_signature() {
 		let account_id: u64 = 2;
 		let wrong_account_id = 1;
 
-		let (_ ,project_id, ..) = create_ok_project(Some(account_id));
+		let (project_id, ..) = create_ok_project(Some(account_id));
 
 		let new_description = H256::random();
 		let new_members = vec![1,2];
@@ -184,7 +226,7 @@ fn cant_update_not_existed_project() {
 #[test]
 fn create_project_content() {
 	new_test_ext().execute_with(|| {
-		let (_ ,project_id, ..) = create_ok_project(None);
+		let (project_id, ..) = create_ok_project(None);
 		let project_content_id =  ProjectContentId::random();
 
 		let project_content = ProjectContentOf::<Test> {
@@ -227,7 +269,7 @@ fn create_project_content() {
 #[test]
 fn create_project_content_with_references() {
 	new_test_ext().execute_with(|| {
-		let (_ ,project_id, ..) = create_ok_project(None);
+		let (project_id, ..) = create_ok_project(None);
 		let project_content_id = ProjectContentId::random();
 
 		let project_content = ProjectContentOf::<Test> {
@@ -279,7 +321,7 @@ fn create_project_content_with_references() {
 #[test]
 fn cant_add_duplicated_project_content() {
 	new_test_ext().execute_with(|| {
-		let (_ ,project_id, ..) = create_ok_project(None);
+		let (project_id, ..) = create_ok_project(None);
 
 		let project_content = ProjectContentOf::<Test> {
 			external_id: ProjectContentId::random(),
@@ -331,7 +373,7 @@ fn cant_add_project_content_with_wrong_project_reference() {
 #[test]
 fn cant_add_project_content_to_incorrect_team() {
 	new_test_ext().execute_with(|| {
-		let (_ ,project_id, ..) = create_ok_project(None);
+		let (project_id, ..) = create_ok_project(None);
 		let wrong_account_id = 234;
 
 		let project_content = ProjectContentOf::<Test> {
@@ -357,7 +399,7 @@ fn cant_add_project_content_to_incorrect_team() {
 #[test]
 fn cant_add_project_content_to_finished_project() {
 	new_test_ext().execute_with(|| {
-		let (_ ,project_id, ..) = create_ok_project(None);
+		let (project_id, ..) = create_ok_project(None);
 
 		let project_content = ProjectContentOf::<Test> {
 			external_id: ProjectContentId::random(),
@@ -391,7 +433,7 @@ fn cant_add_project_content_to_finished_project() {
 #[test]
 fn cant_add_project_content_with_wrong_references() {
 	new_test_ext().execute_with(|| {
-		let (_ ,project_id, ..) = create_ok_project(None);
+		let (project_id, ..) = create_ok_project(None);
 		
 		let project_content = ProjectContentOf::<Test> {
 			external_id: ProjectContentId::random(),
@@ -408,6 +450,196 @@ fn cant_add_project_content_with_wrong_references() {
 		assert_noop!(
 			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
 			Error::<Test>::NoSuchReference
+		);
+
+	})
+}
+
+
+#[test]
+fn create_project_nda() {
+	new_test_ext().execute_with(|| {
+		let (project_nda_id, expected_nda) = create_ok_nda();
+
+		let nda_list = Ndas::<Test>::get();
+		let nda_stored = NdaMap::<Test>::get(project_nda_id);
+
+		assert!(
+			<NdaMap<Test>>::contains_key(project_nda_id),
+			"NDA Map did not contain key, value was `{}`",
+			project_nda_id
+
+		);
+
+		assert_eq!(expected_nda, nda_stored);
+
+		assert!(
+			nda_list.binary_search_by_key(&project_nda_id, |&(external_id, ..)| external_id).is_ok(),
+			"NDA List did not contain the NDA, value was `{}`",
+            project_nda_id
+		);
+
+	})
+}
+
+#[test]
+fn cant_create_project_nda_ends_in_past() {
+	new_test_ext().execute_with(|| {
+		let (project_id, ..) = create_ok_project(None);
+		let project_nda_id =  NdaId::random();		
+		let end_date = 0;
+		
+		let contract_hash = H256::random();
+		let maybe_start_date = None;
+		let parties = vec![DEFAULT_ACCOUNT_ID];
+		let projects = vec![project_id];
+		
+
+		assert_noop!(
+			Deip::create_project_nda(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				project_nda_id, 
+				end_date, 
+				contract_hash, 
+				maybe_start_date,
+				parties.clone(),
+				projects.clone()
+			),
+			Error::<Test>::NdaEndDateMustBeLaterCurrentMoment
+		);
+
+	})
+}
+
+#[test]
+fn cant_create_project_nda_with_start_date_greater_end_date() {
+	new_test_ext().execute_with(|| {
+		let (project_id, ..) = create_ok_project(None);
+		let project_nda_id =  NdaId::random();		
+		
+		let end_date = 1;
+		let maybe_start_date = Some(3);
+		
+		let contract_hash = H256::random();
+		
+		let parties = vec![DEFAULT_ACCOUNT_ID];
+		let projects = vec![project_id];
+		
+
+		assert_noop!(
+			Deip::create_project_nda(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				project_nda_id, 
+				end_date, 
+				contract_hash, 
+				maybe_start_date,
+				parties.clone(),
+				projects.clone()
+			),
+			Error::<Test>::NdaStartDateMustBeLessThanEndDate
+		);
+
+	})
+}
+
+
+#[test]
+fn cant_create_project_nda_with_non_existed_project() {
+	new_test_ext().execute_with(|| {
+		let project_id = ProjectId::random();
+		let project_nda_id =  NdaId::random();		
+		let now = SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.expect("Time went backwards :)").as_millis() as u64;
+	
+		let end_date = now + DAY_IN_MILLIS;
+		
+		let contract_hash = H256::random();
+		let maybe_start_date = None;
+		let parties = vec![DEFAULT_ACCOUNT_ID];
+		let projects = vec![project_id];
+		
+
+		assert_noop!(
+			Deip::create_project_nda(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				project_nda_id, 
+				end_date, 
+				contract_hash, 
+				maybe_start_date,
+				parties.clone(),
+				projects.clone()
+			),
+			Error::<Test>::NoSuchProject
+		);
+
+	})
+}
+
+#[test]
+fn cant_create_project_nda_with_not_correct_parties() {
+	new_test_ext().execute_with(|| {
+		let (project_id, ..) = create_ok_project(None);
+		let project_nda_id =  NdaId::random();		
+		let now = SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.expect("Time went backwards :)").as_millis() as u64;
+	
+		let end_date = now + DAY_IN_MILLIS;
+
+		let wrong_account_id = 4;
+		
+		let contract_hash = H256::random();
+		let maybe_start_date = None;
+		let parties = vec![wrong_account_id];
+		let projects = vec![project_id];
+		
+
+		assert_noop!(
+			Deip::create_project_nda(
+				Origin::signed(wrong_account_id), 
+				project_nda_id, 
+				end_date, 
+				contract_hash, 
+				maybe_start_date,
+				parties.clone(),
+				projects.clone()
+			),
+			Error::<Test>::TeamOfAllProjectsMustSpecifiedAsParty
+		);
+
+	})
+}
+
+#[test]
+fn cant_create_duplicated_project_nda() {
+	new_test_ext().execute_with(|| {
+		let (project_nda_id, ..) = create_ok_nda();
+		
+		let (project_id, ..) = create_ok_project(None);	
+		let now = SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.expect("Time went backwards :)").as_millis() as u64;
+	
+		let end_date = now + DAY_IN_MILLIS;
+		
+		let contract_hash = H256::random();
+		let maybe_start_date = None;
+		let parties = vec![DEFAULT_ACCOUNT_ID];
+		let projects = vec![project_id];
+		
+
+		assert_noop!(
+			Deip::create_project_nda(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				project_nda_id, 
+				end_date, 
+				contract_hash, 
+				maybe_start_date,
+				parties.clone(),
+				projects.clone()
+			),
+			Error::<Test>::NdaAlreadyExists
 		);
 
 	})
