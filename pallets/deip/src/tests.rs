@@ -644,3 +644,113 @@ fn cant_create_duplicated_project_nda() {
 
 	})
 }
+
+
+#[test]
+fn create_nda_content_access_request() {
+	new_test_ext().execute_with(|| {
+		let (project_nda_id, ..) = create_ok_nda();
+
+		let access_request_id = NdaAccessRequestId::random();
+		let encrypted_payload_hash = H256::random();
+		let encrypted_payload_iv = vec![1, 2, 3];
+
+		assert_ok!(
+			Deip::create_nda_content_access_request(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				access_request_id, 
+				project_nda_id,
+				encrypted_payload_hash, 
+				encrypted_payload_iv.clone()
+			)
+		);
+	
+		let expected_nda_request = NdaAccessRequest {
+			external_id: access_request_id,
+			nda_external_id: project_nda_id, 
+			requester: DEFAULT_ACCOUNT_ID,
+			encrypted_payload_hash,
+			encrypted_payload_iv,
+			status: NdaAccessRequestStatus::Pending,
+			grantor: None,
+			encrypted_payload_encryption_key: None,
+			proof_of_encrypted_payload_encryption_key: None,
+		};
+
+		let nda_list = NdaAccessRequests::<Test>::get();
+		let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
+
+		assert!(
+			<NdaAccessRequestMap<Test>>::contains_key(access_request_id),
+			"NDA request Map did not contain key, value was `{}`",
+			access_request_id
+
+		);
+
+		assert_eq!(expected_nda_request, nda_stored);
+
+		assert!(
+			nda_list.binary_search_by_key(&access_request_id, |&(external_id, ..)| external_id).is_ok(),
+			"NDA request List did not contain the NDA request, value was `{}`",
+            access_request_id
+		);
+
+	})
+}
+
+
+#[test]
+fn cant_create_nda_content_access_with_non_existed_nda() {
+	new_test_ext().execute_with(|| {
+		let project_nda_id = NdaId::random();
+
+		let access_request_id = NdaAccessRequestId::random();
+		let encrypted_payload_hash = H256::random();
+		let encrypted_payload_iv = vec![1, 2, 3];
+
+		assert_noop!(
+			Deip::create_nda_content_access_request(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				access_request_id, 
+				project_nda_id,
+				encrypted_payload_hash, 
+				encrypted_payload_iv.clone()
+			),
+			Error::<Test>::NoSuchNda
+		);
+
+	})
+}
+
+#[test]
+fn cant_create_duplicated_nda_content_access() {
+	new_test_ext().execute_with(|| {
+		let (project_nda_id, ..) = create_ok_nda();
+
+		let access_request_id = NdaAccessRequestId::random();
+		let encrypted_payload_hash = H256::random();
+		let encrypted_payload_iv = vec![1, 2, 3];
+
+		assert_ok!(
+			Deip::create_nda_content_access_request(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				access_request_id, 
+				project_nda_id,
+				encrypted_payload_hash, 
+				encrypted_payload_iv.clone()
+			)
+		);
+
+		assert_noop!(
+			Deip::create_nda_content_access_request(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				access_request_id, 
+				project_nda_id,
+				encrypted_payload_hash, 
+				encrypted_payload_iv.clone()
+			),
+			Error::<Test>::NdaAccessRequestAlreadyExists
+		);
+
+	})
+}
