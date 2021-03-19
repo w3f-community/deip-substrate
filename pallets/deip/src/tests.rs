@@ -645,37 +645,43 @@ fn cant_create_duplicated_project_nda() {
 	})
 }
 
+fn create_ok_nda_content_access_request(project_nda_id: NdaId) -> (NdaAccessRequestId, NdaAccessRequestOf<Test>) {
+	let access_request_id = NdaAccessRequestId::random();
+	let encrypted_payload_hash = H256::random();
+	let encrypted_payload_iv = vec![1, 2, 3];
+
+	assert_ok!(
+		Deip::create_nda_content_access_request(
+			Origin::signed(DEFAULT_ACCOUNT_ID), 
+			access_request_id, 
+			project_nda_id,
+			encrypted_payload_hash, 
+			encrypted_payload_iv.clone()
+		)
+	);
+
+	let expected_nda_request = NdaAccessRequest {
+		external_id: access_request_id,
+		nda_external_id: project_nda_id, 
+		requester: DEFAULT_ACCOUNT_ID,
+		encrypted_payload_hash,
+		encrypted_payload_iv,
+		status: NdaAccessRequestStatus::Pending,
+		grantor: None,
+		encrypted_payload_encryption_key: None,
+		proof_of_encrypted_payload_encryption_key: None,
+	};
+
+	(access_request_id, expected_nda_request)
+}
+
 
 #[test]
 fn create_nda_content_access_request() {
 	new_test_ext().execute_with(|| {
 		let (project_nda_id, ..) = create_ok_nda();
 
-		let access_request_id = NdaAccessRequestId::random();
-		let encrypted_payload_hash = H256::random();
-		let encrypted_payload_iv = vec![1, 2, 3];
-
-		assert_ok!(
-			Deip::create_nda_content_access_request(
-				Origin::signed(DEFAULT_ACCOUNT_ID), 
-				access_request_id, 
-				project_nda_id,
-				encrypted_payload_hash, 
-				encrypted_payload_iv.clone()
-			)
-		);
-	
-		let expected_nda_request = NdaAccessRequest {
-			external_id: access_request_id,
-			nda_external_id: project_nda_id, 
-			requester: DEFAULT_ACCOUNT_ID,
-			encrypted_payload_hash,
-			encrypted_payload_iv,
-			status: NdaAccessRequestStatus::Pending,
-			grantor: None,
-			encrypted_payload_encryption_key: None,
-			proof_of_encrypted_payload_encryption_key: None,
-		};
+		let (access_request_id, expected_nda_request) = create_ok_nda_content_access_request(project_nda_id);
 
 		let nda_list = NdaAccessRequests::<Test>::get();
 		let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
@@ -726,30 +732,106 @@ fn cant_create_nda_content_access_with_non_existed_nda() {
 fn cant_create_duplicated_nda_content_access() {
 	new_test_ext().execute_with(|| {
 		let (project_nda_id, ..) = create_ok_nda();
-
-		let access_request_id = NdaAccessRequestId::random();
-		let encrypted_payload_hash = H256::random();
-		let encrypted_payload_iv = vec![1, 2, 3];
-
-		assert_ok!(
-			Deip::create_nda_content_access_request(
-				Origin::signed(DEFAULT_ACCOUNT_ID), 
-				access_request_id, 
-				project_nda_id,
-				encrypted_payload_hash, 
-				encrypted_payload_iv.clone()
-			)
-		);
+		let (access_request_id, expected_nda_request) = create_ok_nda_content_access_request(project_nda_id);
 
 		assert_noop!(
 			Deip::create_nda_content_access_request(
 				Origin::signed(DEFAULT_ACCOUNT_ID), 
 				access_request_id, 
 				project_nda_id,
-				encrypted_payload_hash, 
-				encrypted_payload_iv.clone()
+				expected_nda_request.encrypted_payload_hash, 
+				expected_nda_request.encrypted_payload_iv
 			),
 			Error::<Test>::NdaAccessRequestAlreadyExists
+		);
+
+	})
+}
+
+
+#[test]
+fn fulfill_nda_content_access_request() {
+	new_test_ext().execute_with(|| {
+		let (project_nda_id, ..) = create_ok_nda();
+
+		let (access_request_id, nda_request) = create_ok_nda_content_access_request(project_nda_id);
+
+		let encrypted_payload_encryption_key = vec![1,3,4,2];
+		let proof_of_encrypted_payload_encryption_key = vec![3,4,5,6];
+
+		assert_ok!(
+			Deip::fulfill_nda_content_access_request(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				access_request_id.clone(), 
+				encrypted_payload_encryption_key.clone(), 
+				proof_of_encrypted_payload_encryption_key.clone()
+			)
+		);
+
+		let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
+
+		let expected_nda_request = NdaAccessRequest {
+			status: NdaAccessRequestStatus::Fulfilled,
+			grantor: Some(DEFAULT_ACCOUNT_ID),
+			encrypted_payload_encryption_key: Some(encrypted_payload_encryption_key),
+			proof_of_encrypted_payload_encryption_key: Some(proof_of_encrypted_payload_encryption_key),
+			..nda_request
+		};
+
+		assert_eq!(expected_nda_request, nda_stored);
+
+	})
+}
+
+
+#[test]
+fn cant_fulfill_not_existed_nda_content_access_request() {
+	new_test_ext().execute_with(|| {
+		let access_request_id = NdaAccessRequestId::random();
+
+		let encrypted_payload_encryption_key = vec![1,3,4,2];
+		let proof_of_encrypted_payload_encryption_key = vec![3,4,5,6];
+
+		assert_noop!(
+			Deip::fulfill_nda_content_access_request(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				access_request_id.clone(), 
+				encrypted_payload_encryption_key.clone(), 
+				proof_of_encrypted_payload_encryption_key.clone()
+			),
+			Error::<Test>::NoSuchNdaAccessRequest
+		);
+
+	})
+}
+
+#[test]
+fn cant_fulfill_finalized_nda_content_access_request() {
+	new_test_ext().execute_with(|| {
+		let (project_nda_id, ..) = create_ok_nda();
+
+		let (access_request_id, ..) = create_ok_nda_content_access_request(project_nda_id);
+
+		let encrypted_payload_encryption_key = vec![1,3,4,2];
+		let proof_of_encrypted_payload_encryption_key = vec![3,4,5,6];
+
+		assert_ok!(
+			Deip::fulfill_nda_content_access_request(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				access_request_id.clone(), 
+				encrypted_payload_encryption_key.clone(), 
+				proof_of_encrypted_payload_encryption_key.clone()
+			)
+		);
+
+		assert_noop!(
+			Deip::fulfill_nda_content_access_request(
+				Origin::signed(DEFAULT_ACCOUNT_ID), 
+				access_request_id.clone(), 
+				encrypted_payload_encryption_key.clone(), 
+				proof_of_encrypted_payload_encryption_key.clone()
+			),
+			Error::<Test>::NdaAccessRequestAlreadyFinalized
 		);
 
 	})
