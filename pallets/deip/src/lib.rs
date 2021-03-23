@@ -153,9 +153,9 @@ pub struct Nda<Hash, AccountId, Moment>  {
     contract_creator: AccountId,
     /// Reference for external world and uniques control 
     external_id: NdaId,
-    /// Exparation date of contract
+    /// Unix Timestamp. Exparation date of contract
     end_date: Moment,
-    /// Entry into force of the contract
+    /// Unix Timestamp. Entry into force of the contract
     start_date: Option<Moment>,
     /// Hash of the contract
     contract_hash: Hash,
@@ -184,7 +184,7 @@ impl Default for NdaAccessRequestStatus {
 pub struct NdaAccessRequest<Hash, AccountId>  {
     /// Reference for external world and uniques control 
     external_id: NdaAccessRequestId,
-    /// Reference tp NDA 
+    /// Reference to NDA 
     nda_external_id: NdaId,
     /// Reference to Requester (creator of this request)
     requester: AccountId,
@@ -346,6 +346,10 @@ decl_module! {
         fn deposit_event() = default;
        
         /// Allow a user to create project.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `project`: [Project](./struct.Project.html) to be created.
         #[weight = 10_000]
         fn create_project(origin, project: ProjectOf<T>) {
             // Check that the extrinsic was signed and get the signer.
@@ -381,6 +385,13 @@ decl_module! {
         }
 
         /// Allow a user to update project.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `project_id`: [Project]((./struct.Project.html)) identifier (external_id) to be updated
+        /// - `description`: Optional. Hash of description
+        /// - `is_private`: Optional.  Determine visible project or not 
+        /// - `members`: Optional.  New set of members
         #[weight = 10_000]
         fn update_project(origin, project_id: ProjectId, description: Option<T::Hash>, is_private: Option<bool>, members: Option<Vec<T::AccountId>>) -> DispatchResult {
             // Check that the extrinsic was signed and get the signer.
@@ -416,6 +427,10 @@ decl_module! {
         }
 
         /// Allow a user to create project content.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `content`: [Content](./struct.ProjectContent.html) to be created
         #[weight = 10_000]
         fn create_project_content(origin, content: ProjectContentOf<T>) {
             let account = ensure_signed(origin)?;
@@ -450,7 +465,15 @@ decl_module! {
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
 
-        /// Allow a user to create NDA.
+        /// Allow a user to create [NDA](./struct.Nda.html).
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `end_date`: Unix Timestamp. Exparation date of contract
+        /// - `contract_hash`: Hash of the contract
+        /// - `maybe_start_date`: Optional. Unix Timestamp. Entry into force of the contract
+        /// - `parties`: List of involved Parties
+        /// - `projects`: List of involved Projects
         #[weight = 10_000]
         fn create_project_nda(origin,  
             external_id: NdaId,
@@ -508,7 +531,14 @@ decl_module! {
 
         }
 
-        /// Create request to access NDA content
+        /// Create [request](./struct.NdaAccessRequest.html) to access NDA content
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `external_id`: Reference for external world and uniques control 
+        /// - `nda_external_id`: Reference to NDA 
+        /// - `encrypted_payload_hash`: Payload witch need to be decrypted
+        /// - `encrypted_payload_iv`: IV of encrypted payload
         #[weight = 10_000]
         fn create_nda_content_access_request(
             origin, 
@@ -554,6 +584,12 @@ decl_module! {
         }
         
         /// Fulfill NDA access request
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `external_id`: Reference for external world and uniques control 
+        /// - `encrypted_payload_encryption_key`: Ecrypted key witch can decrypt payload
+        /// - `proof_of_encrypted_payload_encryption_key`: Proof that requester has access to the encrypted data with his key 
         #[weight = 10_000]
         fn fulfill_nda_content_access_request(
             origin, 
@@ -582,7 +618,11 @@ decl_module! {
 
         }
 
-         /// Reject NDA access request
+        /// Reject NDA access request
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `external_id`: Reference for external world and uniques control 
          #[weight = 10_000]
          fn reject_nda_content_access_request(
              origin, 
@@ -608,6 +648,10 @@ decl_module! {
          }
         
         /// Allow a user to create domains.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `external_id`: Domain reference
         #[weight = 10_000]
         fn add_domain(origin, domain: Domain) {
             let account = ensure_signed(origin)?;
