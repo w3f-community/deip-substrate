@@ -1,3 +1,37 @@
+//! # Deip Module
+//! A module for managing digital assets.
+//!
+//! - [`multisig::Config`](./trait.Config.html)
+//! - [`Call`](./enum.Call.html)
+//!
+//! ## Overview
+//!
+//! This module contains functionality for managing different types of digital assets. 
+//!
+//! It provides a hierarchy to simply operate digital assets in the real world. 
+//! The module contains entities Project and  Content of the Project with belongs to multi Account aka Team. 
+//!
+//! Besides, the Module provides Proof of share functionality. Proof of Share is a term we 
+//! use for a special cryptographic proof that a sender actually sent, and the receiver 
+//! has actually received an encrypted payload and a key to decrypt it. Please refer to the attached image.
+//! Includes entities like NDA and NDA Access Request.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//!
+//! * `add_domain` - Add cryptographic hash of Domain
+//! * `create_project` - Create Project belongs to Account (Team)
+//! * `update_project` - Update Project info
+//! * `create_project_content` - Create Project Content (Digital Asset)
+//! * `create_project_nda` - Create NDA contract between sides
+//! * `create_nda_content_access_request` - Some side request access to the data of contract
+//! * `fulfill_nda_content_access_request` - Granter fulfill access request to the data
+//! * `reject_nda_content_access_request` - Granter reject access request to the data
+//!
+//! [`Call`]: ./enum.Call.html
+//! [`Config`]: ./trait.Config.html
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::{
@@ -11,9 +45,16 @@ use sp_std::vec::Vec;
 use sp_runtime::{ RuntimeDebug };
 use sp_core::{ H160 };
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
 
+/// Possible statuses of Project inherited from Project Content type
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 enum ProjectContentType {
     Announcement,
@@ -43,54 +84,88 @@ impl Default for ProjectContentType {
     fn default() -> ProjectContentType { ProjectContentType::Announcement }
 }
 
-/// Configure the pallet by specifying the parameters and types on which it depends.
+/// Configuration trait. Pallet depends on frame_system and pallet_timestamp. 
 pub trait Config: frame_system::Config + pallet_timestamp::Config {
-    /// Because this pallet emits events, it depends on the runtime's definition of an event.
+    /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
 
+/// Unique Project ID reference
 pub type ProjectId = H160;
+/// Unique Domain reference
 pub type Domain = H160;
+/// Unique Project Contnt reference 
 pub type ProjectContentId = H160;
+/// Unique NDA reference 
 pub type NdaId = H160;
+/// Unique NdaAccess Request reference 
 pub type NdaAccessRequestId = H160;
+
 pub type ProjectOf<T> = Project<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
+
+/// Core entity of pallet. Everything connected to Project. 
+/// Only Account (Team) stand before Project in hierarchy.
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct Project<Hash, AccountId> {
+    /// Determine visible project or not 
     is_private: bool,
+    /// Reference for external world and uniques control 
     external_id: ProjectId,
+    /// Reference to the Team 
     team_id: AccountId,
+    /// Hash of Project description
     description: Hash,
+    /// List of Domains aka tags Project matches
     domains: Vec<Domain>,
+    /// List of Project Members. Determine who is participated in the project
     members: Vec<AccountId>
 }
 
+/// Digital asset. Contains information of content and authors of Digital asset.
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct ProjectContent<Hash, AccountId> {
+    /// Reference for external world and uniques control 
     external_id: ProjectContentId,
+    /// Reference to the Project 
     project_external_id: ProjectId,
+    /// Reference to the Team
     team_id: AccountId,
+    /// Type of content. Determine status of Project
     content_type: ProjectContentType,
+    /// Hash of the content ddescription
     description: Hash,
+    /// Hast of digital asset
     content: Hash,
+    /// Authors of Digital asset
     authors: Vec<AccountId>,
+    /// List of References to other digital assets whith will be used in current digital asset.
     references: Option<Vec<ProjectContentId>>
     
 }
+
+/// NDA contract between parties. Usually about dislocating or not dislocating some confidential info
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct Nda<Hash, AccountId, Moment>  {
+    /// Reference to Multisig Account with involved parties
     contract_creator: AccountId,
+    /// Reference for external world and uniques control 
     external_id: NdaId,
+    /// Unix Timestamp. Exparation date of contract
     end_date: Moment,
+    /// Unix Timestamp. Entry into force of the contract
     start_date: Option<Moment>,
+    /// Hash of the contract
     contract_hash: Hash,
+    /// Involved Parties
     parties: Vec<AccountId>,
+    /// Involved Projects 
     projects: Vec<ProjectId>,
 }
 
+/// Statuses of NDA access requests
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 enum NdaAccessRequestStatus {
     Pending,
@@ -103,28 +178,36 @@ impl Default for NdaAccessRequestStatus {
     fn default() -> NdaAccessRequestStatus { NdaAccessRequestStatus::Pending }
 }
 
+/// NDA access request. One of the partice may decide to request to receive 
+/// some info included into contract. Holder should fulfill or reject this request. 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct NdaAccessRequest<Hash, AccountId>  {
+    /// Reference for external world and uniques control 
     external_id: NdaAccessRequestId,
+    /// Reference to NDA 
     nda_external_id: NdaId,
+    /// Reference to Requester (creator of this request)
     requester: AccountId,
+    /// Payload witch need to be decrypted
     encrypted_payload_hash: Hash,
+    /// IV of encrypted payload
     encrypted_payload_iv: Vec<u8>,
+    /// Execution status
     status: NdaAccessRequestStatus,
+    /// Reference to access granter if approved
     grantor: Option<AccountId>,
+    /// Ecrypted key witch can decrypt payload
     encrypted_payload_encryption_key: Option<Vec<u8>>,
+    /// Proof that requester has access to the encrypted data with his key 
     proof_of_encrypted_payload_encryption_key: Option<Vec<u8>>,
 }
 
-// Pallets use events to inform users when important changes are made.
-// Event documentation should end with an array that provides descriptive names for parameters.
-// https://substrate.dev/docs/en/knowledgebase/runtime/events
 decl_event! {
+    /// Events type.
     pub enum Event<T> 
     where 
         AccountId = <T as frame_system::Config>::AccountId,
         Project = ProjectOf<T>,
-        // Content = ProjectContentOf<T>
     {
         // ==== Projects ====
 
@@ -193,47 +276,61 @@ decl_error! {
         
         /// Cannot add a NDA because a NDA with this ID is already a exists.
         NdaAlreadyExists,
+        /// Nda Access Request with this ID is  already a exists.
         NdaAccessRequestAlreadyExists,
+        /// The NDA with this ID does not exist.
         NoSuchNda,
+        /// The NDA Access Request with this ID does not exist.
         NoSuchNdaAccessRequest,
+        /// The start of the contract has not yet arrived, so contract can't be fulfilled or rejected
         NdaContractIsNotActiveYet,
+        /// NDA start date must be later or equal current moment
         NdaStartDateMustBeLaterOrEqualCurrentMoment,
+        /// NDA end date must be later current moment
         NdaEndDateMustBeLaterCurrentMoment,
+        /// NDA start date must be less than end date
         NdaStartDateMustBeLessThanEndDate,
+        /// Team of all projects must specified as party
         TeamOfAllProjectsMustSpecifiedAsParty,
+        /// Nda access request already finalized
         NdaAccessRequestAlreadyFinalized,
 
         
         
         // ==== General =====
 
+        /// Access Forbiten
         NoPermission,
     }
 }
 
-// The pallet's runtime storage items.
-// https://substrate.dev/docs/en/knowledgebase/runtime/storage
 decl_storage! {
     trait Store for Module<T: Config> as Deip {
-        /// The storage item for our projects.
+        /// Map from ProjectID to Project Info
         ProjectMap get(fn project): map hasher(identity) ProjectId => ProjectOf<T>;
-        /// This storage map of ProjectId and Creator
+        /// Project list, guarantees uniquest and provides Project listing
         Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
 
+        /// Map to Project Content Info
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
+        /// Project Content list, guarantees uniquest and provides Project Conent listing
         ProjectsContent get(fn project_content_list): Vec<(ProjectContentId, ProjectId, T::AccountId)>;
 
+        /// NDA list, guarantees uniquest and provides NDA listing
         Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
+        /// Map to NDA Info
         NdaMap get(fn nda): map hasher(identity) NdaId => NdaOf<T>;
         
+        /// NDA Access Requests list, guarantees uniquest and provides NDA Access Requests listing
         NdaAccessRequests get(fn nda_requests): Vec<(NdaAccessRequestId, NdaId, T::AccountId)>;
+        /// Map to NDA Access Requests Info
         NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
         // The set of all Domains.
         Domains get(fn domains) config(): map hasher(blake2_128_concat) Domain => ();
         // The total number of domains stored in the map.
         // Because the map does not store its size, we must store it separately
-        pub DomainCount config(domain_count): u32;
+        DomainCount get(fn domain_count) config(): u32;
     }
 }
 
@@ -249,6 +346,10 @@ decl_module! {
         fn deposit_event() = default;
        
         /// Allow a user to create project.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `project`: [Project](./struct.Project.html) to be created.
         #[weight = 10_000]
         fn create_project(origin, project: ProjectOf<T>) {
             // Check that the extrinsic was signed and get the signer.
@@ -284,6 +385,13 @@ decl_module! {
         }
 
         /// Allow a user to update project.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `project_id`: [Project]((./struct.Project.html)) identifier (external_id) to be updated
+        /// - `description`: Optional. Hash of description
+        /// - `is_private`: Optional.  Determine visible project or not 
+        /// - `members`: Optional.  New set of members
         #[weight = 10_000]
         fn update_project(origin, project_id: ProjectId, description: Option<T::Hash>, is_private: Option<bool>, members: Option<Vec<T::AccountId>>) -> DispatchResult {
             // Check that the extrinsic was signed and get the signer.
@@ -319,6 +427,10 @@ decl_module! {
         }
 
         /// Allow a user to create project content.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `content`: [Content](./struct.ProjectContent.html) to be created
         #[weight = 10_000]
         fn create_project_content(origin, content: ProjectContentOf<T>) {
             let account = ensure_signed(origin)?;
@@ -353,7 +465,15 @@ decl_module! {
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
 
-        /// Allow a user to create NDA.
+        /// Allow a user to create [NDA](./struct.Nda.html).
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `end_date`: Unix Timestamp. Exparation date of contract
+        /// - `contract_hash`: Hash of the contract
+        /// - `maybe_start_date`: Optional. Unix Timestamp. Entry into force of the contract
+        /// - `parties`: List of involved Parties
+        /// - `projects`: List of involved Projects
         #[weight = 10_000]
         fn create_project_nda(origin,  
             external_id: NdaId,
@@ -411,7 +531,14 @@ decl_module! {
 
         }
 
-        /// Create request to access NDA content
+        /// Create [request](./struct.NdaAccessRequest.html) to access NDA content
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `external_id`: Reference for external world and uniques control 
+        /// - `nda_external_id`: Reference to NDA 
+        /// - `encrypted_payload_hash`: Payload witch need to be decrypted
+        /// - `encrypted_payload_iv`: IV of encrypted payload
         #[weight = 10_000]
         fn create_nda_content_access_request(
             origin, 
@@ -457,6 +584,12 @@ decl_module! {
         }
         
         /// Fulfill NDA access request
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `external_id`: Reference for external world and uniques control 
+        /// - `encrypted_payload_encryption_key`: Ecrypted key witch can decrypt payload
+        /// - `proof_of_encrypted_payload_encryption_key`: Proof that requester has access to the encrypted data with his key 
         #[weight = 10_000]
         fn fulfill_nda_content_access_request(
             origin, 
@@ -485,7 +618,11 @@ decl_module! {
 
         }
 
-         /// Reject NDA access request
+        /// Reject NDA access request
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `external_id`: Reference for external world and uniques control 
          #[weight = 10_000]
          fn reject_nda_content_access_request(
              origin, 
@@ -511,22 +648,26 @@ decl_module! {
          }
         
         /// Allow a user to create domains.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `external_id`: Domain reference
         #[weight = 10_000]
-        fn add_domain(origin, doamin: Domain) {
+        fn add_domain(origin, domain: Domain) {
             let account = ensure_signed(origin)?;
         
             let domain_count = DomainCount::get();
             ensure!(domain_count < MAX_DOMAINS, Error::<T>::DomianLimitReached);
         
-            // We don't want to add duplicate doamins, so we check whether the potential new
+            // We don't want to add duplicate domains, so we check whether the potential new
             // domain is already present in the list. Because the domains is stored as a hash
             // map this check is constant time O(1)
-            ensure!(!Domains::contains_key(&doamin), Error::<T>::DomainAlreadyExists);
+            ensure!(!Domains::contains_key(&domain), Error::<T>::DomainAlreadyExists);
         
             // Insert the new domin and emit the event
-            Domains::insert(&doamin, ());
+            Domains::insert(&domain, ());
             DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
-            Self::deposit_event(RawEvent::DomainAdded(account, doamin));
+            Self::deposit_event(RawEvent::DomainAdded(account, domain));
         }
     }
 }

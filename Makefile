@@ -17,3 +17,8 @@ run:
 .PHONY: build
 build:
 	 cargo build --release
+
+
+.PHONY: doc
+doc:
+	 cargo doc --package pallet-deip  --open
