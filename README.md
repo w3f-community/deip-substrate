@@ -36,6 +36,14 @@ subcommands:
 ./target/release/node-template -h
 ```
 
+To build and open rust doc: 
+
+```sh
+cargo doc --package <spec> --open 
+```
+
+Replacing <spec> with one of the included pallets (i.e. cargo doc --package pallet-deip --open).
+
 ## Run
 
 The provided `cargo run` command will launch a temporary node and its state will be discarded after
