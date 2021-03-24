@@ -1,6 +1,8 @@
-# Substrate Node Template
+# DEIP.world blockchain
 
-A fresh FRAME-based [Substrate](https://www.substrate.io/) node, ready for hacking :rocket:
+[DEIP](https://deip.world/) helps Scientists and Researchers, to enhance innovation workflows and to boost knowledge creation. We've made it easier to spread innovation and receive feedback via different kind of scientific reviews. 
+
+DEIP provide a peer-review system, which allows to source consensus among domain experts and formalizes it into the quantified quality metrics. These metrics provide an explicit measure of the quality and potential of knowledge, technologies, and even human capital.
 
 ## Getting Started
 
