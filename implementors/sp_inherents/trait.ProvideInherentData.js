@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["sp_timestamp"] = [{"text":"impl ProvideInherentData for InherentDataProvider","synthetic":false,"types":[]}];
+implementors["sp_timestamp"] = [{"text":"impl <a class=\"trait\" href=\"sp_inherents/trait.ProvideInherentData.html\" title=\"trait sp_inherents::ProvideInherentData\">ProvideInherentData</a> for <a class=\"struct\" href=\"sp_timestamp/struct.InherentDataProvider.html\" title=\"struct sp_timestamp::InherentDataProvider\">InherentDataProvider</a>","synthetic":false,"types":["sp_timestamp::InherentDataProvider"]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
