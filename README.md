@@ -1,8 +1,21 @@
-# DEIP.world blockchain
+# DEIP.world 
 
-[DEIP](https://deip.world/) helps Scientists and Researchers, to enhance innovation workflows and to boost knowledge creation. We've made it easier to spread innovation and receive feedback via different kind of scientific reviews. 
+# DEIP Network
 
-DEIP provide a peer-review system, which allows to source consensus among domain experts and formalizes it into the quantified quality metrics. These metrics provide an explicit measure of the quality and potential of knowledge, technologies, and even human capital.
+DEIP Network is a Substrate-based intellectual property protocol for the Polkadot ecosystem. It is built as an application-specific blockchain that can provide end-to-end management of IP assets as NFTs and become a base asset for the entire DeFi stack. DEIP Network aims to become the major Web3 protocol for intellectual capital management and therefore aggregate various IP assets in the network.
+
+# DEIP Constructor
+
+Main aim of DEIP Constructor is to drive adoption of DEIP Network and help gather tokenised IP assets in the network. DEIP Constructor is a modular open-source framework, that allows to build IP-centric Web3 platform in weeks. DEIP Constructor has two modes to operate  1) no-code mode and 2) low-code mode.
+
+# No-Code mode
+
+Use admin panel and setup wizard. Customised UI with drag-and-drop functionality. Integrate existing modules like F-NFT, DeFi, Funding, Licensing, DAO, etc. In future third party modules will be provided by other Polkadot projects, and will be able to install as a Pallet.
+
+# Low-code mode
+
+Use WASM and Rust to build custom modules. Customised existing modules by digging deeper into the code. In future we will also provide our own DSL and Workflow builder. Open API for integration with third-party services.
+
 
 ## Getting Started
 
