@@ -27,7 +27,7 @@ First, complete the [basic Rust setup instructions](./doc/rust-setup.md).
 
 ### Run
 
-Use Rust's native `cargo` command to build and launch the template node:
+Use Rust's native `cargo` command to build and launch the node:
 
 ```sh
 cargo run --release -- --dev --tmp
