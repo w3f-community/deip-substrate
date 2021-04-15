@@ -2,7 +2,7 @@
 authors = ['DEIP world <https://github.com/substrate-developer-hub>']
 edition = '2018'
 homepage = 'https://deip.world/'
-license = 'Unlicense'
+license = 'Apache-2.0'
 name = 'node-template-runtime'
 repository = 'https://github.com/DEIPworld/deip-polkadot'
 version = '3.0.0'

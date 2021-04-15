@@ -19,7 +19,7 @@ Use WASM and Rust to build custom modules. Customised existing modules by diggin
 
 ## Getting Started
 
-Follow these steps to get started with the Node Template :hammer_and_wrench:
+Follow these steps to get started :hammer_and_wrench:
 
 ### Rust Setup
 
@@ -33,6 +33,12 @@ Use Rust's native `cargo` command to build and launch the template node:
 cargo run --release -- --dev --tmp
 ```
 
+or use `make` alias
+
+```sh
+make run
+```
+
 ### Build
 
 The `cargo run` command will perform an initial build. Use the following command to build the node
@@ -41,6 +47,10 @@ without launching it:
 ```sh
 cargo build --release
 ```
+
+### Test 
+
+The `make tests` command will launch comprehensive test suite. 
 
 ### Embedded Docs
 
