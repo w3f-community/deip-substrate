@@ -39,6 +39,8 @@ pub use frame_support::{
 };
 use pallet_transaction_payment::CurrencyAdapter;
 
+use pallet_deip::{ProjectId};
+
 /// Constant values used within the runtime.
 pub mod constants;
 use constants::{ currency::*};
@@ -414,6 +416,17 @@ impl_runtime_apis! {
 	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
 		fn offchain_worker(header: &<Block as BlockT>::Header) {
 			Executive::offchain_worker(header)
+		}
+	}
+	
+	// Here we implement our custom runtime API.
+	impl deip_runtime_api::DeipApi<Block,  AccountId> for Runtime {
+		fn get_projects() -> Vec<(ProjectId, AccountId)> {
+			// This Runtime API calls into a specific pallet. Calling a pallet is a common
+			// design pattern. You can see most other APIs in this file do the same.
+			// It is also possible to write your logic right here in the runtime
+			// amalgamator file
+			Deip::get_projects()
 		}
 	}
 

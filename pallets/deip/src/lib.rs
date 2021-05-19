@@ -677,4 +677,7 @@ impl<T: Config> Module<T> {
 		ProjectContentMap::<T>::iter_prefix_values(project_id)
             .any(|x| x.content_type == ProjectContentType::FinalResult)
 	}
+    pub fn get_projects() -> Vec<(ProjectId, T::AccountId)>{
+        Self::projects()
+    }
 }
