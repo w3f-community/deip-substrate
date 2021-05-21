@@ -113,9 +113,9 @@ Payload:
     ],
     "is_private": false,
     "members": [
-    "Alice"
+        "Alice"
     ],
-	"team_id": "Alice"
+    "team_id": "Alice"
 }
 ```
 
@@ -152,9 +152,9 @@ Payload:
     "description": "0xde894af8072ccbdd452ce77b9fe10c41eb0e23bbfa7b05a6567aa83822edb5d4",
     "content": "0x05c825fab16b446568f587fdd412c3baa2d6dc830edaf838c4be5623868a2110",
     "authors": [
-    "Alice"
+        "Alice"
     ],
-	"team_id": "Alice"
+    "team_id": "Alice"
 }
 ```
 
@@ -203,7 +203,7 @@ Payload:
 
 Pallet: deip 
 Account: Choose any account with positive balance 
-Function: `createNdaContentAccessRequest(external_id, nda_external_id, encrypted_payload_hash, encrypted_payload_iv)`
+Function: `fulfillNdaContentAccessRequest(external_id, encrypted_payload_encryption_key, proof_of_encrypted_payload_encryption_key)`
 
 Payload:
 ```json
