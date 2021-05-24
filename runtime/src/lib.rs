@@ -39,7 +39,7 @@ pub use frame_support::{
 };
 use pallet_transaction_payment::CurrencyAdapter;
 
-use pallet_deip::{ProjectId};
+use pallet_deip::{ProjectId, Project};
 
 /// Constant values used within the runtime.
 pub mod constants;
@@ -427,6 +427,9 @@ impl_runtime_apis! {
 			// It is also possible to write your logic right here in the runtime
 			// amalgamator file
 			Deip::get_projects()
+		}
+		fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
+			Deip::get_project(project_id)
 		}
 	}
 

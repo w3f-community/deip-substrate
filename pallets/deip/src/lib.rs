@@ -35,7 +35,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::{
-    codec::{Decode, Encode}, debug, ensure,
+    codec::{Decode, Encode}, ensure,
     decl_module, decl_storage, decl_event, decl_error, 
     StorageMap,
     dispatch::{ DispatchResult }
@@ -43,7 +43,9 @@ use frame_support::{
 use frame_system::{ self as system, ensure_signed };
 use sp_std::vec::Vec;
 use sp_runtime::{ RuntimeDebug };
-use sp_core::{ H160 };
+pub use sp_core::{ H160, H256 };
+#[cfg(feature = "std")]
+use serde::{Serialize, Deserialize};
 
 #[cfg(test)]
 mod mock;
@@ -109,6 +111,8 @@ pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as
 /// Core entity of pallet. Everything connected to Project. 
 /// Only Account (Team) stand before Project in hierarchy.
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Project<Hash, AccountId> {
     /// Determine visible project or not 
     is_private: bool,
@@ -679,5 +683,8 @@ impl<T: Config> Module<T> {
 	}
     pub fn get_projects() -> Vec<(ProjectId, T::AccountId)>{
         Self::projects()
+    }
+    pub fn get_project(project_id: &ProjectId) -> ProjectOf<T> {
+        ProjectMap::<T>::get(project_id)
     }
 }
