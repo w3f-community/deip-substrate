@@ -34,6 +34,7 @@ pub fn create_full<C, P>(
 	C: Send + Sync + 'static,
 	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
+	C::Api: deip_runtime_api::DeipApi<Block, AccountId>,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
 {
@@ -54,6 +55,11 @@ pub fn create_full<C, P>(
 	io.extend_with(
 		TransactionPaymentApi::to_delegate(TransactionPayment::new(client.clone()))
 	);
+
+	// Add a silly RPC that returns constant values
+    io.extend_with(deip_rpc::DeipStorageApi::to_delegate(
+        deip_rpc::DeipStorage::new(client),
+    ));
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed

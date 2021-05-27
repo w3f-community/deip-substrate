@@ -1,0 +1,38 @@
+[package]
+name = "deip-rpc"
+version = "1.0.0"
+edition = "2018"
+authors = ['DEIP world <https://github.com/DEIPworld>']
+repository = 'https://github.com/DEIPworld/deip-polkadot'
+description = "A pallet which implements read RPC API for DEIP pallet"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "2.0.0" }
+jsonrpc-core = "15.0"
+jsonrpc-core-client = "15.0"
+jsonrpc-derive = "15.0"
+serde = { version = "1.0.119", optional = true }
+
+# Substrate packages
+
+sp-api = { version = '3.0', default-features = false }
+sp-blockchain = { version = '3.0', default-features = false}
+sp-rpc = { version = '3.0', default-features = false}
+sp-runtime = { version = '3.0', default-features = false}
+
+# local packages
+
+deip-runtime-api = { version = "2.0.0", path = "../runtime-api", default-features = false }
+
+[dev-dependencies]
+serde_json = "1.0.64"
+
+[features]
+default = ["std"]
+std = [
+  "serde",
+  "sp-api/std",
+  "sp-runtime/std",
+  "deip-runtime-api/std"
+]

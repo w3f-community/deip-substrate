@@ -27,6 +27,7 @@ serde = { features = ['derive'], optional = true, version = '1.0.119' }
 # local dependencies
 pallet-template = { path = '../pallets/template', default-features = false, version = '3.0.0' }
 pallet-deip = { path = "../pallets/deip", default-features = false }
+deip-runtime-api = {default-features = false, path = "../pallets/deip/runtime-api" }
 
 # Substrate dependencies
 frame-benchmarking = { default-features = false, optional = true, version = '3.0.0' }
