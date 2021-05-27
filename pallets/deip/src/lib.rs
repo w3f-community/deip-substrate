@@ -38,7 +38,8 @@ use frame_support::{
     codec::{Decode, Encode}, ensure,
     decl_module, decl_storage, decl_event, decl_error, 
     StorageMap,
-    dispatch::{ DispatchResult }
+    dispatch::{ DispatchResult },
+    storage::{ IterableStorageMap }, 
 };
 use frame_system::{ self as system, ensure_signed };
 use sp_std::vec::Vec;
@@ -686,5 +687,10 @@ impl<T: Config> Module<T> {
     }
     pub fn get_project(project_id: &ProjectId) -> ProjectOf<T> {
         ProjectMap::<T>::get(project_id)
+    }
+    pub fn get_domains() -> Vec<Domain> {
+        <Domains as IterableStorageMap<Domain, ()>>::iter()
+            .map(|(dommain, _)| dommain)
+            .collect()
     }
 }
