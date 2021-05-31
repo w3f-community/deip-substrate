@@ -39,7 +39,7 @@ pub use frame_support::{
 };
 use pallet_transaction_payment::CurrencyAdapter;
 
-use pallet_deip::{ProjectId, Project, Domain};
+use pallet_deip::{ProjectId, Project, Domain, DomainId};
 
 /// Constant values used within the runtime.
 pub mod constants;
@@ -433,6 +433,9 @@ impl_runtime_apis! {
 		}
 		fn get_domains() -> Vec<Domain> {
 			Deip::get_domains()
+		}
+		fn get_domain(domain_id: &DomainId) -> Domain {
+			Deip::get_domain(domain_id)
 		}
 	}
 

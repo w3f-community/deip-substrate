@@ -8,25 +8,25 @@ const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
 const DAY_IN_MILLIS: u64 = 86400000;
 
 fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountId>) 
-	-> (ProjectId, ProjectOf<Test>, Domain, <Test as system::Config>::AccountId, ) {
-	let domain = Domain::random();
+	-> (ProjectId, ProjectOf<Test>, DomainId, <Test as system::Config>::AccountId, ) {
+	let domain_id = DomainId::random();
 	let account_id: <Test as system::Config>::AccountId = maybe_account_id.unwrap_or(DEFAULT_ACCOUNT_ID);
 	let project_id = ProjectId::random();
 	
-	assert_ok!(Deip::add_domain(Origin::signed(account_id), domain.clone()));
+	assert_ok!(Deip::add_domain(Origin::signed(account_id), Domain { external_id: domain_id.clone() }));
 
 	let project = ProjectOf::<Test> {
 		is_private: false,
 		external_id: project_id,
 		team_id: account_id,
 		description: H256::random(),
-		domains: vec![domain],
+		domains: vec![domain_id],
 		members: vec![account_id],
 	};
 	
 	assert_ok!(Deip::create_project(Origin::signed(account_id), project.clone()));
 
-	(project_id, project, domain, account_id)
+	(project_id, project, domain_id, account_id)
 }
 
 fn create_ok_nda() -> (NdaId, NdaOf<Test>) {
@@ -102,16 +102,16 @@ fn create_ok_nda_content_access_request(project_nda_id: NdaId) -> (NdaAccessRequ
 #[test]
 fn add_domain() {
 	new_test_ext().execute_with(|| {
-		let domain = Domain::random();
+		let domain_id = DomainId::random();
 		// Dispatch a signed add domian extrinsic.
-		assert_ok!(Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), domain.clone()));
+		assert_ok!(Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), Domain { external_id: domain_id.clone() }));
 		
 		// Read pallet storage and assert an expected result.
 		assert_eq!(Deip::domain_count(), 1);
 		assert!(
-			<Domains>::contains_key(domain),
+			<Domains>::contains_key(domain_id),
 			"Domains did not contain domain, value was `{}`",
-            domain
+            domain_id
 		);
 	});
 }
@@ -119,12 +119,12 @@ fn add_domain() {
 #[test]
 fn cant_add_duplicate_domain() {
 	new_test_ext().execute_with(|| {
-		let domain = Domain::random();
+		let domain_id = DomainId::random();
 		
-		assert_ok!(Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), domain.clone()));
+		assert_ok!(Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), Domain { external_id: domain_id.clone() }));
 
 		assert_noop!(
-			Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), domain.clone()),
+			Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), Domain { external_id: domain_id.clone() }),
 			Error::<Test>::DomainAlreadyExists
 		);
 	})
@@ -167,7 +167,7 @@ fn add_project() {
 #[test]
 fn cant_add_project_with_non_exixsted_domain() {
 	new_test_ext().execute_with(|| {
-		let domain = Domain::random();
+		let domain = DomainId::random();
 		let account_id = DEFAULT_ACCOUNT_ID;
 		
 		let project = Project {

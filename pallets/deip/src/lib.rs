@@ -20,7 +20,7 @@
 //!
 //! ### Dispatchable Functions
 //!
-//! * `add_domain` - Add cryptographic hash of Domain
+//! * `add_domain` - Add cryptographic hash of DomainId
 //! * `create_project` - Create Project belongs to Account (Team)
 //! * `update_project` - Update Project info
 //! * `create_project_content` - Create Project Content (Digital Asset)
@@ -95,8 +95,8 @@ pub trait Config: frame_system::Config + pallet_timestamp::Config {
 
 /// Unique Project ID reference
 pub type ProjectId = H160;
-/// Unique Domain reference
-pub type Domain = H160;
+/// Unique DomainId reference
+pub type DomainId = H160;
 /// Unique Project Contnt reference 
 pub type ProjectContentId = H160;
 /// Unique NDA reference 
@@ -108,6 +108,15 @@ pub type ProjectOf<T> = Project<<T as system::Config>::Hash, <T as system::Confi
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
+
+/// PPossible project domains
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct Domain {
+    /// Reference for external world and uniques control 
+    pub external_id: DomainId,
+}
 
 /// Core entity of pallet. Everything connected to Project. 
 /// Only Account (Team) stand before Project in hierarchy.
@@ -124,7 +133,7 @@ pub struct Project<Hash, AccountId> {
     /// Hash of Project description
     description: Hash,
     /// List of Domains aka tags Project matches
-    domains: Vec<Domain>,
+    domains: Vec<DomainId>,
     /// List of Project Members. Determine who is participated in the project
     members: Vec<AccountId>
 }
@@ -239,8 +248,8 @@ decl_event! {
         //  /// Event emitted when a NDA Access request has been rejected. [BelongsTo, NdaAccessRequestId]
         NdaAccessRequestRejected(AccountId, NdaAccessRequestId),
 
-        /// Added a domain. [Creator, Domain]
-		DomainAdded(AccountId, Domain),
+        /// Added a domain. [Creator, DomainId]
+		DomainAdded(AccountId, DomainId),
     }
 }
 
@@ -332,7 +341,7 @@ decl_storage! {
         NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
         // The set of all Domains.
-        Domains get(fn domains) config(): map hasher(blake2_128_concat) Domain => ();
+        Domains get(fn domains) config(): map hasher(blake2_128_concat) DomainId => Domain;
         // The total number of domains stored in the map.
         // Because the map does not store its size, we must store it separately
         DomainCount get(fn domain_count) config(): u32;
@@ -656,7 +665,7 @@ decl_module! {
         ///
 		/// The origin for this call must be _Signed_. 
         ///
-		/// - `external_id`: Domain reference
+		/// - `project`: [Domain](./struct.Domain.html) to be created.
         #[weight = 10_000]
         fn add_domain(origin, domain: Domain) {
             let account = ensure_signed(origin)?;
@@ -667,12 +676,12 @@ decl_module! {
             // We don't want to add duplicate domains, so we check whether the potential new
             // domain is already present in the list. Because the domains is stored as a hash
             // map this check is constant time O(1)
-            ensure!(!Domains::contains_key(&domain), Error::<T>::DomainAlreadyExists);
+            ensure!(!Domains::contains_key(&domain.external_id), Error::<T>::DomainAlreadyExists);
         
             // Insert the new domin and emit the event
-            Domains::insert(&domain, ());
+            Domains::insert(&domain.external_id, domain.clone());
             DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
-            Self::deposit_event(RawEvent::DomainAdded(account, domain));
+            Self::deposit_event(RawEvent::DomainAdded(account, domain.external_id));
         }
     }
 }
@@ -689,8 +698,11 @@ impl<T: Config> Module<T> {
         ProjectMap::<T>::get(project_id)
     }
     pub fn get_domains() -> Vec<Domain> {
-        <Domains as IterableStorageMap<Domain, ()>>::iter()
-            .map(|(dommain, _)| dommain)
+        <Domains as IterableStorageMap<DomainId, Domain>>::iter()
+            .map(|(_id, domain)| domain)
             .collect()
+    }
+    pub fn get_domain(domain_id: &DomainId) -> Domain {
+        Domains::get(domain_id)
     }
 }

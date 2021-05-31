@@ -6,7 +6,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use std::sync::Arc;
-use deip_runtime_api::{DeipApi as DeipStorageRuntimeApi, ProjectId, H256, Project, Domain};
+use deip_runtime_api::{DeipApi as DeipStorageRuntimeApi, ProjectId, H256, Project, Domain, DomainId};
 use codec::{Codec};
 
 
@@ -18,6 +18,8 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
 	fn get_project(&self, at: Option<BlockHash>, project_id: ProjectId) -> Result<Project<H256, AccountId>>;
 	#[rpc(name = "deipStorage_getDomains")]
 	fn get_domains(&self, at: Option<BlockHash>) -> Result<Vec<Domain>>;
+	#[rpc(name = "deipStorage_getDomain")]
+	fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Domain>;
 }
 
 /// A struct that implements the `DeipStorage`.
@@ -106,6 +108,21 @@ where
 			self.client.info().best_hash));
 
 		let runtime_api_result = api.get_domains(&at);
+		
+		runtime_api_result.map_err(|e| RpcError {
+			code: ErrorCode::ServerError(9876), // No real reason for this value
+			message: "Something wrong".into(),
+			data: Some(format!("{:?}", e).into()),
+		})
+	}
+	fn get_domain(&self, at: Option<<Block as BlockT>::Hash>, domain_id: DomainId) -> Result<Domain> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(||
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash));
+
+		let runtime_api_result = api.get_domain(&at, &domain_id);
+		
 		
 		runtime_api_result.map_err(|e| RpcError {
 			code: ErrorCode::ServerError(9876), // No real reason for this value
