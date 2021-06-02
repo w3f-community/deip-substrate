@@ -39,7 +39,7 @@ use frame_support::{
     decl_module, decl_storage, decl_event, decl_error, 
     StorageMap,
     dispatch::{ DispatchResult },
-    storage::{ IterableStorageMap }, 
+    storage::{ IterableStorageMap, IterableStorageDoubleMap }, 
 };
 use frame_system::{ self as system, ensure_signed };
 use sp_std::vec::Vec;
@@ -59,6 +59,8 @@ pub const MAX_DOMAINS: u32 = 100;
 
 /// Possible statuses of Project inherited from Project Content type
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 enum ProjectContentType {
     Announcement,
     FinalResult,
@@ -140,6 +142,8 @@ pub struct Project<Hash, AccountId> {
 
 /// Digital asset. Contains information of content and authors of Digital asset.
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct ProjectContent<Hash, AccountId> {
     /// Reference for external world and uniques control 
     external_id: ProjectContentId,
@@ -704,5 +708,19 @@ impl<T: Config> Module<T> {
     }
     pub fn get_domain(domain_id: &DomainId) -> Domain {
         Domains::get(domain_id)
+    }
+    pub fn get_project_content_list(content_ids: &Option<Vec<ProjectContentId>>) -> Vec<ProjectContentOf<T>>{
+        <ProjectContentMap<T> as IterableStorageDoubleMap<ProjectId, ProjectContentId, ProjectContentOf<T>>>::iter()
+            .filter(|(_project_id, project_content_id, ..)| {                
+                match content_ids {
+                    Some(ids) => ids.contains(&project_content_id),
+                    _ => true
+                }
+            })
+            .map(|(_project_id, _project_content_id, content)| content)
+            .collect()
+    }
+    pub fn get_project_content(project_id: &ProjectId, project_content_id: &ProjectContentId) -> ProjectContentOf<T> {
+        ProjectContentMap::<T>::get(project_id, project_content_id)
     }
 }

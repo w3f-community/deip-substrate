@@ -6,7 +6,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use std::sync::Arc;
-use deip_runtime_api::{DeipApi as DeipStorageRuntimeApi, ProjectId, H256, Project, Domain, DomainId};
+use deip_runtime_api::{DeipApi as DeipStorageRuntimeApi, * };
 use codec::{Codec};
 
 
@@ -16,6 +16,10 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
 	fn get_projects(&self, at: Option<BlockHash>) -> Result<Vec<Project<H256, AccountId>>>;
 	#[rpc(name = "deipStorage_getProject")]
 	fn get_project(&self, at: Option<BlockHash>, project_id: ProjectId) -> Result<Project<H256, AccountId>>;
+	#[rpc(name = "deipStorage_getProjectContentList")]
+	fn get_project_content_list(&self, at: Option<BlockHash>, content_ids: Option<Vec<ProjectContentId>>) -> Result<Vec<ProjectContent<H256, AccountId>>>;
+	#[rpc(name = "deipStorage_getProjectContent")]
+	fn get_project_content(&self, at: Option<BlockHash>, project_id: ProjectId, project_content_id: ProjectContentId) -> Result<ProjectContent<H256, AccountId>>;
 	#[rpc(name = "deipStorage_getDomains")]
 	fn get_domains(&self, at: Option<BlockHash>) -> Result<Vec<Domain>>;
 	#[rpc(name = "deipStorage_getDomain")]
@@ -122,6 +126,36 @@ where
 			self.client.info().best_hash));
 
 		let runtime_api_result = api.get_domain(&at, &domain_id);
+		
+		
+		runtime_api_result.map_err(|e| RpcError {
+			code: ErrorCode::ServerError(9876), // No real reason for this value
+			message: "Something wrong".into(),
+			data: Some(format!("{:?}", e).into()),
+		})
+	}
+	
+	fn get_project_content_list(&self, at: Option<<Block as BlockT>::Hash>, content_ids: Option<Vec<ProjectContentId>>) -> Result<Vec<ProjectContent<H256, AccountId>>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(||
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash));
+
+		let runtime_api_result = api.get_project_content_list(&at, &content_ids);
+		
+		runtime_api_result.map_err(|e| RpcError {
+			code: ErrorCode::ServerError(9876), // No real reason for this value
+			message: "Something wrong".into(),
+			data: Some(format!("{:?}", e).into()),
+		})
+	}
+	fn get_project_content(&self, at: Option<<Block as BlockT>::Hash>, project_id: ProjectId, project_content_id: ProjectContentId) -> Result<ProjectContent<H256, AccountId>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(||
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash));
+
+		let runtime_api_result = api.get_project_content(&at, &project_id, &project_content_id);
 		
 		
 		runtime_api_result.map_err(|e| RpcError {

@@ -19,5 +19,7 @@ sp_api::decl_runtime_apis! {
 		fn get_project(project_id: &ProjectId) -> Project<H256, AccountId>;
 		fn get_domains() -> Vec<Domain>;
 		fn get_domain(domain_id: &DomainId) -> Domain;
+		fn get_project_content_list(content_ids: &Option<Vec<ProjectContentId>>) -> Vec<ProjectContent<H256, AccountId>>;
+		fn get_project_content(project_id: &ProjectId, project_content_id: &ProjectContentId) -> ProjectContent<H256, AccountId>;
 	}
 }

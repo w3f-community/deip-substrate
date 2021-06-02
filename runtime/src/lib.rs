@@ -39,7 +39,7 @@ pub use frame_support::{
 };
 use pallet_transaction_payment::CurrencyAdapter;
 
-use pallet_deip::{ProjectId, Project, Domain, DomainId};
+use pallet_deip::*;
 
 /// Constant values used within the runtime.
 pub mod constants;
@@ -430,6 +430,12 @@ impl_runtime_apis! {
 		}
 		fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
 			Deip::get_project(project_id)
+		}
+		fn get_project_content_list(content_ids: &Option<Vec<ProjectContentId>>) -> Vec<ProjectContent<H256, AccountId>> {
+			Deip::get_project_content_list(content_ids)
+		}
+		fn get_project_content(project_id: &ProjectId, project_content_id: &ProjectContentId) -> ProjectContent<H256, AccountId> {
+			Deip::get_project_content(project_id, project_content_id)
 		}
 		fn get_domains() -> Vec<Domain> {
 			Deip::get_domains()
