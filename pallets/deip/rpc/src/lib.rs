@@ -24,6 +24,10 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
 	fn get_domains(&self, at: Option<BlockHash>) -> Result<Vec<Domain>>;
 	#[rpc(name = "deipStorage_getDomain")]
 	fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Domain>;
+	#[rpc(name = "deipStorage_getNdaList")]
+	fn get_nda_list(&self, at: Option<BlockHash>) -> Result<Vec<Nda<H256, AccountId, u64>>>;
+	#[rpc(name = "deipStorage_getNda")]
+	fn get_nda(&self, at: Option<BlockHash>, nda_id: NdaId) -> Result<Nda<H256, AccountId, u64>>;
 }
 
 /// A struct that implements the `DeipStorage`.
@@ -164,4 +168,35 @@ where
 			data: Some(format!("{:?}", e).into()),
 		})
 	}
+
+	fn get_nda_list(&self, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<Nda<H256, AccountId, u64>>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(||
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash));
+
+		let runtime_api_result = api.get_nda_list(&at);
+		
+		runtime_api_result.map_err(|e| RpcError {
+			code: ErrorCode::ServerError(9876), // No real reason for this value
+			message: "Something wrong".into(),
+			data: Some(format!("{:?}", e).into()),
+		})
+	}
+	fn get_nda(&self, at: Option<<Block as BlockT>::Hash>, nda_id: NdaId) -> Result<Nda<H256, AccountId, u64>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(||
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash));
+
+		let runtime_api_result = api.get_nda(&at, &nda_id);
+		
+		
+		runtime_api_result.map_err(|e| RpcError {
+			code: ErrorCode::ServerError(9876), // No real reason for this value
+			message: "Something wrong".into(),
+			data: Some(format!("{:?}", e).into()),
+		})
+	}
+
 }

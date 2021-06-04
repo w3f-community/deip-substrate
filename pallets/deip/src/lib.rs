@@ -166,6 +166,8 @@ pub struct ProjectContent<Hash, AccountId> {
 
 /// NDA contract between parties. Usually about dislocating or not dislocating some confidential info
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Nda<Hash, AccountId, Moment>  {
     /// Reference to Multisig Account with involved parties
     contract_creator: AccountId,
@@ -676,16 +678,21 @@ decl_module! {
         
             let domain_count = DomainCount::get();
             ensure!(domain_count < MAX_DOMAINS, Error::<T>::DomianLimitReached);
+
+            let external_id = domain.external_id;
         
             // We don't want to add duplicate domains, so we check whether the potential new
             // domain is already present in the list. Because the domains is stored as a hash
             // map this check is constant time O(1)
-            ensure!(!Domains::contains_key(&domain.external_id), Error::<T>::DomainAlreadyExists);
-        
+            ensure!(!Domains::contains_key(&external_id), Error::<T>::DomainAlreadyExists);
+
+           
+            
             // Insert the new domin and emit the event
-            Domains::insert(&domain.external_id, domain.clone());
+            Domains::insert(&external_id, domain);
             DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
-            Self::deposit_event(RawEvent::DomainAdded(account, domain.external_id));
+            
+            Self::deposit_event(RawEvent::DomainAdded(account, external_id));
         }
     }
 }
@@ -722,5 +729,13 @@ impl<T: Config> Module<T> {
     }
     pub fn get_project_content(project_id: &ProjectId, project_content_id: &ProjectContentId) -> ProjectContentOf<T> {
         ProjectContentMap::<T>::get(project_id, project_content_id)
+    }
+    pub fn get_nda_list() -> Vec<NdaOf<T>>{
+        <NdaMap<T> as IterableStorageMap<NdaId, NdaOf<T>>>::iter()
+            .map(|(_id, nda)| nda)
+            .collect()
+    }
+    pub fn get_nda(nda_id: &NdaId) -> NdaOf<T> {
+        NdaMap::<T>::get(nda_id)
     }
 }

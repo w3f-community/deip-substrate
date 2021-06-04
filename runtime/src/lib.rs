@@ -443,6 +443,12 @@ impl_runtime_apis! {
 		fn get_domain(domain_id: &DomainId) -> Domain {
 			Deip::get_domain(domain_id)
 		}
+		fn get_nda_list() -> Vec<Nda<H256, AccountId, u64>> {
+			Deip::get_nda_list()
+		}
+		fn get_nda(nda_id: &NdaId) -> Nda<H256, AccountId, u64> {
+			Deip::get_nda(nda_id)
+		}
 	}
 
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
