@@ -1,5 +1,5 @@
 {
-    "Domain": "H160",
+    "DomainId": "H160",
     "ProjectId": "H160",
     "ProjectContentId": "H160",
     "NdaAccessRequestId": "H160",
@@ -35,12 +35,15 @@
       "encrypted_payload_encryption_key": "Option<Text>",
       "proof_of_encrypted_payload_encryption_key": "Option<Text>"
     },
+    "Domain": {
+      "external_id": "DomainId"
+    },
     "Project": {
       "is_private": "bool",
       "external_id": "ProjectId",
       "team": "AccountId",
       "description": "Hash",
-      "domains": "Vec<Domain>",
+      "domains": "Vec<DomainId>",
       "members": "Vec<AccountId>"
     },
     "ProjectContentType": {
