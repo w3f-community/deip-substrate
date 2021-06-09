@@ -28,6 +28,10 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
 	fn get_nda_list(&self, at: Option<BlockHash>) -> Result<Vec<Nda<H256, AccountId, u64>>>;
 	#[rpc(name = "deipStorage_getNda")]
 	fn get_nda(&self, at: Option<BlockHash>, nda_id: NdaId) -> Result<Nda<H256, AccountId, u64>>;
+	#[rpc(name = "deipStorage_getReviews")]
+	fn get_reviews(&self, at: Option<BlockHash>) -> Result<Vec<Review<H256, AccountId>>>;
+	#[rpc(name = "deipStorage_getReview")]
+	fn get_review(&self, at: Option<BlockHash>, review_id: ReviewId) -> Result<Review<H256, AccountId>>;
 }
 
 /// A struct that implements the `DeipStorage`.
@@ -190,6 +194,36 @@ where
 			self.client.info().best_hash));
 
 		let runtime_api_result = api.get_nda(&at, &nda_id);
+		
+		
+		runtime_api_result.map_err(|e| RpcError {
+			code: ErrorCode::ServerError(9876), // No real reason for this value
+			message: "Something wrong".into(),
+			data: Some(format!("{:?}", e).into()),
+		})
+	}
+
+	fn get_reviews(&self, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<Review<H256, AccountId>>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(||
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash));
+
+		let runtime_api_result = api.get_reviews(&at);
+		
+		runtime_api_result.map_err(|e| RpcError {
+			code: ErrorCode::ServerError(9876), // No real reason for this value
+			message: "Something wrong".into(),
+			data: Some(format!("{:?}", e).into()),
+		})
+	}
+	fn get_review(&self, at: Option<<Block as BlockT>::Hash>, review_id: ReviewId) -> Result<Review<H256, AccountId>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(||
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash));
+
+		let runtime_api_result = api.get_review(&at, &review_id);
 		
 		
 		runtime_api_result.map_err(|e| RpcError {

@@ -449,6 +449,12 @@ impl_runtime_apis! {
 		fn get_nda(nda_id: &NdaId) -> Nda<H256, AccountId, u64> {
 			Deip::get_nda(nda_id)
 		}
+		fn get_reviews() -> Vec<Review<H256, AccountId>> {
+			Deip::get_reviews()
+		}
+		fn get_review(review_id: &ReviewId) -> Review<H256, AccountId> {
+			Deip::get_review(review_id)
+		}
 	}
 
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
