@@ -1,10 +1,12 @@
 {
     "DomainId": "H160",
     "ProjectId": "H160",
+    "ReviewId": "H160",
     "ProjectContentId": "H160",
     "NdaAccessRequestId": "H160",
     "NdaId": "H160",
     "NdaOf": "Nda",
+    "ReviewOf": "Review", 
     "NdaAccessRequestOf": "NdaAccessRequest",
     "ProjectOf": "Project",
     "ProjectContentOf": "ProjectContent",
@@ -45,6 +47,15 @@
       "description": "Hash",
       "domains": "Vec<DomainId>",
       "members": "Vec<AccountId>"
+    },
+    "Review": {
+      "external_id": "ReviewId",
+      "author": "AccountId",
+      "content": "Hash",
+      "domains": "Vec<DomainId>",
+      "assessment_model": "u32",
+      "weight": "Text",
+      "project_content_external_id": "ProjectContentId"
     },
     "ProjectContentType": {
       "_enum": [

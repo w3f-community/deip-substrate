@@ -28,6 +28,7 @@
 //! * `create_nda_content_access_request` - Some side request access to the data of contract
 //! * `fulfill_nda_content_access_request` - Granter fulfill access request to the data
 //! * `reject_nda_content_access_request` - Granter reject access request to the data
+//! *  `create_review` - Create Review
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -105,11 +106,36 @@ pub type ProjectContentId = H160;
 pub type NdaId = H160;
 /// Unique NdaAccess Request reference 
 pub type NdaAccessRequestId = H160;
+/// Unique Review reference 
+pub type ReviewId = H160;
 
 pub type ProjectOf<T> = Project<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
+pub type ReviewOf<T> = Review<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
+
+
+/// Review 
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct Review<Hash, AccountId> {
+    /// Reference for external world and uniques control 
+    external_id: ReviewId,
+    /// Reference to the Team 
+    author: AccountId,
+    /// Hash of content
+    content: Hash,
+    /// List of Domains aka tags Project matches
+    domains: Vec<DomainId>,
+    /// Model number by which the evaluation is carried out
+    assessment_model: u32,
+    /// percent in "50.00 %" format
+    weight: Vec<u8>,
+    /// Reference to Project Content
+    project_content_external_id: ProjectContentId,
+}
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -228,6 +254,7 @@ decl_event! {
     where 
         AccountId = <T as frame_system::Config>::AccountId,
         Project = ProjectOf<T>,
+        Review = ReviewOf<T>,
     {
         // ==== Projects ====
 
@@ -256,6 +283,9 @@ decl_event! {
 
         /// Added a domain. [Creator, DomainId]
 		DomainAdded(AccountId, DomainId),
+
+        /// Event emitted when a review has been created. [BelongsTo, Review]
+        ReviewCreated(AccountId, Review),
     }
 }
 
@@ -279,6 +309,8 @@ decl_error! {
         ProjectContentAlreadyExists,
         /// Project does not belong to the team.
         ProjectNotBelongToTeam,
+        /// The project content does not exist.
+        NoSuchProjectContent,
         /// The Reference does not exist.
         NoSuchReference, 
         /// Cannot add a project content because a project with this ID is already a finished
@@ -315,7 +347,8 @@ decl_error! {
         /// Nda access request already finalized
         NdaAccessRequestAlreadyFinalized,
 
-        
+        /// Cannot add a review because a review with this ID is already a exists
+        ReviewAlreadyExists,
         
         // ==== General =====
 
@@ -345,6 +378,11 @@ decl_storage! {
         NdaAccessRequests get(fn nda_requests): Vec<(NdaAccessRequestId, NdaId, T::AccountId)>;
         /// Map to NDA Access Requests Info
         NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
+
+        /// Map from ReviewID to Review Info
+        ReviewMap get(fn review): map hasher(identity) ReviewId => ReviewOf<T>;
+        /// Review list, guarantees uniquest and provides Review listing
+        Reviews get(fn reviews): Vec<(ReviewId, T::AccountId)>;
 
         // The set of all Domains.
         Domains get(fn domains) config(): map hasher(blake2_128_concat) DomainId => Domain;
@@ -665,7 +703,40 @@ decl_module! {
              // Emit an event that the NDA was rejected.
              Self::deposit_event(RawEvent::NdaAccessRequestRejected(account, external_id));
  
-         }
+        }
+
+        /// Allow a user to create review.
+        ///
+		/// The origin for this call must be _Signed_. 
+        ///
+		/// - `review`: [Review](./struct.Review.html) to be created
+        #[weight = 10_000]
+        fn create_review(origin, review: ReviewOf<T>) {
+            let account = ensure_signed(origin)?;
+
+            let mut reviews = Reviews::<T>::get();
+
+            let index_to_insert_review = reviews.binary_search_by_key(&review.external_id, |&(a,_)| a)
+                .err().ok_or(Error::<T>::ReviewAlreadyExists)?;
+
+            ProjectsContent::<T>::get().iter().find(|(id, ..)| id == &review.project_content_external_id)
+                .ok_or(Error::<T>::NoSuchProjectContent)?;
+            
+            for domain in &review.domains {
+                ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
+            }
+
+            reviews.insert(index_to_insert_review, (review.external_id,  review.author.clone()));
+            Reviews::<T>::put(reviews);
+
+            // Store the content
+            ReviewMap::<T>::insert(review.external_id, review.clone());
+
+            // Emit an event that the content was created.
+            Self::deposit_event(RawEvent::ReviewCreated(account, review));
+        }
+
+
         
         /// Allow a user to create domains.
         ///
@@ -737,5 +808,13 @@ impl<T: Config> Module<T> {
     }
     pub fn get_nda(nda_id: &NdaId) -> NdaOf<T> {
         NdaMap::<T>::get(nda_id)
+    }
+    pub fn get_reviews() -> Vec<ReviewOf<T>>{
+        <ReviewMap<T> as IterableStorageMap<ReviewId, ReviewOf<T>>>::iter()
+            .map(|(_id, review)| review)
+            .collect()
+    }
+    pub fn get_review(review_id: &ReviewId) -> ReviewOf<T> {
+        ReviewMap::<T>::get(review_id)
     }
 }
