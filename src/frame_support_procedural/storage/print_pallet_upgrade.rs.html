@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/frame-support-procedural-3.0.0/src/storage/print_pallet_upgrade.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>print_pallet_upgrade.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../favicon.svg">
 <link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../frame_support_procedural/index.html'><div class='logo-container rust-logo'><img src='../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+<link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../frame_support_procedural/index.html'><div class='logo-container rust-logo'><img src='../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
                 <a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
@@ -385,43 +385,43 @@
 <span id="382">382</span>
 <span id="383">383</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">StorageLineTypeDef</span>;
-<span class="kw">use</span> <span class="ident">quote</span>::<span class="ident">ToTokens</span>;
-<span class="kw">use</span> <span class="ident">frame_support_procedural_tools</span>::<span class="ident">clean_type_string</span>;
+<span class="kw">use</span> <span class="kw">super</span><span class="ident">::StorageLineTypeDef</span>;
+<span class="kw">use</span> <span class="ident">quote::ToTokens</span>;
+<span class="kw">use</span> <span class="ident">frame_support_procedural_tools::clean_type_string</span>;
 
 <span class="doccomment">/// Environment variable that tells us to print pallet upgrade helper.</span>
 <span class="kw">const</span> <span class="ident">PRINT_PALLET_UPGRADE</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;PRINT_PALLET_UPGRADE&quot;</span>;
 
 <span class="kw">fn</span> <span class="ident">check_print_pallet_upgrade</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-	<span class="ident">std</span>::<span class="ident">env</span>::<span class="ident">var</span>(<span class="ident">PRINT_PALLET_UPGRADE</span>).<span class="ident">is_ok</span>()
+	<span class="ident">std::env::var</span>(<span class="ident">PRINT_PALLET_UPGRADE</span>).<span class="ident">is_ok</span>()
 }
 
 <span class="doccomment">/// Convert visibilty as now objects are defined in a module.</span>
-<span class="kw">fn</span> <span class="ident">convert_vis</span>(<span class="ident">vis</span>: <span class="kw-2">&amp;</span><span class="ident">syn</span>::<span class="ident">Visibility</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>{
+<span class="kw">fn</span> <span class="ident">convert_vis</span>(<span class="ident">vis</span>: <span class="kw-2">&amp;</span><span class="ident">syn::Visibility</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>{
 	<span class="kw">match</span> <span class="ident">vis</span> {
-		<span class="ident">syn</span>::<span class="ident">Visibility</span>::<span class="ident">Inherited</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;pub(super)&quot;</span>,
-		<span class="ident">syn</span>::<span class="ident">Visibility</span>::<span class="ident">Public</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;pub&quot;</span>,
+		<span class="ident">syn::Visibility::Inherited</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;pub(super)&quot;</span>,
+		<span class="ident">syn::Visibility::Public</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;pub&quot;</span>,
 		<span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;/* TODO_VISIBILITY */&quot;</span>,
 	}
 }
 
 <span class="doccomment">/// fn to convert to token stream then string using display and then call clean_type_string on it.</span>
-<span class="kw">fn</span> <span class="ident">to_cleaned_string</span>(<span class="ident">t</span>: <span class="kw">impl</span> <span class="ident">quote</span>::<span class="ident">ToTokens</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
-	<span class="ident">clean_type_string</span>(<span class="kw-2">&amp;</span><span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">t</span>.<span class="ident">into_token_stream</span>()))
+<span class="kw">fn</span> <span class="ident">to_cleaned_string</span>(<span class="ident">t</span>: <span class="kw">impl</span> <span class="ident">quote::ToTokens</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+	<span class="ident">clean_type_string</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">t</span>.<span class="ident">into_token_stream</span>()))
 }
 
 <span class="doccomment">/// Print an incomplete upgrade from decl_storage macro to new pallet attribute.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">maybe_print_pallet_upgrade</span>(<span class="ident">def</span>: <span class="kw-2">&amp;</span><span class="kw">super</span>::<span class="ident">DeclStorageDefExt</span>) {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">maybe_print_pallet_upgrade</span>(<span class="ident">def</span>: <span class="kw-2">&amp;</span><span class="kw">super</span><span class="ident">::DeclStorageDefExt</span>) {
 	<span class="kw">if</span> <span class="op">!</span><span class="ident">check_print_pallet_upgrade</span>() {
 		<span class="kw">return</span>
 	}
 
-	<span class="kw">let</span> <span class="ident">scrate</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">quote</span>::<span class="macro">quote</span><span class="macro">!</span>(<span class="ident">frame_support</span>);
+	<span class="kw">let</span> <span class="ident">scrate</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="macro">quote::quote!</span>(<span class="ident">frame_support</span>);
 
 	<span class="kw">let</span> <span class="ident">config_gen</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">def</span>.<span class="ident">optional_instance</span>.<span class="ident">is_some</span>() {
 		<span class="string">&quot;&lt;I: &#39;static = ()&gt;&quot;</span>
 	} <span class="kw">else</span> {
-		<span class="ident">Default</span>::<span class="ident">default</span>()
+		<span class="ident">Default::default</span>()
 	};
 
 	<span class="kw">let</span> <span class="ident">impl_gen</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">def</span>.<span class="ident">optional_instance</span>.<span class="ident">is_some</span>() {
@@ -454,15 +454,15 @@
 		<span class="string">&quot;&lt;T&gt;&quot;</span>
 	};
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">genesis_config</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">genesis_build</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">genesis_config</span> <span class="op">=</span> <span class="ident">String::new</span>();
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">genesis_build</span> <span class="op">=</span> <span class="ident">String::new</span>();
 
-	<span class="kw">let</span> <span class="ident">genesis_config_builder_def</span> <span class="op">=</span> <span class="kw">super</span>::<span class="ident">genesis_config</span>::<span class="ident">BuilderDef</span>::<span class="ident">from_def</span>(<span class="ident">scrate</span>, <span class="ident">def</span>);
+	<span class="kw">let</span> <span class="ident">genesis_config_builder_def</span> <span class="op">=</span> <span class="kw">super</span><span class="ident">::genesis_config::BuilderDef::from_def</span>(<span class="ident">scrate</span>, <span class="ident">def</span>);
 	<span class="kw">if</span> <span class="op">!</span><span class="ident">genesis_config_builder_def</span>.<span class="ident">blocks</span>.<span class="ident">is_empty</span>() {
-		<span class="kw">let</span> <span class="ident">genesis_config_def</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw">super</span>::<span class="ident">genesis_config</span>::<span class="ident">GenesisConfigDef</span>::<span class="ident">from_def</span>(<span class="ident">def</span>) {
+		<span class="kw">let</span> <span class="ident">genesis_config_def</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw">super</span><span class="ident">::genesis_config::GenesisConfigDef::from_def</span>(<span class="ident">def</span>) {
 			<span class="prelude-val">Ok</span>(<span class="ident">g</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">g</span>,
 			<span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> {
-				<span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Could not print upgrade due compile error: {:?}&quot;</span>, <span class="ident">err</span>);
+				<span class="macro">println!</span>(<span class="string">&quot;Could not print upgrade due compile error: {:?}&quot;</span>, <span class="ident">err</span>);
 				<span class="kw">return</span>
 			},
 		};
@@ -470,13 +470,13 @@
 		<span class="kw">let</span> <span class="ident">genesis_config_impl_gen</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">genesis_config_def</span>.<span class="ident">is_generic</span> {
 			<span class="ident">impl_gen</span>
 		} <span class="kw">else</span> {
-			<span class="ident">Default</span>::<span class="ident">default</span>()
+			<span class="ident">Default::default</span>()
 		};
 
 		<span class="kw">let</span> <span class="ident">genesis_config_use_gen</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">genesis_config_def</span>.<span class="ident">is_generic</span> {
 			<span class="ident">use_gen</span>
 		} <span class="kw">else</span> {
-			<span class="ident">Default</span>::<span class="ident">default</span>()
+			<span class="ident">Default::default</span>()
 		};
 
 		<span class="kw">let</span> <span class="ident">genesis_config_decl_gen</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">genesis_config_def</span>.<span class="ident">is_generic</span> {
@@ -486,17 +486,17 @@
 				<span class="string">&quot;&lt;T: Config&gt;&quot;</span>
 			}
 		} <span class="kw">else</span> {
-			<span class="ident">Default</span>::<span class="ident">default</span>()
+			<span class="ident">Default::default</span>()
 		};
 
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">genesis_config_decl_fields</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">genesis_config_default_fields</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
+		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">genesis_config_decl_fields</span> <span class="op">=</span> <span class="ident">String::new</span>();
+		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">genesis_config_default_fields</span> <span class="op">=</span> <span class="ident">String::new</span>();
 		<span class="kw">for</span> <span class="ident">field</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">genesis_config_def</span>.<span class="ident">fields</span> {
-			<span class="ident">genesis_config_decl_fields</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;
+			<span class="ident">genesis_config_decl_fields</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;
 		{attrs}pub {name}: {typ},&quot;</span>,
 				<span class="ident">attrs</span> <span class="op">=</span> <span class="ident">field</span>.<span class="ident">attrs</span>.<span class="ident">iter</span>()
-					.<span class="ident">fold</span>(<span class="ident">String</span>::<span class="ident">new</span>(), <span class="op">|</span><span class="ident">res</span>, <span class="ident">attr</span><span class="op">|</span> {
-						<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}#[{}]
+					.<span class="ident">fold</span>(<span class="ident">String::new</span>(), <span class="op">|</span><span class="ident">res</span>, <span class="ident">attr</span><span class="op">|</span> {
+						<span class="macro">format!</span>(<span class="string">&quot;{}#[{}]
 		&quot;</span>,
 						<span class="ident">res</span>, <span class="ident">attr</span>.<span class="ident">to_token_stream</span>())
 					}),
@@ -504,14 +504,14 @@
 				<span class="ident">typ</span> <span class="op">=</span> <span class="ident">to_cleaned_string</span>(<span class="kw-2">&amp;</span><span class="ident">field</span>.<span class="ident">typ</span>),
 			));
 
-			<span class="ident">genesis_config_default_fields</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;
+			<span class="ident">genesis_config_default_fields</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;
 				{name}: {default},&quot;</span>,
 				<span class="ident">name</span> <span class="op">=</span> <span class="ident">field</span>.<span class="ident">name</span>,
 				<span class="ident">default</span> <span class="op">=</span> <span class="ident">to_cleaned_string</span>(<span class="kw-2">&amp;</span><span class="ident">field</span>.<span class="ident">default</span>),
 			));
 		}
 
-		<span class="ident">genesis_config</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;
+		<span class="ident">genesis_config</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;
 	#[pallet::genesis_config]
 	pub struct GenesisConfig{genesis_config_decl_gen}
 		// TODO_MAYBE_WHERE_CLAUSE
@@ -535,15 +535,15 @@
 		);
 
 		<span class="kw">let</span> <span class="ident">genesis_config_build</span> <span class="op">=</span> <span class="ident">genesis_config_builder_def</span>.<span class="ident">blocks</span>.<span class="ident">iter</span>()
-			.<span class="ident">fold</span>(<span class="ident">String</span>::<span class="ident">new</span>(), <span class="op">|</span><span class="ident">res</span>, <span class="ident">block</span><span class="op">|</span> {
-				<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}
+			.<span class="ident">fold</span>(<span class="ident">String::new</span>(), <span class="op">|</span><span class="ident">res</span>, <span class="ident">block</span><span class="op">|</span> {
+				<span class="macro">format!</span>(<span class="string">&quot;{}
 					{}&quot;</span>,
 					<span class="ident">res</span>,
 					<span class="ident">to_cleaned_string</span>(<span class="ident">block</span>),
 				)
 			});
 
-		<span class="ident">genesis_build</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;
+		<span class="ident">genesis_build</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;
 	#[pallet::genesis_build]
 	impl{impl_gen} GenesisBuild{use_gen} for GenesisConfig{genesis_config_use_gen}
 		// TODO_MAYBE_WHERE_CLAUSE
@@ -558,24 +558,24 @@
 		);
 	}
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">storages</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">storages</span> <span class="op">=</span> <span class="ident">String::new</span>();
 	<span class="kw">for</span> <span class="ident">line</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">def</span>.<span class="ident">storage_lines</span> {
 		<span class="kw">let</span> <span class="ident">storage_vis</span> <span class="op">=</span> <span class="ident">convert_vis</span>(<span class="kw-2">&amp;</span><span class="ident">line</span>.<span class="ident">visibility</span>);
 
 		<span class="kw">let</span> <span class="ident">getter</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">getter</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">line</span>.<span class="ident">getter</span> {
-			<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;
+			<span class="macro">format!</span>(<span class="string">&quot;
 	#[pallet::getter(fn {getter})]&quot;</span>,
 				<span class="ident">getter</span> <span class="op">=</span> <span class="ident">getter</span>
 			)
 		} <span class="kw">else</span> {
-			<span class="ident">Default</span>::<span class="ident">default</span>()
+			<span class="ident">Default::default</span>()
 		};
 
 		<span class="kw">let</span> <span class="ident">value_type</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">line</span>.<span class="ident">value_type</span>;
 
 		<span class="kw">let</span> <span class="ident">default_value_type_value</span> <span class="op">=</span> <span class="ident">line</span>.<span class="ident">default_value</span>.<span class="ident">as_ref</span>()
 			.<span class="ident">map</span>(<span class="op">|</span><span class="ident">default_expr</span><span class="op">|</span> {
-				<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;
+				<span class="macro">format!</span>(<span class="string">&quot;
 	#[pallet::type_value]
 	{storage_vis} fn DefaultFor{name} /* TODO_MAYBE_GENERICS */ () -&gt; {value_type} {{
 		{default_expr}
@@ -587,25 +587,25 @@
 					<span class="ident">default_expr</span> <span class="op">=</span> <span class="ident">to_cleaned_string</span>(<span class="kw-2">&amp;</span><span class="ident">default_expr</span>),
 				)
 			})
-			.<span class="ident">unwrap_or_else</span>(<span class="ident">String</span>::<span class="ident">new</span>);
+			.<span class="ident">unwrap_or_else</span>(<span class="ident">String::new</span>);
 
 		<span class="kw">let</span> <span class="ident">comma_query_kind</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">line</span>.<span class="ident">is_option</span> {
 			<span class="kw">if</span> <span class="ident">line</span>.<span class="ident">default_value</span>.<span class="ident">is_some</span>() {
 				<span class="string">&quot;, OptionQuery&quot;</span>
 			} <span class="kw">else</span> {
-				<span class="ident">Default</span>::<span class="ident">default</span>()
+				<span class="ident">Default::default</span>()
 			}
 		} <span class="kw">else</span> {
 			<span class="string">&quot;, ValueQuery&quot;</span>
 		};
 
 		<span class="kw">let</span> <span class="ident">comma_default_value_getter_name</span> <span class="op">=</span> <span class="ident">line</span>.<span class="ident">default_value</span>.<span class="ident">as_ref</span>()
-			.<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;, DefaultFor{}&quot;</span>, <span class="ident">line</span>.<span class="ident">name</span>))
-			.<span class="ident">unwrap_or_else</span>(<span class="ident">String</span>::<span class="ident">new</span>);
+			.<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;, DefaultFor{}&quot;</span>, <span class="ident">line</span>.<span class="ident">name</span>))
+			.<span class="ident">unwrap_or_else</span>(<span class="ident">String::new</span>);
 
 		<span class="kw">let</span> <span class="ident">typ</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">line</span>.<span class="ident">storage_type</span> {
-			<span class="ident">StorageLineTypeDef</span>::<span class="ident">Map</span>(<span class="ident">map</span>) <span class="op">=</span><span class="op">&gt;</span> {
-				<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;StorageMap&lt;_, {hasher}, {key}, {value_type}{comma_query_kind}\
+			<span class="ident">StorageLineTypeDef::Map</span>(<span class="ident">map</span>) <span class="op">=</span><span class="op">&gt;</span> {
+				<span class="macro">format!</span>(<span class="string">&quot;StorageMap&lt;_, {hasher}, {key}, {value_type}{comma_query_kind}\
 					{comma_default_value_getter_name}&gt;&quot;</span>,
 					<span class="ident">hasher</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">map</span>.<span class="ident">hasher</span>.<span class="ident">to_storage_hasher_struct</span>(),
 					<span class="ident">key</span> <span class="op">=</span> <span class="ident">to_cleaned_string</span>(<span class="kw-2">&amp;</span><span class="ident">map</span>.<span class="ident">key</span>),
@@ -614,8 +614,8 @@
 					<span class="ident">comma_default_value_getter_name</span> <span class="op">=</span> <span class="ident">comma_default_value_getter_name</span>,
 				)
 			},
-			<span class="ident">StorageLineTypeDef</span>::<span class="ident">DoubleMap</span>(<span class="ident">double_map</span>) <span class="op">=</span><span class="op">&gt;</span> {
-				<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;StorageDoubleMap&lt;_, {hasher1}, {key1}, {hasher2}, {key2}, {value_type}\
+			<span class="ident">StorageLineTypeDef::DoubleMap</span>(<span class="ident">double_map</span>) <span class="op">=</span><span class="op">&gt;</span> {
+				<span class="macro">format!</span>(<span class="string">&quot;StorageDoubleMap&lt;_, {hasher1}, {key1}, {hasher2}, {key2}, {value_type}\
 					{comma_query_kind}{comma_default_value_getter_name}&gt;&quot;</span>,
 					<span class="ident">hasher1</span> <span class="op">=</span> <span class="ident">double_map</span>.<span class="ident">hasher1</span>.<span class="ident">to_storage_hasher_struct</span>(),
 					<span class="ident">key1</span> <span class="op">=</span> <span class="ident">to_cleaned_string</span>(<span class="kw-2">&amp;</span><span class="ident">double_map</span>.<span class="ident">key1</span>),
@@ -626,8 +626,8 @@
 					<span class="ident">comma_default_value_getter_name</span> <span class="op">=</span> <span class="ident">comma_default_value_getter_name</span>,
 				)
 			},
-			<span class="ident">StorageLineTypeDef</span>::<span class="ident">Simple</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
-				<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;StorageValue&lt;_, {value_type}{comma_query_kind}\
+			<span class="ident">StorageLineTypeDef::Simple</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+				<span class="macro">format!</span>(<span class="string">&quot;StorageValue&lt;_, {value_type}{comma_query_kind}\
 					{comma_default_value_getter_name}&gt;&quot;</span>,
 					<span class="ident">value_type</span> <span class="op">=</span> <span class="ident">to_cleaned_string</span>(<span class="kw-2">&amp;</span><span class="ident">value_type</span>),
 					<span class="ident">comma_query_kind</span> <span class="op">=</span> <span class="ident">comma_query_kind</span>,
@@ -643,7 +643,7 @@
 			<span class="string">&quot;&quot;</span>
 		};
 
-		<span class="ident">storages</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;
+		<span class="ident">storages</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;
 {default_value_type_value}{doc}
 	#[pallet::storage]{getter}
 	{storage_vis} type {name}{full_decl_gen} = {typ};{additional_comment}&quot;</span>,
@@ -655,11 +655,11 @@
 			<span class="ident">typ</span> <span class="op">=</span> <span class="ident">typ</span>,
 			<span class="ident">additional_comment</span> <span class="op">=</span> <span class="ident">additional_comment</span>,
 			<span class="ident">doc</span> <span class="op">=</span> <span class="ident">line</span>.<span class="ident">doc_attrs</span>.<span class="ident">iter</span>()
-				.<span class="ident">fold</span>(<span class="ident">String</span>::<span class="ident">new</span>(), <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">res</span>, <span class="ident">attr</span><span class="op">|</span> {
-					<span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn</span>::<span class="ident">Meta</span>::<span class="ident">NameValue</span>(<span class="ident">name_value</span>) <span class="op">=</span> <span class="ident">attr</span> {
+				.<span class="ident">fold</span>(<span class="ident">String::new</span>(), <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">res</span>, <span class="ident">attr</span><span class="op">|</span> {
+					<span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::Meta::NameValue</span>(<span class="ident">name_value</span>) <span class="op">=</span> <span class="ident">attr</span> {
 						<span class="kw">if</span> <span class="ident">name_value</span>.<span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;doc&quot;</span>) {
-							<span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn</span>::<span class="ident">Lit</span>::<span class="ident">Str</span>(<span class="ident">string</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">name_value</span>.<span class="ident">lit</span> {
-								<span class="ident">res</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}
+							<span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::Lit::Str</span>(<span class="ident">string</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">name_value</span>.<span class="ident">lit</span> {
+								<span class="ident">res</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;{}
 	///{}&quot;</span>,
 									<span class="ident">res</span>,
 									<span class="ident">string</span>.<span class="ident">value</span>(),
@@ -686,7 +686,7 @@
 		<span class="string">&quot;&quot;</span>
 	};
 
-	<span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;
+	<span class="macro">println!</span>(<span class="string">&quot;
 // Template for pallet upgrade for {pallet_name}
 
 pub use pallet::*;
@@ -769,5 +769,5 @@ pub mod pallet {{
 	);
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="frame_support_procedural" data-search-js="../../../search-index.js"></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="frame_support_procedural" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div>
     <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script></body></html>

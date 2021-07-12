@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/frame-benchmarking-3.0.0/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../frame_benchmarking/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../frame_benchmarking/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
                 <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">   1</span>
 <span id="2">   2</span>
 <span id="3">   3</span>
@@ -1109,11 +1109,11 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">analysis</span>::{<span class="ident">Analysis</span>, <span class="ident">BenchmarkSelector</span>, <span class="ident">RegressionModel</span>};
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sp_io</span>::<span class="ident">storage</span>::<span class="ident">root</span> <span class="kw">as</span> <span class="ident">storage_root</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sp_runtime</span>::<span class="ident">traits</span>::<span class="ident">Zero</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sp_io::storage::root</span> <span class="kw">as</span> <span class="ident">storage_root</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sp_runtime::traits::Zero</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">frame_support</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">paste</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sp_storage</span>::<span class="ident">TrackedStorageKey</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sp_storage::TrackedStorageKey</span>;
 
 <span class="doccomment">/// Construct pallet benchmarks for weighing dispatchables.</span>
 <span class="doccomment">///</span>
@@ -1241,11 +1241,11 @@
 <span class="doccomment">/// }</span>
 <span class="doccomment">/// ```</span>
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">benchmarks</span> {
+<span class="macro">macro_rules!</span> <span class="ident">benchmarks</span> {
 	(
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span>(
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span>(
 			{ }
 			{ }
 			( )
@@ -1257,11 +1257,11 @@
 
 <span class="doccomment">/// Same as [`benchmarks`] but for instantiable module.</span>
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">benchmarks_instance</span> {
+<span class="macro">macro_rules!</span> <span class="ident">benchmarks_instance</span> {
 	(
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span>(
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span>(
 			{ <span class="macro-nonterminal">I</span> }
 			{ }
 			( )
@@ -1273,7 +1273,7 @@
 
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">benchmarks_iter</span> {
+<span class="macro">macro_rules!</span> <span class="ident">benchmarks_iter</span> {
 	<span class="comment">// detect and extract where clause:</span>
 	(
 		{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>:<span class="ident">ident</span> )<span class="question-mark">?</span> }
@@ -1283,7 +1283,7 @@
 		<span class="ident">where_clause</span> { <span class="kw">where</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_ty</span>:<span class="ident">ty</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_bound</span>:<span class="ident">path</span> ),<span class="op">*</span> $(,)<span class="question-mark">?</span> }
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_ty</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_bound</span> ),<span class="op">*</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> )
@@ -1301,7 +1301,7 @@
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> )
@@ -1320,7 +1320,7 @@
 		<span class="ident">verify</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>:<span class="ident">block</span>
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> )
@@ -1340,15 +1340,15 @@
 		<span class="ident">verify</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>:<span class="ident">block</span>
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> )
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names_extra</span> )<span class="op">*</span> )
 			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">code</span> )<span class="op">*</span> }: {
 				<span class="op">&lt;</span>
-					<span class="ident">Call</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">frame_support</span>::<span class="ident">traits</span>::<span class="ident">UnfilteredDispatchable</span>
-				<span class="op">&gt;</span>::<span class="ident">dispatch_bypass_filter</span>(
+					<span class="ident">Call</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::frame_support::traits::UnfilteredDispatchable</span>
+				<span class="op">&gt;</span><span class="ident">::dispatch_bypass_filter</span>(
 					<span class="ident">Call</span>::<span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">dispatch</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">arg</span>),<span class="kw-2">*</span>), <span class="macro-nonterminal">$</span><span class="macro-nonterminal">origin</span>.<span class="ident">into</span>()
 				)<span class="question-mark">?</span>;
 			}
@@ -1366,7 +1366,7 @@
 		<span class="ident">verify</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>:<span class="ident">block</span>
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmark_backend</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmark_backend!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
@@ -1377,13 +1377,13 @@
 		}
 
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">impl_benchmark_test</span><span class="macro">!</span>(
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::impl_benchmark_test!</span>(
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
 		);
 
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span>(
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span>(
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span> )<span class="question-mark">?</span> } <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span> )
@@ -1398,12 +1398,12 @@
 		( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span>:<span class="ident">tt</span> )<span class="op">*</span> )
 		( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names_extra</span>:<span class="ident">tt</span> )<span class="op">*</span> )
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">selected_benchmark</span><span class="macro">!</span>(
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::selected_benchmark!</span>(
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span>)<span class="op">*</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span>
 		);
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">impl_benchmark</span><span class="macro">!</span>(
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::impl_benchmark!</span>(
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> )
@@ -1419,7 +1419,7 @@
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">code</span>:<span class="ident">tt</span> )<span class="op">*</span> }: <span class="kw">_</span> ( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">origin</span>:<span class="ident">expr</span> $( , <span class="macro-nonterminal">$</span><span class="macro-nonterminal">arg</span>:<span class="ident">expr</span> )<span class="op">*</span> )
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> )
@@ -1438,7 +1438,7 @@
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">code</span>:<span class="ident">tt</span> )<span class="op">*</span> }: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">dispatch</span>:<span class="ident">ident</span> ( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">origin</span>:<span class="ident">expr</span> $( , <span class="macro-nonterminal">$</span><span class="macro-nonterminal">arg</span>:<span class="ident">expr</span> )<span class="op">*</span> )
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> )
@@ -1457,7 +1457,7 @@
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">code</span>:<span class="ident">tt</span> )<span class="op">*</span> }: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">eval</span>:<span class="ident">block</span>
 		$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> )<span class="op">*</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmarks_iter</span><span class="macro">!</span>(
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmarks_iter!</span>(
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
 			( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">names</span> )<span class="op">*</span> )
@@ -1471,7 +1471,7 @@
 
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">benchmark_backend</span> {
+<span class="macro">macro_rules!</span> <span class="ident">benchmark_backend</span> {
 	<span class="comment">// parsing arms</span>
 	(
 		{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>:<span class="ident">ident</span> )<span class="question-mark">?</span> }
@@ -1485,7 +1485,7 @@
 		}
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>:<span class="ident">block</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmark_backend</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmark_backend!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
@@ -1510,7 +1510,7 @@
 		}
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>:<span class="ident">block</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmark_backend</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmark_backend!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
@@ -1536,7 +1536,7 @@
 		}
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>:<span class="ident">block</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmark_backend</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmark_backend!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
@@ -1562,7 +1562,7 @@
 		}
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>:<span class="ident">block</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmark_backend</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmark_backend!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
@@ -1588,7 +1588,7 @@
 		}
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>:<span class="ident">block</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro">benchmark_backend</span><span class="macro">!</span> {
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::benchmark_backend!</span> {
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> }
 			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
 			{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span> }
@@ -1618,26 +1618,26 @@
 		<span class="kw">struct</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>;
 		<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
 		<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span> $( <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span><span class="op">&gt;</span>, <span class="ident">I</span>: <span class="ident">Instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>
-			<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
+			<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>
 			<span class="kw">where</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span>
 		{
-			<span class="kw">fn</span> <span class="ident">components</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>, <span class="ident">u32</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> {
-				<span class="macro">vec</span><span class="macro">!</span> [
+			<span class="kw">fn</span> <span class="ident">components</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>, <span class="ident">u32</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> {
+				<span class="macro">vec!</span> [
 					$(
-						(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">param</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">param_from</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">param_to</span>)
+						(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">param</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">param_from</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">param_to</span>)
 					),<span class="op">*</span>
 				]
 			}
 
 			<span class="kw">fn</span> <span class="ident">instance</span>(
 				<span class="kw-2">&amp;</span><span class="self">self</span>,
-				<span class="ident">components</span>: <span class="kw-2">&amp;</span>[(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>, <span class="ident">u32</span>)],
+				<span class="ident">components</span>: <span class="kw-2">&amp;</span>[(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>, <span class="ident">u32</span>)],
 				<span class="ident">verify</span>: <span class="ident">bool</span>
 			) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">FnOnce</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
 				$(
 					<span class="comment">// Prepare instance</span>
 					<span class="kw">let</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">param</span> <span class="op">=</span> <span class="ident">components</span>.<span class="ident">iter</span>()
-						.<span class="ident">find</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="number">0</span> <span class="op">=</span><span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">param</span>)
+						.<span class="ident">find</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="number">0</span> <span class="op">=</span><span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">param</span>)
 						.<span class="ident">ok_or</span>(<span class="string">&quot;Could not find component in benchmark preparation.&quot;</span>)<span class="question-mark">?</span>
 						.<span class="number">1</span>;
 				)<span class="op">*</span>
@@ -1647,7 +1647,7 @@
 				$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">param_instancer</span> ; )<span class="op">*</span>
 				$( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">post</span> )<span class="op">*</span>
 
-				<span class="prelude-val">Ok</span>(<span class="ident">Box</span>::<span class="ident">new</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
+				<span class="prelude-val">Ok</span>(<span class="ident">Box::new</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
 					<span class="macro-nonterminal">$</span><span class="macro-nonterminal">eval</span>;
 					<span class="kw">if</span> <span class="ident">verify</span> {
 						<span class="macro-nonterminal">$</span><span class="macro-nonterminal">postcode</span>;
@@ -1675,7 +1675,7 @@
 <span class="comment">// ```</span>
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">selected_benchmark</span> {
+<span class="macro">macro_rules!</span> <span class="ident">selected_benchmark</span> {
 	(
 		{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span>:<span class="ident">tt</span> )<span class="op">*</span> }
 		{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>:<span class="ident">ident</span> )<span class="question-mark">?</span> }
@@ -1689,29 +1689,29 @@
 
 		<span class="comment">// Allow us to select a benchmark from the list of available benchmarks.</span>
 		<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span> $( <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span><span class="op">&gt;</span>, <span class="ident">I</span>: <span class="ident">Instance</span> )<span class="question-mark">?</span> <span class="op">&gt;</span>
-			<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span> )<span class="question-mark">?</span> <span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SelectedBenchmark</span>
+			<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span> )<span class="question-mark">?</span> <span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SelectedBenchmark</span>
 			<span class="kw">where</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span>
 		{
-			<span class="kw">fn</span> <span class="ident">components</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>, <span class="ident">u32</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> {
+			<span class="kw">fn</span> <span class="ident">components</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>, <span class="ident">u32</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> {
 				<span class="kw">match</span> <span class="self">self</span> {
 					$(
 						<span class="self">Self</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span> <span class="op">=</span><span class="op">&gt;</span> <span class="op">&lt;</span>
-							<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench_inst</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>
-						<span class="op">&gt;</span>::<span class="ident">components</span>(<span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span>),
+							<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench_inst</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>
+						<span class="op">&gt;</span><span class="ident">::components</span>(<span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span>),
 					)<span class="op">*</span>
 				}
 			}
 
 			<span class="kw">fn</span> <span class="ident">instance</span>(
 				<span class="kw-2">&amp;</span><span class="self">self</span>,
-				<span class="ident">components</span>: <span class="kw-2">&amp;</span>[(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>, <span class="ident">u32</span>)],
+				<span class="ident">components</span>: <span class="kw-2">&amp;</span>[(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>, <span class="ident">u32</span>)],
 				<span class="ident">verify</span>: <span class="ident">bool</span>
 			) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">FnOnce</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
 				<span class="kw">match</span> <span class="self">self</span> {
 					$(
 						<span class="self">Self</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span> <span class="op">=</span><span class="op">&gt;</span> <span class="op">&lt;</span>
-							<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench_inst</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>
-						<span class="op">&gt;</span>::<span class="ident">instance</span>(<span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span>, <span class="ident">components</span>, <span class="ident">verify</span>),
+							<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench_inst</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>
+						<span class="op">&gt;</span><span class="ident">::instance</span>(<span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">bench</span>, <span class="ident">components</span>, <span class="ident">verify</span>),
 					)<span class="op">*</span>
 				}
 			}
@@ -1721,7 +1721,7 @@
 
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">impl_benchmark</span> {
+<span class="macro">macro_rules!</span> <span class="ident">impl_benchmark</span> {
 	(
 		{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span>:<span class="ident">tt</span> )<span class="op">*</span> }
 		{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>:<span class="ident">ident</span> )<span class="question-mark">?</span> }
@@ -1729,13 +1729,13 @@
 		( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name_extra</span>:<span class="ident">ident</span> ),<span class="op">*</span> )
 	) <span class="op">=</span><span class="op">&gt;</span> {
 		<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span> $(<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span><span class="op">&gt;</span>, <span class="ident">I</span>: <span class="ident">Instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>
-			<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">Benchmarking</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkResults</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Module</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>
-			<span class="kw">where</span> <span class="ident">T</span>: <span class="ident">frame_system</span>::<span class="ident">Config</span>, $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span>
+			<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::Benchmarking</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkResults</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Module</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span> <span class="op">&gt;</span>
+			<span class="kw">where</span> <span class="ident">T</span>: <span class="ident">frame_system::Config</span>, $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span>
 		{
 			<span class="kw">fn</span> <span class="ident">benchmarks</span>(<span class="ident">extra</span>: <span class="ident">bool</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>]<span class="op">&gt;</span> {
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">all</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[ $( <span class="macro">stringify</span><span class="macro">!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>).<span class="ident">as_ref</span>() ),<span class="op">*</span> ];
+				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">all</span> <span class="op">=</span> <span class="macro">vec!</span>[ $( <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>).<span class="ident">as_ref</span>() ),<span class="op">*</span> ];
 				<span class="kw">if</span> <span class="op">!</span><span class="ident">extra</span> {
-					<span class="kw">let</span> <span class="ident">extra</span> <span class="op">=</span> [ $( <span class="macro">stringify</span><span class="macro">!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name_extra</span>).<span class="ident">as_ref</span>() ),<span class="op">*</span> ];
+					<span class="kw">let</span> <span class="ident">extra</span> <span class="op">=</span> [ $( <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name_extra</span>).<span class="ident">as_ref</span>() ),<span class="op">*</span> ];
 					<span class="ident">all</span>.<span class="ident">retain</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="op">!</span><span class="ident">extra</span>.<span class="ident">contains</span>(<span class="ident">x</span>));
 				}
 				<span class="ident">all</span>
@@ -1747,17 +1747,17 @@
 				<span class="ident">highest_range_values</span>: <span class="kw-2">&amp;</span>[<span class="ident">u32</span>],
 				<span class="ident">steps</span>: <span class="kw-2">&amp;</span>[<span class="ident">u32</span>],
 				<span class="ident">repeat</span>: <span class="ident">u32</span>,
-				<span class="ident">whitelist</span>: <span class="kw-2">&amp;</span>[<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">TrackedStorageKey</span>],
+				<span class="ident">whitelist</span>: <span class="kw-2">&amp;</span>[<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::TrackedStorageKey</span>],
 				<span class="ident">verify</span>: <span class="ident">bool</span>,
-			) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkResults</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
+			) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkResults</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
 				<span class="comment">// Map the input to the selected benchmark.</span>
-				<span class="kw">let</span> <span class="ident">extrinsic</span> <span class="op">=</span> <span class="ident">sp_std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="ident">extrinsic</span>)
+				<span class="kw">let</span> <span class="ident">extrinsic</span> <span class="op">=</span> <span class="ident">sp_std::str::from_utf8</span>(<span class="ident">extrinsic</span>)
 					.<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="string">&quot;`extrinsic` is not a valid utf8 string!&quot;</span>)<span class="question-mark">?</span>;
 				<span class="kw">let</span> <span class="ident">selected_benchmark</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">extrinsic</span> {
-					$( <span class="macro">stringify</span><span class="macro">!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">SelectedBenchmark</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>, )<span class="op">*</span>
+					$( <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">SelectedBenchmark</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>, )<span class="op">*</span>
 					<span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="string">&quot;Could not find extrinsic.&quot;</span>),
 				};
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkResults</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
+				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkResults</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
 				<span class="kw">if</span> <span class="ident">repeat</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
 					<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">results</span>);
 				}
@@ -1765,27 +1765,27 @@
 				<span class="comment">// Add whitelist to DB including whitelisted caller</span>
 				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">whitelist</span> <span class="op">=</span> <span class="ident">whitelist</span>.<span class="ident">to_vec</span>();
 				<span class="kw">let</span> <span class="ident">whitelisted_caller_key</span> <span class="op">=</span>
-					<span class="op">&lt;</span><span class="ident">frame_system</span>::<span class="ident">Account</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">frame_support</span>::<span class="ident">storage</span>::<span class="ident">StorageMap</span><span class="op">&lt;</span><span class="kw">_</span>,<span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>::<span class="ident">hashed_key_for</span>(
-						<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">whitelisted_caller</span>::<span class="op">&lt;</span><span class="ident">T</span>::<span class="ident">AccountId</span><span class="op">&gt;</span>()
+					<span class="op">&lt;</span><span class="ident">frame_system::Account</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">frame_support::storage::StorageMap</span><span class="op">&lt;</span><span class="kw">_</span>,<span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::hashed_key_for</span>(
+						<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::whitelisted_caller</span>::<span class="op">&lt;</span><span class="ident">T::AccountId</span><span class="op">&gt;</span>()
 					);
 				<span class="ident">whitelist</span>.<span class="ident">push</span>(<span class="ident">whitelisted_caller_key</span>.<span class="ident">into</span>());
-				<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">set_whitelist</span>(<span class="ident">whitelist</span>);
+				<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::set_whitelist</span>(<span class="ident">whitelist</span>);
 
 				<span class="comment">// Warm up the DB</span>
-				<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">commit_db</span>();
-				<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">wipe_db</span>();
+				<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::commit_db</span>();
+				<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::wipe_db</span>();
 
 				<span class="kw">let</span> <span class="ident">components</span> <span class="op">=</span> <span class="op">&lt;</span>
-					<span class="ident">SelectedBenchmark</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span><span class="op">&gt;</span>
-				<span class="op">&gt;</span>::<span class="ident">components</span>(<span class="kw-2">&amp;</span><span class="ident">selected_benchmark</span>);
+					<span class="ident">SelectedBenchmark</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span><span class="op">&gt;</span>
+				<span class="op">&gt;</span><span class="ident">::components</span>(<span class="kw-2">&amp;</span><span class="ident">selected_benchmark</span>);
 
 				<span class="comment">// Default number of steps for a component.</span>
 				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">prev_steps</span> <span class="op">=</span> <span class="number">10</span>;
 
 				<span class="kw">let</span> <span class="ident">repeat_benchmark</span> <span class="op">=</span> <span class="op">|</span>
 					<span class="ident">repeat</span>: <span class="ident">u32</span>,
-					<span class="ident">c</span>: <span class="kw-2">&amp;</span>[(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>, <span class="ident">u32</span>)],
-					<span class="ident">results</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkResults</span><span class="op">&gt;</span>,
+					<span class="ident">c</span>: <span class="kw-2">&amp;</span>[(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>, <span class="ident">u32</span>)],
+					<span class="ident">results</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkResults</span><span class="op">&gt;</span>,
 					<span class="ident">verify</span>: <span class="ident">bool</span>,
 				<span class="op">|</span> <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
 					<span class="comment">// Run the benchmark `repeat` times.</span>
@@ -1793,55 +1793,55 @@
 						<span class="comment">// Set up the externalities environment for the setup we want to</span>
 						<span class="comment">// benchmark.</span>
 						<span class="kw">let</span> <span class="ident">closure_to_benchmark</span> <span class="op">=</span> <span class="op">&lt;</span>
-							<span class="ident">SelectedBenchmark</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span><span class="op">&gt;</span>
-						<span class="op">&gt;</span>::<span class="ident">instance</span>(<span class="kw-2">&amp;</span><span class="ident">selected_benchmark</span>, <span class="ident">c</span>, <span class="ident">verify</span>)<span class="question-mark">?</span>;
+							<span class="ident">SelectedBenchmark</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>)<span class="question-mark">?</span><span class="op">&gt;</span>
+						<span class="op">&gt;</span><span class="ident">::instance</span>(<span class="kw-2">&amp;</span><span class="ident">selected_benchmark</span>, <span class="ident">c</span>, <span class="ident">verify</span>)<span class="question-mark">?</span>;
 
 						<span class="comment">// Set the block number to at least 1 so events are deposited.</span>
-						<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">Zero</span>::<span class="ident">is_zero</span>(<span class="kw-2">&amp;</span><span class="ident">frame_system</span>::<span class="ident">Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>::<span class="ident">block_number</span>()) {
-							<span class="ident">frame_system</span>::<span class="ident">Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>::<span class="ident">set_block_number</span>(<span class="number">1u32</span>.<span class="ident">into</span>());
+						<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::Zero::is_zero</span>(<span class="kw-2">&amp;</span><span class="ident">frame_system::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::block_number</span>()) {
+							<span class="ident">frame_system::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::set_block_number</span>(<span class="number">1u32</span>.<span class="ident">into</span>());
 						}
 
 						<span class="comment">// Commit the externalities to the database, flushing the DB cache.</span>
 						<span class="comment">// This will enable worst case scenario for reading from the database.</span>
-						<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">commit_db</span>();
+						<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::commit_db</span>();
 
 						<span class="comment">// Reset the read/write counter so we don&#39;t count operations in the setup process.</span>
-						<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">reset_read_write_count</span>();
+						<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::reset_read_write_count</span>();
 
 						<span class="kw">if</span> <span class="ident">verify</span> {
 							<span class="ident">closure_to_benchmark</span>()<span class="question-mark">?</span>;
 						} <span class="kw">else</span> {
 							<span class="comment">// Time the extrinsic logic.</span>
-							<span class="ident">frame_support</span>::<span class="ident">debug</span>::<span class="macro">trace</span><span class="macro">!</span>(
+							<span class="macro">frame_support::debug::trace!</span>(
 								<span class="ident">target</span>: <span class="string">&quot;benchmark&quot;</span>,
 								<span class="string">&quot;Start Benchmark: {:?}&quot;</span>, <span class="ident">c</span>
 							);
 
-							<span class="kw">let</span> <span class="ident">start_extrinsic</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">current_time</span>();
+							<span class="kw">let</span> <span class="ident">start_extrinsic</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::current_time</span>();
 
 							<span class="ident">closure_to_benchmark</span>()<span class="question-mark">?</span>;
 
-							<span class="kw">let</span> <span class="ident">finish_extrinsic</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">current_time</span>();
+							<span class="kw">let</span> <span class="ident">finish_extrinsic</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::current_time</span>();
 							<span class="kw">let</span> <span class="ident">elapsed_extrinsic</span> <span class="op">=</span> <span class="ident">finish_extrinsic</span> <span class="op">-</span> <span class="ident">start_extrinsic</span>;
 							<span class="comment">// Commit the changes to get proper write count</span>
-							<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">commit_db</span>();
-							<span class="ident">frame_support</span>::<span class="ident">debug</span>::<span class="macro">trace</span><span class="macro">!</span>(
+							<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::commit_db</span>();
+							<span class="macro">frame_support::debug::trace!</span>(
 								<span class="ident">target</span>: <span class="string">&quot;benchmark&quot;</span>,
 								<span class="string">&quot;End Benchmark: {} ns&quot;</span>, <span class="ident">elapsed_extrinsic</span>
 							);
-							<span class="kw">let</span> <span class="ident">read_write_count</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">read_write_count</span>();
-							<span class="ident">frame_support</span>::<span class="ident">debug</span>::<span class="macro">trace</span><span class="macro">!</span>(
+							<span class="kw">let</span> <span class="ident">read_write_count</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::read_write_count</span>();
+							<span class="macro">frame_support::debug::trace!</span>(
 								<span class="ident">target</span>: <span class="string">&quot;benchmark&quot;</span>,
 								<span class="string">&quot;Read/Write Count {:?}&quot;</span>, <span class="ident">read_write_count</span>
 							);
 
 							<span class="comment">// Time the storage root recalculation.</span>
-							<span class="kw">let</span> <span class="ident">start_storage_root</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">current_time</span>();
-							<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">storage_root</span>();
-							<span class="kw">let</span> <span class="ident">finish_storage_root</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">current_time</span>();
+							<span class="kw">let</span> <span class="ident">start_storage_root</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::current_time</span>();
+							<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::storage_root</span>();
+							<span class="kw">let</span> <span class="ident">finish_storage_root</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::current_time</span>();
 							<span class="kw">let</span> <span class="ident">elapsed_storage_root</span> <span class="op">=</span> <span class="ident">finish_storage_root</span> <span class="op">-</span> <span class="ident">start_storage_root</span>;
 
-							<span class="ident">results</span>.<span class="ident">push</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkResults</span> {
+							<span class="ident">results</span>.<span class="ident">push</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkResults</span> {
 								<span class="ident">components</span>: <span class="ident">c</span>.<span class="ident">to_vec</span>(),
 								<span class="ident">extrinsic_time</span>: <span class="ident">elapsed_extrinsic</span>,
 								<span class="ident">storage_root_time</span>: <span class="ident">elapsed_storage_root</span>,
@@ -1853,7 +1853,7 @@
 						}
 
 						<span class="comment">// Wipe the DB back to the genesis state.</span>
-						<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">wipe_db</span>();
+						<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::wipe_db</span>();
 					}
 
 					<span class="prelude-val">Ok</span>(())
@@ -1862,9 +1862,9 @@
 				<span class="kw">if</span> <span class="ident">components</span>.<span class="ident">is_empty</span>() {
 					<span class="kw">if</span> <span class="ident">verify</span> {
 						<span class="comment">// If `--verify` is used, run the benchmark once to verify it would complete.</span>
-						<span class="ident">repeat_benchmark</span>(<span class="number">1</span>, <span class="ident">Default</span>::<span class="ident">default</span>(), <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span>::<span class="ident">new</span>(), <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+						<span class="ident">repeat_benchmark</span>(<span class="number">1</span>, <span class="ident">Default::default</span>(), <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec::new</span>(), <span class="bool-val">true</span>)<span class="question-mark">?</span>;
 					}
-					<span class="ident">repeat_benchmark</span>(<span class="ident">repeat</span>, <span class="ident">Default</span>::<span class="ident">default</span>(), <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">results</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+					<span class="ident">repeat_benchmark</span>(<span class="ident">repeat</span>, <span class="ident">Default::default</span>(), <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">results</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
 				} <span class="kw">else</span> {
 					<span class="comment">// Select the component we will be benchmarking. Each component will be benchmarked.</span>
 					<span class="kw">for</span> (<span class="ident">idx</span>, (<span class="ident">name</span>, <span class="ident">low</span>, <span class="ident">high</span>)) <span class="kw">in</span> <span class="ident">components</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
@@ -1889,7 +1889,7 @@
 							<span class="kw">let</span> <span class="ident">component_value</span> <span class="op">=</span> <span class="ident">lowest</span> <span class="op">+</span> <span class="ident">step_size</span> <span class="op">*</span> <span class="ident">s</span>;
 
 							<span class="comment">// Select the max value for all the other components.</span>
-							<span class="kw">let</span> <span class="ident">c</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">components</span>.<span class="ident">iter</span>()
+							<span class="kw">let</span> <span class="ident">c</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">components</span>.<span class="ident">iter</span>()
 								.<span class="ident">enumerate</span>()
 								.<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">idx</span>, (<span class="ident">n</span>, <span class="kw">_</span>, <span class="ident">h</span>))<span class="op">|</span>
 									<span class="kw">if</span> <span class="ident">n</span> <span class="op">=</span><span class="op">=</span> <span class="ident">name</span> {
@@ -1902,7 +1902,7 @@
 
 							<span class="kw">if</span> <span class="ident">verify</span> {
 								<span class="comment">// If `--verify` is used, run the benchmark once to verify it would complete.</span>
-								<span class="ident">repeat_benchmark</span>(<span class="number">1</span>, <span class="kw-2">&amp;</span><span class="ident">c</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span>::<span class="ident">new</span>(), <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+								<span class="ident">repeat_benchmark</span>(<span class="number">1</span>, <span class="kw-2">&amp;</span><span class="ident">c</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec::new</span>(), <span class="bool-val">true</span>)<span class="question-mark">?</span>;
 							}
 							<span class="ident">repeat_benchmark</span>(<span class="ident">repeat</span>, <span class="kw-2">&amp;</span><span class="ident">c</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">results</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
 						}
@@ -1919,51 +1919,51 @@
 <span class="comment">// and ensure that everything completes successfully.</span>
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">impl_benchmark_test</span> {
+<span class="macro">macro_rules!</span> <span class="ident">impl_benchmark_test</span> {
 	(
 		{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span>:<span class="ident">tt</span> )<span class="op">*</span> }
 		{ $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">instance</span>:<span class="ident">ident</span> )<span class="question-mark">?</span> }
 		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>
 	) <span class="op">=</span><span class="op">&gt;</span> {
-		<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">paste</span>::<span class="macro">item</span><span class="macro">!</span> {
-			<span class="kw">fn</span> [<span class="op">&lt;</span><span class="ident">test_benchmark_</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span><span class="op">&gt;</span>] <span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span> <span class="op">&gt;</span> () <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span>
-				<span class="kw">where</span> <span class="ident">T</span>: <span class="ident">frame_system</span>::<span class="ident">Config</span>, $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span>
+		<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro">::paste::item!</span> {
+			<span class="kw">fn</span> [<span class="op">&lt;</span><span class="macro-nonterminal">test_benchmark_</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span><span class="op">&gt;</span>] <span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span> <span class="op">&gt;</span> () <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span>
+				<span class="kw">where</span> <span class="ident">T</span>: <span class="ident">frame_system::Config</span>, $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">where_clause</span> )<span class="op">*</span>
 			{
 				<span class="kw">let</span> <span class="ident">selected_benchmark</span> <span class="op">=</span> <span class="ident">SelectedBenchmark</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>;
 				<span class="kw">let</span> <span class="ident">components</span> <span class="op">=</span> <span class="op">&lt;</span>
-					<span class="ident">SelectedBenchmark</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">_</span><span class="op">&gt;</span>
-				<span class="op">&gt;</span>::<span class="ident">components</span>(<span class="kw-2">&amp;</span><span class="ident">selected_benchmark</span>);
+					<span class="ident">SelectedBenchmark</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">_</span><span class="op">&gt;</span>
+				<span class="op">&gt;</span><span class="ident">::components</span>(<span class="kw-2">&amp;</span><span class="ident">selected_benchmark</span>);
 
 				<span class="kw">let</span> <span class="ident">execute_benchmark</span> <span class="op">=</span> <span class="op">|</span>
-					<span class="ident">c</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>, <span class="ident">u32</span>)<span class="op">&gt;</span>
+					<span class="ident">c</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>, <span class="ident">u32</span>)<span class="op">&gt;</span>
 				<span class="op">|</span> <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
 					<span class="comment">// Set up the benchmark, return execution + verification function.</span>
 					<span class="kw">let</span> <span class="ident">closure_to_verify</span> <span class="op">=</span> <span class="op">&lt;</span>
-						<span class="ident">SelectedBenchmark</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">_</span><span class="op">&gt;</span>
-					<span class="op">&gt;</span>::<span class="ident">instance</span>(<span class="kw-2">&amp;</span><span class="ident">selected_benchmark</span>, <span class="kw-2">&amp;</span><span class="ident">c</span>, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+						<span class="ident">SelectedBenchmark</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkingSetup</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">_</span><span class="op">&gt;</span>
+					<span class="op">&gt;</span><span class="ident">::instance</span>(<span class="kw-2">&amp;</span><span class="ident">selected_benchmark</span>, <span class="kw-2">&amp;</span><span class="ident">c</span>, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
 					<span class="comment">// Set the block number to at least 1 so events are deposited.</span>
-					<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">Zero</span>::<span class="ident">is_zero</span>(<span class="kw-2">&amp;</span><span class="ident">frame_system</span>::<span class="ident">Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>::<span class="ident">block_number</span>()) {
-						<span class="ident">frame_system</span>::<span class="ident">Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>::<span class="ident">set_block_number</span>(<span class="number">1u32</span>.<span class="ident">into</span>());
+					<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::Zero::is_zero</span>(<span class="kw-2">&amp;</span><span class="ident">frame_system::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::block_number</span>()) {
+						<span class="ident">frame_system::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::set_block_number</span>(<span class="number">1u32</span>.<span class="ident">into</span>());
 					}
 
 					<span class="comment">// Run execution + verification</span>
 					<span class="ident">closure_to_verify</span>()<span class="question-mark">?</span>;
 
 					<span class="comment">// Reset the state</span>
-					<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">benchmarking</span>::<span class="ident">wipe_db</span>();
+					<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::benchmarking::wipe_db</span>();
 
 					<span class="prelude-val">Ok</span>(())
 				};
 
 				<span class="kw">if</span> <span class="ident">components</span>.<span class="ident">is_empty</span>() {
-					<span class="ident">execute_benchmark</span>(<span class="ident">Default</span>::<span class="ident">default</span>())<span class="question-mark">?</span>;
+					<span class="ident">execute_benchmark</span>(<span class="ident">Default::default</span>())<span class="question-mark">?</span>;
 				} <span class="kw">else</span> {
 					<span class="kw">for</span> (<span class="kw">_</span>, (<span class="ident">name</span>, <span class="ident">low</span>, <span class="ident">high</span>)) <span class="kw">in</span> <span class="ident">components</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
 						<span class="comment">// Test only the low and high value, assuming values in the middle won&#39;t break</span>
-						<span class="kw">for</span> <span class="ident">component_value</span> <span class="kw">in</span> <span class="macro">vec</span><span class="macro">!</span>[<span class="ident">low</span>, <span class="ident">high</span>] {
+						<span class="kw">for</span> <span class="ident">component_value</span> <span class="kw">in</span> <span class="macro">vec!</span>[<span class="ident">low</span>, <span class="ident">high</span>] {
 							<span class="comment">// Select the max value for all the other components.</span>
-							<span class="kw">let</span> <span class="ident">c</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkParameter</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">components</span>.<span class="ident">iter</span>()
+							<span class="kw">let</span> <span class="ident">c</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkParameter</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">components</span>.<span class="ident">iter</span>()
 								.<span class="ident">enumerate</span>()
 								.<span class="ident">map</span>(<span class="op">|</span>(<span class="kw">_</span>, (<span class="ident">n</span>, <span class="kw">_</span>, <span class="ident">h</span>))<span class="op">|</span>
 									<span class="kw">if</span> <span class="ident">n</span> <span class="op">=</span><span class="op">=</span> <span class="ident">name</span> {
@@ -1989,14 +1989,14 @@
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">show_benchmark_debug_info</span>(
 	<span class="ident">instance_string</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
 	<span class="ident">benchmark</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-	<span class="ident">lowest_range_values</span>: <span class="kw-2">&amp;</span><span class="ident">sp_std</span>::<span class="ident">prelude</span>::<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-	<span class="ident">highest_range_values</span>: <span class="kw-2">&amp;</span><span class="ident">sp_std</span>::<span class="ident">prelude</span>::<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-	<span class="ident">steps</span>: <span class="kw-2">&amp;</span><span class="ident">sp_std</span>::<span class="ident">prelude</span>::<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
+	<span class="ident">lowest_range_values</span>: <span class="kw-2">&amp;</span><span class="ident">sp_std::prelude::Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
+	<span class="ident">highest_range_values</span>: <span class="kw-2">&amp;</span><span class="ident">sp_std::prelude::Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
+	<span class="ident">steps</span>: <span class="kw-2">&amp;</span><span class="ident">sp_std::prelude::Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
 	<span class="ident">repeat</span>: <span class="kw-2">&amp;</span><span class="ident">u32</span>,
 	<span class="ident">verify</span>: <span class="kw-2">&amp;</span><span class="ident">bool</span>,
 	<span class="ident">error_message</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">sp_runtime</span>::<span class="ident">RuntimeString</span> {
-	<span class="ident">sp_runtime</span>::<span class="macro">format_runtime_string</span><span class="macro">!</span>(
+) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">sp_runtime::RuntimeString</span> {
+	<span class="macro">sp_runtime::format_runtime_string!</span>(
 		<span class="string">&quot;\n* Pallet: {}\n\
 		* Benchmark: {}\n\
 		* Lowest_range_values: {:?}\n\
@@ -2005,9 +2005,9 @@
 		* Repeat: {:?}\n\
 		* Verify: {:?}\n\
 		* Error message: {}&quot;</span>,
-		<span class="ident">sp_std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="ident">instance_string</span>)
+		<span class="ident">sp_std::str::from_utf8</span>(<span class="ident">instance_string</span>)
 		.<span class="ident">expect</span>(<span class="string">&quot;it&#39;s all just strings ran through the wasm interface. qed&quot;</span>),
-		<span class="ident">sp_std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="ident">benchmark</span>)
+		<span class="ident">sp_std::str::from_utf8</span>(<span class="ident">benchmark</span>)
 		.<span class="ident">expect</span>(<span class="string">&quot;it&#39;s all just strings ran through the wasm interface. qed&quot;</span>),
 		<span class="ident">lowest_range_values</span>,
 		<span class="ident">highest_range_values</span>,
@@ -2082,12 +2082,12 @@
 <span class="doccomment">/// ```</span>
 
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">add_benchmark</span> {
+<span class="macro">macro_rules!</span> <span class="ident">add_benchmark</span> {
 	( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">params</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">batches</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">path</span>, $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span>:<span class="ident">tt</span> )<span class="op">*</span> ) <span class="op">=</span><span class="op">&gt;</span> (
-		<span class="kw">let</span> <span class="ident">name_string</span> <span class="op">=</span> <span class="macro">stringify</span><span class="macro">!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>).<span class="ident">as_bytes</span>();
-		<span class="kw">let</span> <span class="ident">instance_string</span> <span class="op">=</span> <span class="macro">stringify</span><span class="macro">!</span>( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span> )<span class="op">*</span> ).<span class="ident">as_bytes</span>();
+		<span class="kw">let</span> <span class="ident">name_string</span> <span class="op">=</span> <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>).<span class="ident">as_bytes</span>();
+		<span class="kw">let</span> <span class="ident">instance_string</span> <span class="op">=</span> <span class="macro">stringify!</span>( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span> )<span class="op">*</span> ).<span class="ident">as_bytes</span>();
 		<span class="kw">let</span> (<span class="ident">config</span>, <span class="ident">whitelist</span>) <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">params</span>;
-		<span class="kw">let</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkConfig</span> {
+		<span class="kw">let</span> <span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkConfig</span> {
 			<span class="ident">pallet</span>,
 			<span class="ident">benchmark</span>,
 			<span class="ident">lowest_range_values</span>,
@@ -2099,12 +2099,12 @@
 		} <span class="op">=</span> <span class="ident">config</span>;
 		<span class="kw">if</span> <span class="kw-2">&amp;</span><span class="ident">pallet</span>[..] <span class="op">=</span><span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">name_string</span>[..] <span class="op">|</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">pallet</span>[..] <span class="op">=</span><span class="op">=</span> <span class="kw-2">&amp;</span><span class="string">b&quot;*&quot;</span>[..] {
 			<span class="kw">if</span> <span class="kw-2">&amp;</span><span class="ident">pallet</span>[..] <span class="op">=</span><span class="op">=</span> <span class="kw-2">&amp;</span><span class="string">b&quot;*&quot;</span>[..] <span class="op">|</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">benchmark</span>[..] <span class="op">=</span><span class="op">=</span> <span class="kw-2">&amp;</span><span class="string">b&quot;*&quot;</span>[..] {
-				<span class="kw">for</span> <span class="ident">benchmark</span> <span class="kw">in</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span> )<span class="kw-2">*</span>::<span class="ident">benchmarks</span>(<span class="kw-2">*</span><span class="ident">extra</span>).<span class="ident">into_iter</span>() {
-					<span class="macro-nonterminal">$</span><span class="macro-nonterminal">batches</span>.<span class="ident">push</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkBatch</span> {
+				<span class="kw">for</span> <span class="ident">benchmark</span> <span class="kw">in</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span> )<span class="kw-2">*</span><span class="ident">::benchmarks</span>(<span class="kw-2">*</span><span class="ident">extra</span>).<span class="ident">into_iter</span>() {
+					<span class="macro-nonterminal">$</span><span class="macro-nonterminal">batches</span>.<span class="ident">push</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkBatch</span> {
 						<span class="ident">pallet</span>: <span class="ident">name_string</span>.<span class="ident">to_vec</span>(),
 						<span class="ident">instance</span>: <span class="ident">instance_string</span>.<span class="ident">to_vec</span>(),
 						<span class="ident">benchmark</span>: <span class="ident">benchmark</span>.<span class="ident">to_vec</span>(),
-						<span class="ident">results</span>: $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span> )<span class="kw-2">*</span>::<span class="ident">run_benchmark</span>(
+						<span class="ident">results</span>: $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span> )<span class="kw-2">*</span><span class="ident">::run_benchmark</span>(
 							<span class="ident">benchmark</span>,
 							<span class="kw-2">&amp;</span><span class="ident">lowest_range_values</span>[..],
 							<span class="kw-2">&amp;</span><span class="ident">highest_range_values</span>[..],
@@ -2113,7 +2113,7 @@
 							<span class="ident">whitelist</span>,
 							<span class="kw-2">*</span><span class="ident">verify</span>,
 						).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> { 
-							<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">show_benchmark_debug_info</span>(
+							<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::show_benchmark_debug_info</span>(
 								<span class="ident">instance_string</span>,
 								<span class="ident">benchmark</span>,
 								<span class="ident">lowest_range_values</span>,
@@ -2127,11 +2127,11 @@
 					});
 				}
 			} <span class="kw">else</span> {
-				<span class="macro-nonterminal">$</span><span class="macro-nonterminal">batches</span>.<span class="ident">push</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">BenchmarkBatch</span> {
+				<span class="macro-nonterminal">$</span><span class="macro-nonterminal">batches</span>.<span class="ident">push</span>(<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::BenchmarkBatch</span> {
 					<span class="ident">pallet</span>: <span class="ident">name_string</span>.<span class="ident">to_vec</span>(),
 					<span class="ident">instance</span>: <span class="ident">instance_string</span>.<span class="ident">to_vec</span>(),
 					<span class="ident">benchmark</span>: <span class="ident">benchmark</span>.<span class="ident">clone</span>(),
-					<span class="ident">results</span>: $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span> )<span class="kw-2">*</span>::<span class="ident">run_benchmark</span>(
+					<span class="ident">results</span>: $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">location</span> )<span class="kw-2">*</span><span class="ident">::run_benchmark</span>(
 						<span class="kw-2">&amp;</span><span class="ident">benchmark</span>[..],
 						<span class="kw-2">&amp;</span><span class="ident">lowest_range_values</span>[..],
 						<span class="kw-2">&amp;</span><span class="ident">highest_range_values</span>[..],
@@ -2140,7 +2140,7 @@
 						<span class="ident">whitelist</span>,
 						<span class="kw-2">*</span><span class="ident">verify</span>,
 					).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> { 
-						<span class="macro-nonterminal">$</span><span class="kw">crate</span>::<span class="macro-nonterminal">show_benchmark_debug_info</span>(
+						<span class="macro-nonterminal">$</span><span class="kw">crate</span><span class="macro-nonterminal">::show_benchmark_debug_info</span>(
 							<span class="ident">instance_string</span>,
 							<span class="ident">benchmark</span>,
 							<span class="ident">lowest_range_values</span>,
@@ -2157,5 +2157,5 @@
 	)
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="frame_benchmarking" data-search-js="../../search-index.js"></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="frame_benchmarking" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>
     <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script></body></html>

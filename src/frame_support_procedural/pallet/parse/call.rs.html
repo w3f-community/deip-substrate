@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/frame-support-procedural-3.0.0/src/pallet/parse/call.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>call.rs - source</title><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg">
 <link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../../frame_support_procedural/index.html'><div class='logo-container rust-logo'><img src='../../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+<link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../../frame_support_procedural/index.html'><div class='logo-container rust-logo'><img src='../../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
                 <a id="settings-menu" href="../../../../settings.html"><img src="../../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
@@ -253,66 +253,66 @@
 <span class="comment">// See the License for the specific language governing permissions and</span>
 <span class="comment">// limitations under the License.</span>
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">helper</span>;
-<span class="kw">use</span> <span class="ident">quote</span>::<span class="ident">ToTokens</span>;
-<span class="kw">use</span> <span class="ident">syn</span>::<span class="ident">spanned</span>::<span class="ident">Spanned</span>;
+<span class="kw">use</span> <span class="kw">super</span><span class="ident">::helper</span>;
+<span class="kw">use</span> <span class="ident">quote::ToTokens</span>;
+<span class="kw">use</span> <span class="ident">syn::spanned::Spanned</span>;
 
 <span class="doccomment">/// List of additional token to be used for parsing.</span>
 <span class="kw">mod</span> <span class="ident">keyword</span> {
-	<span class="ident">syn</span>::<span class="macro">custom_keyword</span><span class="macro">!</span>(<span class="ident">DispatchResultWithPostInfo</span>);
-	<span class="ident">syn</span>::<span class="macro">custom_keyword</span><span class="macro">!</span>(<span class="ident">Call</span>);
-	<span class="ident">syn</span>::<span class="macro">custom_keyword</span><span class="macro">!</span>(<span class="ident">OriginFor</span>);
-	<span class="ident">syn</span>::<span class="macro">custom_keyword</span><span class="macro">!</span>(<span class="ident">weight</span>);
-	<span class="ident">syn</span>::<span class="macro">custom_keyword</span><span class="macro">!</span>(<span class="ident">compact</span>);
-	<span class="ident">syn</span>::<span class="macro">custom_keyword</span><span class="macro">!</span>(<span class="ident">T</span>);
-	<span class="ident">syn</span>::<span class="macro">custom_keyword</span><span class="macro">!</span>(<span class="ident">pallet</span>);
+	<span class="macro">syn::custom_keyword!</span>(<span class="ident">DispatchResultWithPostInfo</span>);
+	<span class="macro">syn::custom_keyword!</span>(<span class="ident">Call</span>);
+	<span class="macro">syn::custom_keyword!</span>(<span class="ident">OriginFor</span>);
+	<span class="macro">syn::custom_keyword!</span>(<span class="ident">weight</span>);
+	<span class="macro">syn::custom_keyword!</span>(<span class="ident">compact</span>);
+	<span class="macro">syn::custom_keyword!</span>(<span class="ident">T</span>);
+	<span class="macro">syn::custom_keyword!</span>(<span class="ident">pallet</span>);
 }
 
 <span class="doccomment">/// Definition of dispatchables typically `impl&lt;T: Config&gt; Pallet&lt;T&gt; { ... }`</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CallDef</span> {
 	<span class="doccomment">/// The where_clause used.</span>
-	<span class="kw">pub</span> <span class="ident">where_clause</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">syn</span>::<span class="ident">WhereClause</span><span class="op">&gt;</span>,
+	<span class="kw">pub</span> <span class="ident">where_clause</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">syn::WhereClause</span><span class="op">&gt;</span>,
 	<span class="doccomment">/// A set of usage of instance, must be check for consistency with trait.</span>
-	<span class="kw">pub</span> <span class="ident">instances</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">helper</span>::<span class="ident">InstanceUsage</span><span class="op">&gt;</span>,
+	<span class="kw">pub</span> <span class="ident">instances</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">helper::InstanceUsage</span><span class="op">&gt;</span>,
 	<span class="doccomment">/// The index of call item in pallet module.</span>
 	<span class="kw">pub</span> <span class="ident">index</span>: <span class="ident">usize</span>,
 	<span class="doccomment">/// Information on methods (used for expansion).</span>
 	<span class="kw">pub</span> <span class="ident">methods</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CallVariantDef</span><span class="op">&gt;</span>,
 	<span class="doccomment">/// The span of the pallet::call attribute.</span>
-	<span class="kw">pub</span> <span class="ident">attr_span</span>: <span class="ident">proc_macro2</span>::<span class="ident">Span</span>,
+	<span class="kw">pub</span> <span class="ident">attr_span</span>: <span class="ident">proc_macro2::Span</span>,
 }
 
 <span class="doccomment">/// Definition of dispatchable typically: `#[weight...] fn foo(origin .., param1: ...) -&gt; ..`</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CallVariantDef</span> {
 	<span class="doccomment">/// Function name.</span>
-	<span class="kw">pub</span> <span class="ident">name</span>: <span class="ident">syn</span>::<span class="ident">Ident</span>,
+	<span class="kw">pub</span> <span class="ident">name</span>: <span class="ident">syn::Ident</span>,
 	<span class="doccomment">/// Information on args: `(is_compact, name, type)`</span>
-	<span class="kw">pub</span> <span class="ident">args</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">bool</span>, <span class="ident">syn</span>::<span class="ident">Ident</span>, <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">syn</span>::<span class="ident">Type</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
+	<span class="kw">pub</span> <span class="ident">args</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">bool</span>, <span class="ident">syn::Ident</span>, <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">syn::Type</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
 	<span class="doccomment">/// Weight formula.</span>
-	<span class="kw">pub</span> <span class="ident">weight</span>: <span class="ident">syn</span>::<span class="ident">Expr</span>,
+	<span class="kw">pub</span> <span class="ident">weight</span>: <span class="ident">syn::Expr</span>,
 	<span class="doccomment">/// Docs, used for metadata.</span>
-	<span class="kw">pub</span> <span class="ident">docs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">syn</span>::<span class="ident">Lit</span><span class="op">&gt;</span>,
+	<span class="kw">pub</span> <span class="ident">docs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">syn::Lit</span><span class="op">&gt;</span>,
 }
 
 <span class="doccomment">/// Attributes for functions in call impl block.</span>
 <span class="doccomment">/// Parse for `#[pallet::weight(expr)]`</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FunctionAttr</span> {
-	<span class="ident">weight</span>: <span class="ident">syn</span>::<span class="ident">Expr</span>,
+	<span class="ident">weight</span>: <span class="ident">syn::Expr</span>,
 }
 
-<span class="kw">impl</span> <span class="ident">syn</span>::<span class="ident">parse</span>::<span class="ident">Parse</span> <span class="kw">for</span> <span class="ident">FunctionAttr</span> {
-	<span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">syn</span>::<span class="ident">parse</span>::<span class="ident">ParseStream</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-		<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">syn</span>::<span class="macro">Token</span><span class="macro">!</span>[#]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
+<span class="kw">impl</span> <span class="ident">syn::parse::Parse</span> <span class="kw">for</span> <span class="ident">FunctionAttr</span> {
+	<span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">syn::parse::ParseStream</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn::Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+		<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="macro">syn::Token!</span>[#]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">content</span>;
-		<span class="ident">syn</span>::<span class="macro">bracketed</span><span class="macro">!</span>(<span class="ident">content</span> <span class="kw">in</span> <span class="ident">input</span>);
-		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword</span>::<span class="ident">pallet</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">syn</span>::<span class="macro">Token</span><span class="macro">!</span>[::]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
-		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword</span>::<span class="ident">weight</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+		<span class="macro">syn::bracketed!</span>(<span class="ident">content</span> <span class="kw">in</span> <span class="ident">input</span>);
+		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword::pallet</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="macro">syn::Token!</span>[::]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
+		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword::weight</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
 		<span class="kw">let</span> <span class="ident">weight_content</span>;
-		<span class="ident">syn</span>::<span class="macro">parenthesized</span><span class="macro">!</span>(<span class="ident">weight_content</span> <span class="kw">in</span> <span class="ident">content</span>);
+		<span class="macro">syn::parenthesized!</span>(<span class="ident">weight_content</span> <span class="kw">in</span> <span class="ident">content</span>);
 		<span class="prelude-val">Ok</span>(<span class="ident">FunctionAttr</span> {
-			<span class="ident">weight</span>: <span class="ident">weight_content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">syn</span>::<span class="ident">Expr</span><span class="op">&gt;</span>()<span class="question-mark">?</span>,
+			<span class="ident">weight</span>: <span class="ident">weight_content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">syn::Expr</span><span class="op">&gt;</span>()<span class="question-mark">?</span>,
 		})
 	}
 }
@@ -321,38 +321,38 @@
 <span class="doccomment">/// Parse for `#[pallet::compact]|</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ArgAttrIsCompact</span>;
 
-<span class="kw">impl</span> <span class="ident">syn</span>::<span class="ident">parse</span>::<span class="ident">Parse</span> <span class="kw">for</span> <span class="ident">ArgAttrIsCompact</span> {
-	<span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">syn</span>::<span class="ident">parse</span>::<span class="ident">ParseStream</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-		<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">syn</span>::<span class="macro">Token</span><span class="macro">!</span>[#]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
+<span class="kw">impl</span> <span class="ident">syn::parse::Parse</span> <span class="kw">for</span> <span class="ident">ArgAttrIsCompact</span> {
+	<span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">syn::parse::ParseStream</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn::Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+		<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="macro">syn::Token!</span>[#]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">content</span>;
-		<span class="ident">syn</span>::<span class="macro">bracketed</span><span class="macro">!</span>(<span class="ident">content</span> <span class="kw">in</span> <span class="ident">input</span>);
-		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword</span>::<span class="ident">pallet</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">syn</span>::<span class="macro">Token</span><span class="macro">!</span>[::]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
+		<span class="macro">syn::bracketed!</span>(<span class="ident">content</span> <span class="kw">in</span> <span class="ident">input</span>);
+		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword::pallet</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="macro">syn::Token!</span>[::]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
-		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword</span>::<span class="ident">compact</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+		<span class="ident">content</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword::compact</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 		<span class="prelude-val">Ok</span>(<span class="ident">ArgAttrIsCompact</span>)
 	}
 }
 
 <span class="doccomment">/// Check the syntax is `OriginFor&lt;T&gt;`</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check_dispatchable_first_arg_type</span>(<span class="ident">ty</span>: <span class="kw-2">&amp;</span><span class="ident">syn</span>::<span class="ident">Type</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check_dispatchable_first_arg_type</span>(<span class="ident">ty</span>: <span class="kw-2">&amp;</span><span class="ident">syn::Type</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
 
 	<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CheckDispatchableFirstArg</span>;
-	<span class="kw">impl</span> <span class="ident">syn</span>::<span class="ident">parse</span>::<span class="ident">Parse</span> <span class="kw">for</span> <span class="ident">CheckDispatchableFirstArg</span> {
-		<span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">syn</span>::<span class="ident">parse</span>::<span class="ident">ParseStream</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-			<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword</span>::<span class="ident">OriginFor</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-			<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">syn</span>::<span class="macro">Token</span><span class="macro">!</span>[<span class="op">&lt;</span>]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
-			<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword</span>::<span class="ident">T</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-			<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">syn</span>::<span class="macro">Token</span><span class="macro">!</span>[<span class="op">&gt;</span>]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
+	<span class="kw">impl</span> <span class="ident">syn::parse::Parse</span> <span class="kw">for</span> <span class="ident">CheckDispatchableFirstArg</span> {
+		<span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">syn::parse::ParseStream</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn::Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+			<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword::OriginFor</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+			<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="macro">syn::Token!</span>[<span class="op">&lt;</span>]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
+			<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">keyword::T</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+			<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="macro">syn::Token!</span>[<span class="op">&gt;</span>]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
 			<span class="prelude-val">Ok</span>(<span class="self">Self</span>)
 		}
 	}
 
-	<span class="ident">syn</span>::<span class="ident">parse2</span>::<span class="op">&lt;</span><span class="ident">CheckDispatchableFirstArg</span><span class="op">&gt;</span>(<span class="ident">ty</span>.<span class="ident">to_token_stream</span>())
+	<span class="ident">syn::parse2</span>::<span class="op">&lt;</span><span class="ident">CheckDispatchableFirstArg</span><span class="op">&gt;</span>(<span class="ident">ty</span>.<span class="ident">to_token_stream</span>())
 		.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
 			<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;Invalid type: expected `OriginFor&lt;T&gt;`&quot;</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">err</span> <span class="op">=</span> <span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">ty</span>.<span class="ident">span</span>(), <span class="ident">msg</span>);
+			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">err</span> <span class="op">=</span> <span class="ident">syn::Error::new</span>(<span class="ident">ty</span>.<span class="ident">span</span>(), <span class="ident">msg</span>);
 			<span class="ident">err</span>.<span class="ident">combine</span>(<span class="ident">e</span>);
 			<span class="ident">err</span>
 		})<span class="question-mark">?</span>;
@@ -362,54 +362,54 @@
 
 <span class="kw">impl</span> <span class="ident">CallDef</span> {
 	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_from</span>(
-		<span class="ident">attr_span</span>: <span class="ident">proc_macro2</span>::<span class="ident">Span</span>,
+		<span class="ident">attr_span</span>: <span class="ident">proc_macro2::Span</span>,
 		<span class="ident">index</span>: <span class="ident">usize</span>,
-		<span class="ident">item</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">syn</span>::<span class="ident">Item</span>
-	) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-		<span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn</span>::<span class="ident">Item</span>::<span class="ident">Impl</span>(<span class="ident">item</span>) <span class="op">=</span> <span class="ident">item</span> {
+		<span class="ident">item</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">syn::Item</span>
+	) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">syn::Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+		<span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::Item::Impl</span>(<span class="ident">item</span>) <span class="op">=</span> <span class="ident">item</span> {
 			<span class="ident">item</span>
 		} <span class="kw">else</span> {
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">item</span>.<span class="ident">span</span>(), <span class="string">&quot;Invalid pallet::call, expected item impl&quot;</span>));
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">item</span>.<span class="ident">span</span>(), <span class="string">&quot;Invalid pallet::call, expected item impl&quot;</span>));
 		};
 
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">instances</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[];
-		<span class="ident">instances</span>.<span class="ident">push</span>(<span class="ident">helper</span>::<span class="ident">check_impl_gen</span>(<span class="kw-2">&amp;</span><span class="ident">item</span>.<span class="ident">generics</span>, <span class="ident">item</span>.<span class="ident">impl_token</span>.<span class="ident">span</span>())<span class="question-mark">?</span>);
-		<span class="ident">instances</span>.<span class="ident">push</span>(<span class="ident">helper</span>::<span class="ident">check_pallet_struct_usage</span>(<span class="kw-2">&amp;</span><span class="ident">item</span>.<span class="ident">self_ty</span>)<span class="question-mark">?</span>);
+		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">instances</span> <span class="op">=</span> <span class="macro">vec!</span>[];
+		<span class="ident">instances</span>.<span class="ident">push</span>(<span class="ident">helper::check_impl_gen</span>(<span class="kw-2">&amp;</span><span class="ident">item</span>.<span class="ident">generics</span>, <span class="ident">item</span>.<span class="ident">impl_token</span>.<span class="ident">span</span>())<span class="question-mark">?</span>);
+		<span class="ident">instances</span>.<span class="ident">push</span>(<span class="ident">helper::check_pallet_struct_usage</span>(<span class="kw-2">&amp;</span><span class="ident">item</span>.<span class="ident">self_ty</span>)<span class="question-mark">?</span>);
 
 		<span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">for_</span>)) <span class="op">=</span> <span class="ident">item</span>.<span class="ident">trait_</span> {
 			<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;Invalid pallet::call, expected no trait ident as in \
 				`impl&lt;..&gt; Pallet&lt;..&gt; { .. }`&quot;</span>;
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">for_</span>.<span class="ident">span</span>(), <span class="ident">msg</span>))
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">for_</span>.<span class="ident">span</span>(), <span class="ident">msg</span>))
 		}
 
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">methods</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[];
+		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">methods</span> <span class="op">=</span> <span class="macro">vec!</span>[];
 		<span class="kw">for</span> <span class="ident">impl_item</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">item</span>.<span class="ident">items</span> {
-			<span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn</span>::<span class="ident">ImplItem</span>::<span class="ident">Method</span>(<span class="ident">method</span>) <span class="op">=</span> <span class="ident">impl_item</span> {
+			<span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::ImplItem::Method</span>(<span class="ident">method</span>) <span class="op">=</span> <span class="ident">impl_item</span> {
 				<span class="kw">match</span> <span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">inputs</span>.<span class="ident">first</span>() {
 					<span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
 						<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;Invalid pallet::call, must have at least origin arg&quot;</span>;
-						<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
+						<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
 					},
-					<span class="prelude-val">Some</span>(<span class="ident">syn</span>::<span class="ident">FnArg</span>::<span class="ident">Receiver</span>(<span class="kw">_</span>)) <span class="op">=</span><span class="op">&gt;</span> {
+					<span class="prelude-val">Some</span>(<span class="ident">syn::FnArg::Receiver</span>(<span class="kw">_</span>)) <span class="op">=</span><span class="op">&gt;</span> {
 						<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;Invalid pallet::call, first argument must be a typed argument, \
 							e.g. `origin: OriginFor&lt;T&gt;`&quot;</span>;
-						<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
+						<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
 					},
-					<span class="prelude-val">Some</span>(<span class="ident">syn</span>::<span class="ident">FnArg</span>::<span class="ident">Typed</span>(<span class="ident">arg</span>)) <span class="op">=</span><span class="op">&gt;</span> {
+					<span class="prelude-val">Some</span>(<span class="ident">syn::FnArg::Typed</span>(<span class="ident">arg</span>)) <span class="op">=</span><span class="op">&gt;</span> {
 						<span class="ident">check_dispatchable_first_arg_type</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">arg</span>.<span class="ident">ty</span>)<span class="question-mark">?</span>;
 					},
 				}
 
-				<span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn</span>::<span class="ident">ReturnType</span>::<span class="ident">Type</span>(<span class="kw">_</span>, <span class="ident">type_</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">output</span> {
-					<span class="ident">syn</span>::<span class="ident">parse2</span>::<span class="op">&lt;</span><span class="ident">keyword</span>::<span class="ident">DispatchResultWithPostInfo</span><span class="op">&gt;</span>(<span class="ident">type_</span>.<span class="ident">to_token_stream</span>())<span class="question-mark">?</span>;
+				<span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::ReturnType::Type</span>(<span class="kw">_</span>, <span class="ident">type_</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">output</span> {
+					<span class="ident">syn::parse2</span>::<span class="op">&lt;</span><span class="ident">keyword::DispatchResultWithPostInfo</span><span class="op">&gt;</span>(<span class="ident">type_</span>.<span class="ident">to_token_stream</span>())<span class="question-mark">?</span>;
 				} <span class="kw">else</span> {
 					<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;Invalid pallet::call, require return type \
 						DispatchResultWithPostInfo&quot;</span>;
-					<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
+					<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
 				}
 
 				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">call_var_attrs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FunctionAttr</span><span class="op">&gt;</span> <span class="op">=</span>
-					<span class="ident">helper</span>::<span class="ident">take_item_attrs</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">method</span>.<span class="ident">attrs</span>)<span class="question-mark">?</span>;
+					<span class="ident">helper::take_item_attrs</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">method</span>.<span class="ident">attrs</span>)<span class="question-mark">?</span>;
 
 				<span class="kw">if</span> <span class="ident">call_var_attrs</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="number">1</span> {
 					<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">call_var_attrs</span>.<span class="ident">is_empty</span>() {
@@ -417,37 +417,37 @@
 					} <span class="kw">else</span> {
 						<span class="string">&quot;Invalid pallet::call, too many weight attributes given&quot;</span>
 					};
-					<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
+					<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
 				}
 				<span class="kw">let</span> <span class="ident">weight</span> <span class="op">=</span> <span class="ident">call_var_attrs</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>().<span class="ident">weight</span>;
 
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">args</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[];
+				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">args</span> <span class="op">=</span> <span class="macro">vec!</span>[];
 				<span class="kw">for</span> <span class="ident">arg</span> <span class="kw">in</span> <span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">inputs</span>.<span class="ident">iter_mut</span>().<span class="ident">skip</span>(<span class="number">1</span>) {
-					<span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn</span>::<span class="ident">FnArg</span>::<span class="ident">Typed</span>(<span class="ident">arg</span>) <span class="op">=</span> <span class="ident">arg</span> {
+					<span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::FnArg::Typed</span>(<span class="ident">arg</span>) <span class="op">=</span> <span class="ident">arg</span> {
 						<span class="ident">arg</span>
 					} <span class="kw">else</span> {
-						<span class="macro">unreachable</span><span class="macro">!</span>(<span class="string">&quot;Only first argument can be receiver&quot;</span>);
+						<span class="macro">unreachable!</span>(<span class="string">&quot;Only first argument can be receiver&quot;</span>);
 					};
 
 					<span class="kw">let</span> <span class="ident">arg_attrs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ArgAttrIsCompact</span><span class="op">&gt;</span> <span class="op">=</span>
-						<span class="ident">helper</span>::<span class="ident">take_item_attrs</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">arg</span>.<span class="ident">attrs</span>)<span class="question-mark">?</span>;
+						<span class="ident">helper::take_item_attrs</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">arg</span>.<span class="ident">attrs</span>)<span class="question-mark">?</span>;
 
 					<span class="kw">if</span> <span class="ident">arg_attrs</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">1</span> {
 						<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;Invalid pallet::call, argument has too many attributes&quot;</span>;
-						<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">arg</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
+						<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">arg</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
 					}
 
-					<span class="kw">let</span> <span class="ident">arg_ident</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn</span>::<span class="ident">Pat</span>::<span class="ident">Ident</span>(<span class="ident">pat</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">arg</span>.<span class="ident">pat</span> {
+					<span class="kw">let</span> <span class="ident">arg_ident</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::Pat::Ident</span>(<span class="ident">pat</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">arg</span>.<span class="ident">pat</span> {
 						<span class="ident">pat</span>.<span class="ident">ident</span>.<span class="ident">clone</span>()
 					} <span class="kw">else</span> {
 						<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;Invalid pallet::call, argument must be ident&quot;</span>;
-						<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">arg</span>.<span class="ident">pat</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
+						<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">arg</span>.<span class="ident">pat</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
 					};
 
 					<span class="ident">args</span>.<span class="ident">push</span>((<span class="op">!</span><span class="ident">arg_attrs</span>.<span class="ident">is_empty</span>(), <span class="ident">arg_ident</span>, <span class="ident">arg</span>.<span class="ident">ty</span>.<span class="ident">clone</span>()));
 				}
 
-				<span class="kw">let</span> <span class="ident">docs</span> <span class="op">=</span> <span class="ident">helper</span>::<span class="ident">get_doc_literals</span>(<span class="kw-2">&amp;</span><span class="ident">method</span>.<span class="ident">attrs</span>);
+				<span class="kw">let</span> <span class="ident">docs</span> <span class="op">=</span> <span class="ident">helper::get_doc_literals</span>(<span class="kw-2">&amp;</span><span class="ident">method</span>.<span class="ident">attrs</span>);
 
 				<span class="ident">methods</span>.<span class="ident">push</span>(<span class="ident">CallVariantDef</span> {
 					<span class="ident">name</span>: <span class="ident">method</span>.<span class="ident">sig</span>.<span class="ident">ident</span>.<span class="ident">clone</span>(),
@@ -457,7 +457,7 @@
 				});
 			} <span class="kw">else</span> {
 				<span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;Invalid pallet::call, only method accepted&quot;</span>;
-				<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">impl_item</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
+				<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new</span>(<span class="ident">impl_item</span>.<span class="ident">span</span>(), <span class="ident">msg</span>));
 			}
 		}
 
@@ -471,5 +471,5 @@
 	}
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="frame_support_procedural" data-search-js="../../../../search-index.js"></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="frame_support_procedural" data-search-index-js="../../../../search-index.js" data-search-js="../../../../search.js"></div>
     <script src="../../../../main.js"></script><script src="../../../../source-script.js"></script><script src="../../../../source-files.js"></script></body></html>
