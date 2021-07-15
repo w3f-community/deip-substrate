@@ -36,9 +36,9 @@ pub struct Info<Moment> {
     end_time: Moment,
     status: Status,
     /// How many contributions already reserved
-    total_amount: (),
-    soft_cap: (),
-    hard_cap: (),
+    total_amount: u64,
+    soft_cap: u64,
+    hard_cap: u64,
 }
 
 impl<T: Config> Module<T> {
