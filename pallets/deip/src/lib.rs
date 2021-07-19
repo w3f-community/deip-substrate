@@ -376,6 +376,7 @@ decl_error! {
         TokenSaleHardCapShouldBeGreaterOrEqualSoftCap,
         TokenSaleScheduledAlready,
         TokenSaleAlreadyExists,
+        TokenSaleBalanceIsNotEnough,
     }
 }
 
@@ -492,9 +493,10 @@ decl_module! {
             end_time: T::Moment,
             soft_cap: BalanceOf<T>,
             hard_cap: BalanceOf<T>,
+            security_tokens_on_sale: u64,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap)
+            Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
         }
 
         /// Allow a user to update project.
