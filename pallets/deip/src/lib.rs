@@ -40,7 +40,8 @@ use frame_support::{
     decl_module, decl_storage, decl_event, decl_error, 
     StorageMap,
     dispatch::{ DispatchResult, Parameter },
-    storage::{ IterableStorageMap, IterableStorageDoubleMap }, 
+    storage::{ IterableStorageMap, IterableStorageDoubleMap },
+    traits::Currency
 };
 use frame_system::{ self as system, ensure_signed };
 use sp_std::vec::Vec;
@@ -101,6 +102,8 @@ pub trait Config: frame_system::Config + pallet_timestamp::Config {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
     
     type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
+
+    type Currency: Currency<Self::AccountId>;
 }
 
 /// Unique Project ID reference
@@ -121,7 +124,8 @@ pub type ReviewOf<T> = Review<<T as system::Config>::Hash, <T as system::Config>
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment>;
+pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>>;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -482,8 +486,8 @@ decl_module! {
             project_id: ProjectId,
             start_time: T::Moment,
             end_time: T::Moment,
-            soft_cap: u64,
-            hard_cap: u64,
+            soft_cap: BalanceOf<T>,
+            hard_cap: BalanceOf<T>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap)

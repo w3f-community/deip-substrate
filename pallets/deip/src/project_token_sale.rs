@@ -25,7 +25,7 @@ impl Default for Status {
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct Info<Moment> {
+pub struct Info<Moment, Balance> {
     /// Reference for external world and uniques control
     external_id: Id,
     /// Reference to the Project
@@ -36,9 +36,9 @@ pub struct Info<Moment> {
     end_time: Moment,
     status: Status,
     /// How many contributions already reserved
-    total_amount: u64,
-    soft_cap: u64,
-    hard_cap: u64,
+    total_amount: Balance,
+    soft_cap: Balance,
+    hard_cap: Balance,
 }
 
 impl<T: Config> Module<T> {
@@ -48,8 +48,8 @@ impl<T: Config> Module<T> {
         project_id: ProjectId,
         start_time: T::Moment,
         end_time: T::Moment,
-        soft_cap: u64,
-        hard_cap: u64,
+        soft_cap: BalanceOf<T>,
+        hard_cap: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
             !ProjectTokenSaleMap::<T>::contains_key(external_id),
@@ -66,7 +66,7 @@ impl<T: Config> Module<T> {
             Error::<T>::TokenSaleEndTimeMustBeLaterStartTime
         );
 
-        ensure!(soft_cap > 0, Error::<T>::TokenSaleSoftCapShouldBePositive);
+        ensure!(soft_cap > 0u32.into(), Error::<T>::TokenSaleSoftCapShouldBePositive);
         ensure!(
             hard_cap >= soft_cap,
             Error::<T>::TokenSaleHardCapShouldBeGreaterOrEqualSoftCap
@@ -104,6 +104,8 @@ impl<T: Config> Module<T> {
             start_time: start_time,
             end_time: end_time,
             status: ProjectTokenSaleStatus::Inactive,
+            soft_cap: soft_cap,
+            hard_cap: hard_cap,
             ..Default::default()
         };
 
