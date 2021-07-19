@@ -128,18 +128,17 @@ impl<T: Config> Module<T> {
         ProjectTokens::mutate_exists(project_id, |maybe_project| -> DispatchResult {
             let project = maybe_project.as_mut().ok_or(Error::<T>::NoSuchProject)?;
 
-            ensure!(
-                security_tokens_on_sale <= project.total,
-                Error::<T>::TokenSaleBalanceIsNotEnough
-            );
-            project
+            let new_total = project
                 .total
                 .checked_sub(security_tokens_on_sale)
-                .expect("total has appropriate value");
-            project
+                .ok_or(Error::<T>::TokenSaleBalanceIsNotEnough)?;
+            let new_reserved = project
                 .reserved
                 .checked_add(security_tokens_on_sale)
-                .expect("reserved can't exceed total");
+                .ok_or(Error::<T>::TokenSaleProjectReservedOverflow)?;
+
+            project.total = new_total;
+            project.reserved = new_reserved;
 
             Ok(())
         })?;
@@ -231,10 +230,12 @@ impl<T: Config> Module<T> {
         ProjectTokens::mutate_exists(sale.project_id, |maybe_project| {
             let token_info = maybe_project.as_mut().expect("we keep collections in sync");
 
-            token_info
+            let restored_total = token_info
                 .total
                 .checked_add(token_info.reserved)
-                .expect("reserved can't exceed total");
+                .expect("reserved + total can't exceed u64");
+
+            token_info.total = restored_total;
             token_info.reserved = 0;
         });
 
