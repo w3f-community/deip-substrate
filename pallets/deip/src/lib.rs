@@ -874,9 +874,11 @@ decl_module! {
             Self::deposit_event(RawEvent::DomainAdded(account, external_id));
         }
 
-        fn on_finalize() {
-            Self::process_project_token_sales();
-        }
+        // TODO: temporarily disabled since more appropriate approach
+        // should be used (for example, Off-Chain Workers)
+        // fn on_finalize() {
+        //     Self::process_project_token_sales();
+        // }
     }
 }
 
