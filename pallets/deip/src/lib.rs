@@ -59,7 +59,8 @@ mod tests;
 mod project_token_sale;
 use project_token_sale::{Id as ProjectTokenSaleId,
     Status as ProjectTokenSaleStatus,
-    Info as ProjectTokenSale};
+    Info as ProjectTokenSale,
+    TokenInfo as ProjectTokenSaleTokenInfo};
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
@@ -385,6 +386,8 @@ decl_storage! {
         /// Project list, guarantees uniquest and provides Project listing
         Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
 
+        ProjectTokens: map hasher(identity) ProjectId => ProjectTokenSaleTokenInfo;
+
         ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) ProjectTokenSaleId => ProjectTokenSaleOf<T>;
         ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, ProjectTokenSaleId)>;
 
@@ -475,6 +478,7 @@ decl_module! {
 
             // Store the projects related to account
             ProjectMap::<T>::insert(project.external_id, project.clone());
+            ProjectTokens::insert(project.external_id, ProjectTokenSaleTokenInfo{ total: 100_000u64, reserved: 0u64 });
 
             // Emit an event that the project was created.
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
