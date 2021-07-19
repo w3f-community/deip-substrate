@@ -169,24 +169,32 @@ impl<T: Config> Module<T> {
     pub(super) fn process_project_token_sales() {
         let now = pallet_timestamp::Module::<T>::get();
 
-        let token_sales_by_end_time = ProjectTokenSaleEndTimes::<T>::get();
-        for (_, sale_id) in token_sales_by_end_time {
+        let mut token_sales_by_end_time = ProjectTokenSaleEndTimes::<T>::get();
+        let i = token_sales_by_end_time.partition_point(|&(e, _)| e <= now);
+        for (_, sale_id) in token_sales_by_end_time.drain(..i) {
             let sale = ProjectTokenSaleMap::<T>::get(sale_id);
-            if sale.end_time <= now && matches!(sale.status, ProjectTokenSaleStatus::Active) {
-                if sale.total_amount < sale.soft_cap {
-                    Self::update_status(&sale, ProjectTokenSaleStatus::Expired);
-                    Self::refund_project_token_sale(&sale);
-                } else if sale.total_amount >= sale.soft_cap {
-                    Self::update_status(&sale, ProjectTokenSaleStatus::Finished);
-                    Self::finish_project_token_sale(&sale);
-                }
-            } else if sale.end_time > now {
-                if now >= sale.start_time && matches!(sale.status, ProjectTokenSaleStatus::Inactive)
-                {
-                    Self::update_status(&sale, ProjectTokenSaleStatus::Active);
-                }
+            if !matches!(sale.status, ProjectTokenSaleStatus::Active) {
+                continue;
+            }
+
+            if sale.total_amount < sale.soft_cap {
+                Self::update_status(&sale, ProjectTokenSaleStatus::Expired);
+                Self::refund_project_token_sale(&sale);
+            } else if sale.total_amount >= sale.soft_cap {
+                Self::update_status(&sale, ProjectTokenSaleStatus::Finished);
+                Self::finish_project_token_sale(&sale);
             }
         }
+
+        let token_sales_by_end_time = token_sales_by_end_time;
+        for (_, sale_id) in token_sales_by_end_time.iter() {
+            let sale = ProjectTokenSaleMap::<T>::get(sale_id);
+            if matches!(sale.status, ProjectTokenSaleStatus::Inactive) {
+                Self::update_status(&sale, ProjectTokenSaleStatus::Active);
+            }
+        }
+
+        ProjectTokenSaleEndTimes::<T>::put(token_sales_by_end_time);
     }
 
     fn update_status(sale: &ProjectTokenSaleOf<T>, new_status: ProjectTokenSaleStatus) {
