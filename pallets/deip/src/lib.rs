@@ -55,6 +55,11 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+mod project_token_sale;
+use project_token_sale::{Id as ProjectTokenSaleId,
+    Status as ProjectTokenSaleStatus,
+    Info as ProjectTokenSale};
+
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
 
@@ -354,6 +359,9 @@ decl_error! {
 
         /// Access Forbiten
         NoPermission,
+
+        // Project token sale errors
+        TokenSaleStartDateMustBeLaterOrEqualCurrentMoment,
     }
 }
 
@@ -454,6 +462,19 @@ decl_module! {
 
             // Emit an event that the project was created.
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
+        }
+
+        #[weight = 10_000]
+        fn create_project_token_sale(origin,
+            external_id: ProjectTokenSaleId,
+            project_id: ProjectId,
+            start_time: T::Moment,
+            end_time: T::Moment,
+            soft_cap: (),
+            hard_cap: (),
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap)
         }
 
         /// Allow a user to update project.
