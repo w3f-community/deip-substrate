@@ -1,5 +1,7 @@
 use crate::*;
 
+use sp_runtime::{traits::Saturating, SaturatedConversion};
+
 /// Unique ProjectTokenSale ID reference
 pub type Id = H160;
 
@@ -172,22 +174,22 @@ impl<T: Config> Module<T> {
             let sale = ProjectTokenSaleMap::<T>::get(sale_id);
             if sale.end_time <= now && matches!(sale.status, ProjectTokenSaleStatus::Active) {
                 if sale.total_amount < sale.soft_cap {
-                    Self::update_status(sale, ProjectTokenSaleStatus::Expired);
-                    Self::refund_project_token_sale(sale_id);
+                    Self::update_status(&sale, ProjectTokenSaleStatus::Expired);
+                    Self::refund_project_token_sale(&sale);
                 } else if sale.total_amount >= sale.soft_cap {
-                    Self::update_status(sale, ProjectTokenSaleStatus::Finished);
-                    Self::finish_project_token_sale(sale_id);
+                    Self::update_status(&sale, ProjectTokenSaleStatus::Finished);
+                    Self::finish_project_token_sale(&sale);
                 }
             } else if sale.end_time > now {
                 if now >= sale.start_time && matches!(sale.status, ProjectTokenSaleStatus::Inactive)
                 {
-                    Self::update_status(sale, ProjectTokenSaleStatus::Active);
+                    Self::update_status(&sale, ProjectTokenSaleStatus::Active);
                 }
             }
         }
     }
 
-    fn update_status(sale: ProjectTokenSaleOf<T>, new_status: ProjectTokenSaleStatus) {
+    fn update_status(sale: &ProjectTokenSaleOf<T>, new_status: ProjectTokenSaleStatus) {
         ProjectTokenSaleMap::<T>::mutate_exists(sale.external_id, |maybe_sale| -> () {
             let sale = maybe_sale.as_mut().expect("we keep collections in sync");
             sale.status = new_status;
@@ -217,11 +219,66 @@ impl<T: Config> Module<T> {
         }
     }
 
-    fn refund_project_token_sale(id: ProjectTokenSaleId) {
-        // unimplemented!();
+    fn refund_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
+        ProjectTokens::mutate_exists(sale.project_id, |maybe_project| {
+            let token_info = maybe_project.as_mut().expect("we keep collections in sync");
+
+            token_info
+                .total
+                .checked_add(token_info.reserved)
+                .expect("reserved can't exceed total");
+            token_info.reserved = 0;
+        });
+
+        let contributors = ProjectTokenSaleContributionIndex::<T>::get(sale.external_id);
+        for contribution in contributors {
+            T::Currency::unreserve(&contribution.0, contribution.1);
+        }
+
+        ProjectTokenSaleContributionIndex::<T>::remove(sale.external_id);
     }
 
-    fn finish_project_token_sale(id: ProjectTokenSaleId) {
-        // unimplemented!();
+    fn finish_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
+        ProjectTokens::mutate_exists(sale.project_id, |maybe_project| {
+            let token_info = maybe_project.as_mut().expect("we keep collections in sync");
+            token_info.reserved = 0;
+        });
+
+        let contributors = ProjectTokenSaleContributionIndex::<T>::get(sale.external_id);
+        let mut iter = contributors.iter();
+
+        let first_contribution = iter
+            .next()
+            .expect("Token sale is about to finish, but there are no contributors?");
+
+        let mut total_token_amount: u64 = 0;
+        for contribution in iter {
+            T::Currency::repatriate_reserved(
+                &contribution.0,
+                &ProjectMap::<T>::get(sale.project_id).team_id,
+                contribution.1,
+                frame_support::traits::BalanceStatus::Free,
+            )
+            .expect("Corresponding amount should be reserved earlier");
+
+            // similiar to frame_support::traits::Imbalance::ration
+            let token_amount = contribution
+                .1
+                .saturating_mul(sale.security_tokens_on_sale.saturated_into())
+                / sale.total_amount;
+            let token_amount: u64 = token_amount.saturated_into();
+            total_token_amount += token_amount;
+
+            OwnedProjectTokens::<T>::insert(contribution.0.clone(), sale.project_id, token_amount);
+        }
+
+        // process the remainder
+        OwnedProjectTokens::<T>::insert(
+            first_contribution.0.clone(),
+            sale.project_id,
+            sale.security_tokens_on_sale - total_token_amount,
+        );
+
+        ProjectTokenSaleContributionIndex::<T>::remove(sale.external_id);
     }
 }

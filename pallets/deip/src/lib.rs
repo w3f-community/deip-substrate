@@ -41,7 +41,7 @@ use frame_support::{
     StorageMap,
     dispatch::{ DispatchResult, Parameter },
     storage::{ IterableStorageMap, IterableStorageDoubleMap },
-    traits::Currency
+    traits::{Currency, ReservableCurrency}
 };
 use frame_system::{ self as system, ensure_signed };
 use sp_std::vec::Vec;
@@ -104,7 +104,7 @@ pub trait Config: frame_system::Config + pallet_timestamp::Config {
     
     type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
 
-    type Currency: Currency<Self::AccountId>;
+    type Currency: ReservableCurrency<Self::AccountId>;
 }
 
 /// Unique Project ID reference
@@ -393,6 +393,13 @@ decl_storage! {
         ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, ProjectTokenSaleId)>;
         /// Index for fast lookup a token sale by its end time
         ProjectTokenSaleEndTimes: Vec<(T::Moment, ProjectTokenSaleId)>;
+
+        /// temporary index for fast lookup contributions by project's id
+        ProjectTokenSaleContributionIndex: map hasher(identity) ProjectTokenSaleId => Vec<(T::AccountId, BalanceOf<T>)>;
+
+        /// temporary object that holds information about how many project's tokens
+        /// belong to the user
+        OwnedProjectTokens: double_map hasher(blake2_128_concat) T::AccountId, hasher(identity) ProjectId => u64;
 
         /// Map to Project Content Info
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
