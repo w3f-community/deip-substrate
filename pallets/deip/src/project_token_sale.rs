@@ -190,6 +190,7 @@ impl<T: Config> Module<T> {
             let sale = ProjectTokenSaleMap::<T>::get(sale_id);
             if matches!(sale.status, ProjectTokenSaleStatus::Inactive) {
                 Self::update_status(&sale, ProjectTokenSaleStatus::Active);
+                Self::deposit_event(RawEvent::ProjectTokenSaleActivated(sale.project_id, *sale_id));
             }
         }
 
@@ -245,6 +246,7 @@ impl<T: Config> Module<T> {
         }
 
         ProjectTokenSaleContributionIndex::<T>::remove(sale.external_id);
+        Self::deposit_event(RawEvent::ProjectTokenSaleExpired(sale.project_id, sale.external_id));
     }
 
     fn finish_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
@@ -289,5 +291,7 @@ impl<T: Config> Module<T> {
         );
 
         ProjectTokenSaleContributionIndex::<T>::remove(sale.external_id);
+
+        Self::deposit_event(RawEvent::ProjectTokenSaleFinished(sale.project_id, sale.external_id));
     }
 }

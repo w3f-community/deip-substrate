@@ -300,6 +300,12 @@ decl_event! {
 
         /// Event emitted when a token sale for project has been created.
         ProjectTokenSaleCreated(ProjectId, ProjectTokenSale),
+        /// Event emitted when a token sale for project has been activated.
+        ProjectTokenSaleActivated(ProjectId, ProjectTokenSaleId),
+        /// Event emitted when a token sale for project has finished.
+        ProjectTokenSaleFinished(ProjectId, ProjectTokenSaleId),
+        /// Event emitted when a token sale for project has expired.
+        ProjectTokenSaleExpired(ProjectId, ProjectTokenSaleId),
     }
 }
 
