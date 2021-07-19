@@ -391,6 +391,8 @@ decl_storage! {
 
         ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) ProjectTokenSaleId => ProjectTokenSaleOf<T>;
         ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, ProjectTokenSaleId)>;
+        /// Index for fast lookup a token sale by its end time
+        ProjectTokenSaleEndTimes: Vec<(T::Moment, ProjectTokenSaleId)>;
 
         /// Map to Project Content Info
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
@@ -856,6 +858,10 @@ decl_module! {
             DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
             
             Self::deposit_event(RawEvent::DomainAdded(account, external_id));
+        }
+
+        fn on_finalize() {
+            Self::process_project_token_sales();
         }
     }
 }
