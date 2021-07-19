@@ -121,7 +121,7 @@ pub type ReviewOf<T> = Review<<T as system::Config>::Hash, <T as system::Config>
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-
+pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment>;
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -260,6 +260,7 @@ decl_event! {
         AccountId = <T as frame_system::Config>::AccountId,
         Project = ProjectOf<T>,
         Review = ReviewOf<T>,
+        ProjectTokenSale = ProjectTokenSaleOf<T>,
     {
         // ==== Projects ====
 
@@ -291,6 +292,9 @@ decl_event! {
 
         /// Event emitted when a review has been created. [BelongsTo, Review]
         ReviewCreated(AccountId, Review),
+
+        /// Event emitted when a token sale for project has been created.
+        ProjectTokenSaleCreated(ProjectId, ProjectTokenSale),
     }
 }
 
@@ -361,7 +365,12 @@ decl_error! {
         NoPermission,
 
         // Project token sale errors
-        TokenSaleStartDateMustBeLaterOrEqualCurrentMoment,
+        TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment,
+        TokenSaleEndTimeMustBeLaterStartTime,
+        TokenSaleSoftCapShouldBePositive,
+        TokenSaleHardCapShouldBeGreaterOrEqualSoftCap,
+        TokenSaleScheduledAlready,
+        TokenSaleAlreadyExists,
     }
 }
 
@@ -371,6 +380,9 @@ decl_storage! {
         ProjectMap get(fn project): map hasher(identity) ProjectId => ProjectOf<T>;
         /// Project list, guarantees uniquest and provides Project listing
         Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
+
+        ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) ProjectTokenSaleId => ProjectTokenSaleOf<T>;
+        ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, ProjectTokenSaleId)>;
 
         /// Map to Project Content Info
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
@@ -470,8 +482,8 @@ decl_module! {
             project_id: ProjectId,
             start_time: T::Moment,
             end_time: T::Moment,
-            soft_cap: (),
-            hard_cap: (),
+            soft_cap: u64,
+            hard_cap: u64,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap)
