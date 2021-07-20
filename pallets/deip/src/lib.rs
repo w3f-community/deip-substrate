@@ -62,6 +62,8 @@ use project_token_sale::{Id as ProjectTokenSaleId,
     Info as ProjectTokenSale,
     TokenInfo as ProjectTokenSaleTokenInfo};
 
+mod project_token_sale_contribution;
+
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
 
@@ -513,6 +515,11 @@ decl_module! {
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
+        }
+
+        #[weight = 10_000]
+        fn contribute_to_project_token_sale(origin) -> DispatchResult {
+            Self::contribute_to_project_token_sale_impl()
         }
 
         /// Allow a user to update project.
