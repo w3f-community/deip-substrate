@@ -40,7 +40,8 @@ use frame_support::{
     decl_module, decl_storage, decl_event, decl_error, 
     StorageMap,
     dispatch::{ DispatchResult, Parameter },
-    storage::{ IterableStorageMap, IterableStorageDoubleMap }, 
+    storage::{ IterableStorageMap, IterableStorageDoubleMap },
+    traits::{Currency, ReservableCurrency}
 };
 use frame_system::{ self as system, ensure_signed };
 use sp_std::vec::Vec;
@@ -54,6 +55,12 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
+
+mod project_token_sale;
+use project_token_sale::{Id as ProjectTokenSaleId,
+    Status as ProjectTokenSaleStatus,
+    Info as ProjectTokenSale,
+    TokenInfo as ProjectTokenSaleTokenInfo};
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
@@ -96,6 +103,8 @@ pub trait Config: frame_system::Config + pallet_timestamp::Config {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
     
     type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
+
+    type Currency: ReservableCurrency<Self::AccountId>;
 }
 
 /// Unique Project ID reference
@@ -116,7 +125,8 @@ pub type ReviewOf<T> = Review<<T as system::Config>::Hash, <T as system::Config>
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-
+pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>>;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -255,6 +265,7 @@ decl_event! {
         AccountId = <T as frame_system::Config>::AccountId,
         Project = ProjectOf<T>,
         Review = ReviewOf<T>,
+        ProjectTokenSale = ProjectTokenSaleOf<T>,
     {
         // ==== Projects ====
 
@@ -286,6 +297,15 @@ decl_event! {
 
         /// Event emitted when a review has been created. [BelongsTo, Review]
         ReviewCreated(AccountId, Review),
+
+        /// Event emitted when a token sale for project has been created.
+        ProjectTokenSaleCreated(ProjectId, ProjectTokenSale),
+        /// Event emitted when a token sale for project has been activated.
+        ProjectTokenSaleActivated(ProjectId, ProjectTokenSaleId),
+        /// Event emitted when a token sale for project has finished.
+        ProjectTokenSaleFinished(ProjectId, ProjectTokenSaleId),
+        /// Event emitted when a token sale for project has expired.
+        ProjectTokenSaleExpired(ProjectId, ProjectTokenSaleId),
     }
 }
 
@@ -354,6 +374,16 @@ decl_error! {
 
         /// Access Forbiten
         NoPermission,
+
+        // Project token sale errors
+        TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment,
+        TokenSaleEndTimeMustBeLaterStartTime,
+        TokenSaleSoftCapShouldBePositive,
+        TokenSaleHardCapShouldBeGreaterOrEqualSoftCap,
+        TokenSaleScheduledAlready,
+        TokenSaleAlreadyExists,
+        TokenSaleBalanceIsNotEnough,
+        TokenSaleProjectReservedOverflow,
     }
 }
 
@@ -363,6 +393,20 @@ decl_storage! {
         ProjectMap get(fn project): map hasher(identity) ProjectId => ProjectOf<T>;
         /// Project list, guarantees uniquest and provides Project listing
         Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
+
+        ProjectTokens: map hasher(identity) ProjectId => ProjectTokenSaleTokenInfo;
+
+        ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) ProjectTokenSaleId => ProjectTokenSaleOf<T>;
+        ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, ProjectTokenSaleId)>;
+        /// Index for fast lookup a token sale by its end time
+        ProjectTokenSaleEndTimes: Vec<(T::Moment, ProjectTokenSaleId)>;
+
+        /// temporary index for fast lookup contributions by project's id
+        ProjectTokenSaleContributionIndex: map hasher(identity) ProjectTokenSaleId => Vec<(T::AccountId, BalanceOf<T>)>;
+
+        /// temporary object that holds information about how many project's tokens
+        /// belong to the user
+        OwnedProjectTokens: double_map hasher(blake2_128_concat) T::AccountId, hasher(identity) ProjectId => u64;
 
         /// Map to Project Content Info
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
@@ -451,9 +495,24 @@ decl_module! {
 
             // Store the projects related to account
             ProjectMap::<T>::insert(project.external_id, project.clone());
+            ProjectTokens::insert(project.external_id, ProjectTokenSaleTokenInfo{ total: 100_000u64, reserved: 0u64 });
 
             // Emit an event that the project was created.
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
+        }
+
+        #[weight = 10_000]
+        fn create_project_token_sale(origin,
+            external_id: ProjectTokenSaleId,
+            project_id: ProjectId,
+            start_time: T::Moment,
+            end_time: T::Moment,
+            soft_cap: BalanceOf<T>,
+            hard_cap: BalanceOf<T>,
+            security_tokens_on_sale: u64,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
         }
 
         /// Allow a user to update project.
@@ -814,6 +873,12 @@ decl_module! {
             
             Self::deposit_event(RawEvent::DomainAdded(account, external_id));
         }
+
+        // TODO: temporarily disabled since more appropriate approach
+        // should be used (for example, Off-Chain Workers)
+        // fn on_finalize() {
+        //     Self::process_project_token_sales();
+        // }
     }
 }
 
