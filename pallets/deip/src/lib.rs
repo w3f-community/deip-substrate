@@ -310,6 +310,8 @@ decl_event! {
         ProjectTokenSaleFinished(ProjectId, ProjectTokenSaleId),
         /// Event emitted when a token sale for project has expired.
         ProjectTokenSaleExpired(ProjectId, ProjectTokenSaleId),
+        /// Event emitted when DAO contributed to the project token sale
+        ProjectTokenSaleContributed(ProjectTokenSaleId, AccountId),
     }
 }
 

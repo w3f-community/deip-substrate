@@ -89,6 +89,11 @@ impl<T: Config> Module<T> {
             unimplemented!();
         }
 
+        Self::deposit_event(RawEvent::ProjectTokenSaleContributed(
+            sale_id,
+            account.clone(),
+        ));
+
         Ok(())
     }
 }
