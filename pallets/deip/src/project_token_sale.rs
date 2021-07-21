@@ -165,6 +165,16 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    pub(super) fn collect_funds(sale_id: Id, amount: BalanceOf<T>) -> Result<(), ()> {
+        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |sale| -> Result<(), ()> {
+            match sale.as_mut() {
+                Some(s) => s.total_amount = amount.saturating_add(s.total_amount),
+                None => return Err(()),
+            }
+            Ok(())
+        })
+    }
+
     pub(super) fn process_project_token_sales() {
         let now = pallet_timestamp::Module::<T>::get();
 

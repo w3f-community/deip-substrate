@@ -83,7 +83,7 @@ impl<T: Config> Module<T> {
             };
         });
 
-        // update total_amount in token sale
+        Self::collect_funds(sale_id, amount_to_contribute).expect("ProjectTokenSale already found");
 
         if is_hard_cap_reached {
             unimplemented!();
