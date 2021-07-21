@@ -175,6 +175,17 @@ impl<T: Config> Module<T> {
         })
     }
 
+    pub(super) fn finish_project_token_sale_by_id(sale_id: Id,) -> Result<(), ()> {
+        match ProjectTokenSaleMap::<T>::try_get(sale_id) {
+            Err(_) => Err(()),
+            Ok(sale) => {
+                Self::update_status(&sale, Status::Finished);
+                Self::finish_project_token_sale(&sale);
+                Ok(())
+            }
+        }
+    }
+
     pub(super) fn process_project_token_sales() {
         let now = pallet_timestamp::Module::<T>::get();
 

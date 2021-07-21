@@ -85,14 +85,14 @@ impl<T: Config> Module<T> {
 
         Self::collect_funds(sale_id, amount_to_contribute).expect("ProjectTokenSale already found");
 
-        if is_hard_cap_reached {
-            unimplemented!();
-        }
-
         Self::deposit_event(RawEvent::ProjectTokenSaleContributed(
             sale_id,
             account.clone(),
         ));
+
+        if is_hard_cap_reached {
+            Self::finish_project_token_sale_by_id(sale_id).expect("ProjectTokenSale already found");
+        }
 
         Ok(())
     }
