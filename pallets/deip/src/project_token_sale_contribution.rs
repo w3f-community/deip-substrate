@@ -1,15 +1,16 @@
 use crate::*;
 
 use sp_runtime::traits::Saturating;
+use sp_std::vec;
 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Contribution<AccountId, Balance, Moment> {
-    sale_id: ProjectTokenSaleId,
-    owner: AccountId,
-    amount: Balance,
-    time: Moment,
+    pub sale_id: ProjectTokenSaleId,
+    pub owner: AccountId,
+    pub amount: Balance,
+    pub time: Moment,
 }
 
 impl<T: Config> Module<T> {
@@ -43,22 +44,46 @@ impl<T: Config> Module<T> {
             Error::<T>::ContributionNotEnoughFunds
         );
 
-        let contribution =
-            ProjectTokenSaleContributionBySaleIdOwner::<T>::try_get(&(sale_id, account.clone()));
-        let new_contribution = Contribution {
-            sale_id: sale_id,
-            owner: account.clone(),
-            amount: amount_to_contribute
-                .saturating_add(contribution.as_ref().map_or_else(|_| 0u32.into(), |c| c.amount)),
-            time: contribution.map_or_else(|_| pallet_timestamp::Module::<T>::get(), |c| c.time),
-        };
+        ProjectTokenSaleContributions::<T>::mutate_exists(sale_id, |contributions| {
+            let mut_contributions = match contributions.as_mut() {
+                None => {
+                    *contributions = Some(vec![(
+                        account.clone(),
+                        Contribution {
+                            sale_id: sale_id,
+                            owner: account.clone(),
+                            amount: amount_to_contribute,
+                            time: pallet_timestamp::Module::<T>::get(),
+                        },
+                    )]);
+                    return;
+                }
+                Some(c) => c,
+            };
 
-        ProjectTokenSaleContributionBySaleIdOwner::<T>::insert(
-            (sale_id, account),
-            new_contribution,
-        );
+            match mut_contributions.binary_search_by_key(&&account, |&(ref a, _)| a) {
+                Err(i) => {
+                    mut_contributions.insert(
+                        i,
+                        (
+                            account.clone(),
+                            Contribution {
+                                sale_id: sale_id,
+                                owner: account.clone(),
+                                amount: amount_to_contribute,
+                                time: pallet_timestamp::Module::<T>::get(),
+                            },
+                        ),
+                    );
+                }
+                Ok(i) => {
+                    mut_contributions[i].1.amount =
+                        amount_to_contribute.saturating_add(mut_contributions[i].1.amount);
+                }
+            };
+        });
 
-        // update total_amount in token sale 
+        // update total_amount in token sale
 
         if is_hard_cap_reached {
             unimplemented!();

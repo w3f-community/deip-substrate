@@ -410,10 +410,8 @@ decl_storage! {
         /// Index for fast lookup a token sale by its end time
         ProjectTokenSaleEndTimes: Vec<(T::Moment, ProjectTokenSaleId)>;
 
-        /// temporary index for fast lookup contributions by project's id
-        ProjectTokenSaleContributionIndex: map hasher(identity) ProjectTokenSaleId => Vec<(T::AccountId, BalanceOf<T>)>;
-
-        ProjectTokenSaleContributionBySaleIdOwner: map hasher(identity) (ProjectTokenSaleId, T::AccountId) => ProjectTokenSaleContributionOf<T>;
+        /// Contains contributions to project token sales from DAOs
+        ProjectTokenSaleContributions: map hasher(identity) ProjectTokenSaleId => Vec<(T::AccountId, ProjectTokenSaleContributionOf<T>)>;
 
         /// temporary object that holds information about how many project's tokens
         /// belong to the user
