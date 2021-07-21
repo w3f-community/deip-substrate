@@ -63,6 +63,7 @@ use project_token_sale::{Id as ProjectTokenSaleId,
     TokenInfo as ProjectTokenSaleTokenInfo};
 
 mod project_token_sale_contribution;
+use project_token_sale_contribution::{Contribution as ProjectTokenSaleContribution};
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
@@ -129,6 +130,7 @@ pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
+pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<<T as system::Config>::AccountId, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -386,6 +388,11 @@ decl_error! {
         TokenSaleAlreadyExists,
         TokenSaleBalanceIsNotEnough,
         TokenSaleProjectReservedOverflow,
+
+        // Possible errors when DAO tries to contribute to a project token sale
+        ContributionProjectTokenSaleNotFound,
+        ContributionProjectTokenSaleNotActive,
+        ContributionNotEnoughFunds,
     }
 }
 
@@ -405,6 +412,8 @@ decl_storage! {
 
         /// temporary index for fast lookup contributions by project's id
         ProjectTokenSaleContributionIndex: map hasher(identity) ProjectTokenSaleId => Vec<(T::AccountId, BalanceOf<T>)>;
+
+        ProjectTokenSaleContributionBySaleIdOwner: map hasher(identity) (ProjectTokenSaleId, T::AccountId) => ProjectTokenSaleContributionOf<T>;
 
         /// temporary object that holds information about how many project's tokens
         /// belong to the user
@@ -518,8 +527,12 @@ decl_module! {
         }
 
         #[weight = 10_000]
-        fn contribute_to_project_token_sale(origin) -> DispatchResult {
-            Self::contribute_to_project_token_sale_impl()
+        fn contribute_to_project_token_sale(origin,
+            id: ProjectTokenSaleId,
+            amount: BalanceOf<T>
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::contribute_to_project_token_sale_impl(account, id, amount)
         }
 
         /// Allow a user to update project.

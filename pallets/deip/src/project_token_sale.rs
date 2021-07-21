@@ -36,20 +36,20 @@ pub struct TokenInfo {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Info<Moment, Balance> {
     /// Reference for external world and uniques control
-    external_id: Id,
+    pub external_id: Id,
     /// Reference to the Project
-    project_id: ProjectId,
+    pub project_id: ProjectId,
     /// When the sale starts
-    start_time: Moment,
+    pub start_time: Moment,
     /// When it supposed to end
-    end_time: Moment,
-    status: Status,
+    pub end_time: Moment,
+    pub status: Status,
     /// How many contributions already reserved
-    total_amount: Balance,
-    soft_cap: Balance,
-    hard_cap: Balance,
+    pub total_amount: Balance,
+    pub soft_cap: Balance,
+    pub hard_cap: Balance,
     /// How many tokens supposed to sale
-    security_tokens_on_sale: u64,
+    pub security_tokens_on_sale: u64,
 }
 
 impl<T: Config> Module<T> {
