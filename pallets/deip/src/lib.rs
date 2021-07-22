@@ -22,8 +22,8 @@
 //!
 //! * `add_domain` - Add cryptographic hash of DomainId
 //! * `create_project` - Create Project belongs to Account (Team)
-//! * [`create_project_token_sale`](./enum.Call.html#variant.create_project_token_sale)
-//! * [`contribute_to_project_token_sale`](./enum.Call.html#variant.contribute_to_project_token_sale)
+//! * [`create_investment_opportunity`](./enum.Call.html#variant.create_investment_opportunity)
+//! * [`invest`](./enum.Call.html#variant.invest)
 //! * `update_project` - Update Project info
 //! * `create_project_content` - Create Project Content (Digital Asset)
 //! * `create_project_nda` - Create NDA contract between sides
@@ -59,7 +59,7 @@ mod mock;
 mod tests;
 
 mod project_token_sale;
-use project_token_sale::{Id as ProjectTokenSaleId,
+use project_token_sale::{Id as InvestmentId,
     Status as ProjectTokenSaleStatus,
     Info as ProjectTokenSale,
     TokenInfo as ProjectTokenSaleTokenInfo};
@@ -133,6 +133,25 @@ pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as
 pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
 pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<<T as system::Config>::AccountId, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub enum InvestmentOpportunity<Moment, Balance> {
+    ProjectTokenSale {
+        /// a moment when the sale starts. Must be later than current moment.
+        start_time: Moment,
+        /// a moment when the sale ends. Must be later than `start_time`.
+        end_time: Moment,
+        /// amount of units to raise. This must be greater or equal to `ExistentialDeposit`
+        /// (see [frame_support::traits::Currency] for details).
+        soft_cap: Balance,
+        /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
+        hard_cap: Balance,
+        /// specifies how many tokens of the project are intended to sale.
+        security_tokens_on_sale: u64,
+    },
+}
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -307,13 +326,13 @@ decl_event! {
         /// Event emitted when a token sale for project has been created.
         ProjectTokenSaleCreated(ProjectId, ProjectTokenSale),
         /// Event emitted when a token sale for project has been activated.
-        ProjectTokenSaleActivated(ProjectId, ProjectTokenSaleId),
+        ProjectTokenSaleActivated(ProjectId, InvestmentId),
         /// Event emitted when a token sale for project has finished.
-        ProjectTokenSaleFinished(ProjectId, ProjectTokenSaleId),
+        ProjectTokenSaleFinished(ProjectId, InvestmentId),
         /// Event emitted when a token sale for project has expired.
-        ProjectTokenSaleExpired(ProjectId, ProjectTokenSaleId),
+        ProjectTokenSaleExpired(ProjectId, InvestmentId),
         /// Event emitted when DAO contributed to the project token sale
-        ProjectTokenSaleContributed(ProjectTokenSaleId, AccountId),
+        ProjectTokenSaleContributed(InvestmentId, AccountId),
     }
 }
 
@@ -409,13 +428,13 @@ decl_storage! {
 
         ProjectTokens: map hasher(identity) ProjectId => ProjectTokenSaleTokenInfo;
 
-        ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) ProjectTokenSaleId => ProjectTokenSaleOf<T>;
-        ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, ProjectTokenSaleId)>;
+        ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) InvestmentId => ProjectTokenSaleOf<T>;
+        ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, InvestmentId)>;
         /// Index for fast lookup a token sale by its end time
-        ProjectTokenSaleEndTimes: Vec<(T::Moment, ProjectTokenSaleId)>;
+        ProjectTokenSaleEndTimes: Vec<(T::Moment, InvestmentId)>;
 
         /// Contains contributions to project token sales from DAOs
-        ProjectTokenSaleContributions: map hasher(identity) ProjectTokenSaleId => Vec<(T::AccountId, ProjectTokenSaleContributionOf<T>)>;
+        ProjectTokenSaleContributions: map hasher(identity) InvestmentId => Vec<(T::AccountId, ProjectTokenSaleContributionOf<T>)>;
 
         /// temporary object that holds information about how many project's tokens
         /// belong to the user
@@ -514,45 +533,44 @@ decl_module! {
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
         }
 
-        /// Allows DAO to create a project token sale.
+        /// Allows DAO to create an investment opportunity.
         ///
         /// The origin for this call must be _Signed_.
         ///
         /// - `external_id`: id of the sale. Must be unique.
         /// - `project_id`: id of the project which tokens are intended to sale.
-        /// - `start_time`: a moment when the sale starts. Must be later than current moment.
-        /// - `end_time`: a moment when the sale ends. Must be later than `start_time`.
-        /// - `soft_cap`: amount of units to raise. This must be greater or equal to ExistentialDeposit
-        /// (see [frame_support::traits::Currency] for details).
-        /// - `hard_cap`: amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
-        /// - `security_tokens_on_sale`: specifies how many tokens of the project are intended to sale.
+        /// - `investment_type`: specifies type of created investment opportunity. For possible
+        /// variants and details see [`InvestmentOpportunity`].
         #[weight = 10_000]
-        fn create_project_token_sale(origin,
-            external_id: ProjectTokenSaleId,
+        fn create_investment_opportunity(origin,
+            external_id: InvestmentId,
             project_id: ProjectId,
-            start_time: T::Moment,
-            end_time: T::Moment,
-            soft_cap: BalanceOf<T>,
-            hard_cap: BalanceOf<T>,
-            security_tokens_on_sale: u64,
+            investment_type: InvestmentOpportunity<T::Moment, BalanceOf<T>>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
+
+            match investment_type {
+                InvestmentOpportunity::ProjectTokenSale{
+                    start_time,
+                    end_time,
+                    soft_cap,
+                    hard_cap,
+                    security_tokens_on_sale,
+                } => Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
+            }
         }
 
-        /// Allows DAO to contribute to a project token sale.
-        /// If the sale finished successfully DAO receives project tokens
-        /// according to its contribution ratio.
+        /// Allows DAO to invest to an opportunity.
         ///
         /// The origin for this call must be _Signed_.
         ///
-        /// - `id`: identifier of the project token sale
-        /// - `amount`: amount of units to contribute. The account should have enough funds on
-        ///     the balance. This amount is reserved until the sale finished or expired
+        /// - `id`: identifier of the investment opportunity
+        /// - `amount`: amount of units to invest. The account should have enough funds on
+        ///     the balance. This amount is reserved until the investment finished or expired
         /// (see [frame_support::traits::ReservableCurrency] for details).
         #[weight = 10_000]
-        fn contribute_to_project_token_sale(origin,
-            id: ProjectTokenSaleId,
+        fn invest(origin,
+            id: InvestmentId,
             amount: BalanceOf<T>
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;

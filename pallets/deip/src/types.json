@@ -65,7 +65,7 @@
   "ProjectContentId": "H160",
   "NdaAccessRequestId": "H160",
   "NdaId": "H160",
-  "ProjectTokenSaleId": "H160",
+  "InvestmentId": "H160",
   "NdaOf": "Nda",
   "NdaAccessRequestOf": "NdaAccessRequest",
   "ProjectOf": "Project",
@@ -168,7 +168,7 @@
     ]
   },
   "ProjectTokenSale": {
-    "external_id": "ProjectTokenSaleId",
+    "external_id": "InvestmentId",
     "project_id": "ProjectId",
     "start_time": "Moment",
     "end_time": "Moment",
@@ -179,9 +179,24 @@
     "security_tokens_on_sale": "u64"
   },
   "ProjectTokenSaleContribution": {
-    "sale_id": "ProjectTokenSaleId",
+    "sale_id": "InvestmentId",
     "owner": "AccountId",
     "amount": "Balance",
     "time": "Moment"
+  },
+  "ProjectTokenSaleTokenInfo": {
+    "total": "u64",
+    "reserved": "u64"
+  },
+  "InvestmentOpportunity": {
+    "_enum": {
+      "ProjectTokenSale": {
+        "start_time": "Moment",
+        "end_time": "Moment",
+        "soft_cap": "Balance",
+        "hard_cap": "Balance",
+        "security_tokens_on_sale": "u64"
+      }
+    }
   }
 }

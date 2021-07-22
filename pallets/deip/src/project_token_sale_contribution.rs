@@ -7,7 +7,7 @@ use sp_std::vec;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Contribution<AccountId, Balance, Moment> {
-    pub sale_id: ProjectTokenSaleId,
+    pub sale_id: InvestmentId,
     pub owner: AccountId,
     pub amount: Balance,
     pub time: Moment,
@@ -16,7 +16,7 @@ pub struct Contribution<AccountId, Balance, Moment> {
 impl<T: Config> Module<T> {
     pub(super) fn contribute_to_project_token_sale_impl(
         account: T::AccountId,
-        sale_id: ProjectTokenSaleId,
+        sale_id: InvestmentId,
         amount: BalanceOf<T>,
     ) -> DispatchResult {
         let sale = ProjectTokenSaleMap::<T>::try_get(sale_id)
