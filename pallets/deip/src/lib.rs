@@ -22,13 +22,15 @@
 //!
 //! * `add_domain` - Add cryptographic hash of DomainId
 //! * `create_project` - Create Project belongs to Account (Team)
+//! * [`create_project_token_sale`](./enum.Call.html#variant.create_project_token_sale)
+//! * [`contribute_to_project_token_sale`](./enum.Call.html#variant.contribute_to_project_token_sale)
 //! * `update_project` - Update Project info
 //! * `create_project_content` - Create Project Content (Digital Asset)
 //! * `create_project_nda` - Create NDA contract between sides
 //! * `create_nda_content_access_request` - Some side request access to the data of contract
 //! * `fulfill_nda_content_access_request` - Granter fulfill access request to the data
 //! * `reject_nda_content_access_request` - Granter reject access request to the data
-//! *  `create_review` - Create Review
+//! * `create_review` - Create Review
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -512,6 +514,18 @@ decl_module! {
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
         }
 
+        /// Allows DAO to create a project token sale.
+        ///
+        /// The origin for this call must be _Signed_.
+        ///
+        /// - `external_id`: id of the sale. Must be unique.
+        /// - `project_id`: id of the project which tokens are intended to sale.
+        /// - `start_time`: a moment when the sale starts. Must be later than current moment.
+        /// - `end_time`: a moment when the sale ends. Must be later than `start_time`.
+        /// - `soft_cap`: amount of units to raise. This must be greater or equal to ExistentialDeposit
+        /// (see [frame_support::traits::Currency] for details).
+        /// - `hard_cap`: amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
+        /// - `security_tokens_on_sale`: specifies how many tokens of the project are intended to sale.
         #[weight = 10_000]
         fn create_project_token_sale(origin,
             external_id: ProjectTokenSaleId,
@@ -526,6 +540,16 @@ decl_module! {
             Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
         }
 
+        /// Allows DAO to contribute to a project token sale.
+        /// If the sale finished successfully DAO receives project tokens
+        /// according to its contribution ratio.
+        ///
+        /// The origin for this call must be _Signed_.
+        ///
+        /// - `id`: identifier of the project token sale
+        /// - `amount`: amount of units to contribute. The account should have enough funds on
+        ///     the balance. This amount is reserved until the sale finished or expired
+        /// (see [frame_support::traits::ReservableCurrency] for details).
         #[weight = 10_000]
         fn contribute_to_project_token_sale(origin,
             id: ProjectTokenSaleId,
