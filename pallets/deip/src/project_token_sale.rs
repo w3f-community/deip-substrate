@@ -209,8 +209,8 @@ impl<T: Config> Module<T> {
         let token_sales_by_end_time = token_sales_by_end_time;
         for (_, sale_id) in token_sales_by_end_time.iter() {
             let sale = ProjectTokenSaleMap::<T>::get(sale_id);
-            if matches!(sale.status, ProjectTokenSaleStatus::Inactive) {
-                Self::update_status(&sale, ProjectTokenSaleStatus::Active);
+            if now >= sale.start_time && matches!(sale.status, Status::Inactive) {
+                Self::update_status(&sale, Status::Active);
                 Self::deposit_event(RawEvent::ProjectTokenSaleActivated(
                     sale.project_id,
                     *sale_id,
