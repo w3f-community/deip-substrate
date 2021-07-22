@@ -1,5 +1,6 @@
 use crate::*;
 
+use frame_support::traits::{ExistenceRequirement, Imbalance, WithdrawReasons};
 use sp_runtime::{traits::Saturating, SaturatedConversion};
 
 /// Unique ProjectTokenSale ID reference
@@ -175,7 +176,7 @@ impl<T: Config> Module<T> {
         })
     }
 
-    pub(super) fn finish_project_token_sale_by_id(sale_id: Id,) -> Result<(), ()> {
+    pub(super) fn finish_project_token_sale_by_id(sale_id: Id) -> Result<(), ()> {
         match ProjectTokenSaleMap::<T>::try_get(sale_id) {
             Err(_) => Err(()),
             Ok(sale) => {
@@ -283,6 +284,11 @@ impl<T: Config> Module<T> {
             token_info.reserved = 0;
         });
 
+        let mut imbalance = T::Currency::deposit_creating(
+            &ProjectMap::<T>::get(sale.project_id).team_id,
+            sale.total_amount,
+        );
+
         let contributions = ProjectTokenSaleContributions::<T>::try_get(sale.external_id)
             .expect("Token sale is about to finish, but there are no contributions?");
         let mut iter = contributions.iter();
@@ -291,15 +297,22 @@ impl<T: Config> Module<T> {
             .next()
             .expect("Token sale is about to finish, but there are no contributors?");
 
+        let withdraw = |who, value| {
+            T::Currency::unreserve(who, value);
+            T::Currency::withdraw(
+                who,
+                value,
+                WithdrawReasons::TRANSFER,
+                ExistenceRequirement::KeepAlive,
+            )
+            .expect("Required amount just unreserved")
+        };
+
         let mut total_token_amount: u64 = 0;
         for (_, ref contribution) in iter {
-            T::Currency::repatriate_reserved(
-                &contribution.owner,
-                &ProjectMap::<T>::get(sale.project_id).team_id,
-                contribution.amount,
-                frame_support::traits::BalanceStatus::Free,
-            )
-            .expect("Corresponding amount should be reserved earlier");
+            imbalance = imbalance
+                .offset(withdraw(&contribution.owner, contribution.amount))
+                .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"));
 
             // similiar to frame_support::traits::Imbalance::ration
             let token_amount = contribution
@@ -309,14 +322,28 @@ impl<T: Config> Module<T> {
             let token_amount: u64 = token_amount.saturated_into();
             total_token_amount += token_amount;
 
-            OwnedProjectTokens::<T>::insert(contribution.owner.clone(), sale.project_id, token_amount);
+            OwnedProjectTokens::<T>::insert(
+                contribution.owner.clone(),
+                sale.project_id,
+                token_amount,
+            );
         }
 
         // process the remainder
+        imbalance
+            .offset(withdraw(
+                &first_contribution.owner,
+                first_contribution.amount,
+            ))
+            .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"))
+            .drop_zero()
+            .unwrap_or_else(|_| panic!("all contributions should be processed"));
+
         OwnedProjectTokens::<T>::insert(
             first_contribution.owner.clone(),
             sale.project_id,
-            sale.security_tokens_on_sale.saturating_sub(total_token_amount),
+            sale.security_tokens_on_sale
+                .saturating_sub(total_token_amount),
         );
 
         ProjectTokenSaleContributions::<T>::remove(sale.external_id);
