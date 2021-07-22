@@ -71,6 +71,7 @@
   "ProjectOf": "Project",
   "ProjectContentOf": "ProjectContent",
   "ProjectTokenSaleOf": "ProjectTokenSale",
+  "ProjectTokenSaleContributionOf": "ProjectTokenSaleContribution",
   "Nda": {
     "contract_creator": "AccountId",
     "external_id": "NdaId",
@@ -176,5 +177,11 @@
     "soft_cap": "Balance",
     "hard_cap": "Balance",
     "security_tokens_on_sale": "u64"
+  },
+  "ProjectTokenSaleContribution": {
+    "sale_id": "ProjectTokenSaleId",
+    "owner": "AccountId",
+    "amount": "Balance",
+    "time": "Moment"
   }
 }
