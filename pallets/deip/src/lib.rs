@@ -384,7 +384,7 @@ decl_error! {
         // Project token sale errors
         TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment,
         TokenSaleEndTimeMustBeLaterStartTime,
-        TokenSaleSoftCapShouldBePositive,
+        TokenSaleSoftCapMustBeGreaterOrEqualMinimum,
         TokenSaleHardCapShouldBeGreaterOrEqualSoftCap,
         TokenSaleScheduledAlready,
         TokenSaleAlreadyExists,

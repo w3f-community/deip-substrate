@@ -80,8 +80,8 @@ impl<T: Config> Module<T> {
         );
 
         ensure!(
-            soft_cap > 0u32.into(),
-            Error::<T>::TokenSaleSoftCapShouldBePositive
+            soft_cap >= T::Currency::minimum_balance(),
+            Error::<T>::TokenSaleSoftCapMustBeGreaterOrEqualMinimum
         );
         ensure!(
             hard_cap >= soft_cap,
