@@ -40,21 +40,26 @@ pub use pallet::*;
 /// Re-exports deip-toolkit
 pub use pallet_deip_toolkit;
 
+const NON_LOCAL: u8 = 99;
+
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
     use frame_system::pallet_prelude::*;
     use frame_system::RawOrigin;
+    use frame_system::offchain::{SubmitTransaction, SendTransactionTypes};
     
     use frame_support::pallet_prelude::*;
     use frame_support::weights::{PostDispatchInfo, GetDispatchInfo};
+    use frame_support::debug::RuntimeLogger;
+    use frame_support::debug::debug;
     
     use frame_support::traits::{UnfilteredDispatchable, IsSubType};
     
     use sp_std::prelude::*;
     use sp_std::collections::{btree_map::BTreeMap};
     
-    use sp_runtime::traits::{Dispatchable};
+    use sp_runtime::traits::{Dispatchable, Zero};
     
     use crate::proposal::{
         ProposalId, DeipProposal,
@@ -63,10 +68,10 @@ pub mod pallet {
         InputProposalBatchItem
     };
     use crate::storage::StorageWrite;
-    
+
     /// Configuration trait
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: frame_system::Config + pallet_timestamp::Config + SendTransactionTypes<Call<Self>> {
         /// Type represents events
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// Type represents particular call from batch-transaction 
@@ -79,6 +84,14 @@ pub mod pallet {
              IsSubType<Call<Self>>;
         
         type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
+        
+        /// Pending proposal's time-to-live
+        #[pallet::constant]
+        type Ttl: Get<Self::Moment>;
+        
+        /// Period of check for expired proposals
+        #[pallet::constant]
+        type ExpirePeriod: Get<Self::BlockNumber>;
     }
     
     #[doc(hidden)]
@@ -88,7 +101,69 @@ pub mod pallet {
     
     #[doc(hidden)]
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(n: T::BlockNumber) {
+            RuntimeLogger::init();
+            if !sp_io::offchain::is_validator() {
+                debug!("{}", "not a validator");
+                return
+            }
+            if n % T::ExpirePeriod::get() != Zero::zero() {
+                debug!("skip expire proposals at {:?}", n);
+                return
+            }
+            debug!("expire proposals at {:?}", n);
+            let now = pallet_timestamp::Module::<T>::get();
+            for (id, obj) in ProposalRepository::<T>::iter() {
+                if !obj.expired(now) {
+                    continue
+                }
+                let call = Call::expire(id);
+                let submit = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+                if submit.is_err() {
+                    debug!("{}", "error on submit unsigned transaction");
+                } else {
+                    debug!("{}", "submit unsigned transaction");
+                }
+            }
+        }
+    }
+    
+    #[pallet::validate_unsigned]
+	impl<T: Config> ValidateUnsigned for Pallet<T> {
+		type Call = Call<T>;
+
+		/// Validate unsigned call to this module.
+		///
+		/// By default unsigned transactions are disallowed, but implementing the validator
+		/// here we make sure that some particular calls (the ones produced by offchain worker)
+		/// are being whitelisted and marked as valid.
+		fn validate_unsigned(
+			source: TransactionSource,
+			call: &Self::Call,
+		)
+            -> TransactionValidity
+        {
+            // Firstly let's check that we get the local transaction.
+            if !matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
+                return InvalidTransaction::Custom(super::NON_LOCAL).into()
+            }
+			// Check that we call the right function.
+			if let Call::expire(ref proposal_id) = call {
+                let proposal = ProposalRepository::<T>::get(proposal_id);
+                let now = pallet_timestamp::Module::<T>::get();
+                if proposal.is_none() { return InvalidTransaction::Stale.into() }
+                else if !proposal.as_ref().unwrap().expired(now) { return InvalidTransaction::Future.into() }
+                ValidTransaction::with_tag_prefix("DeipProposalOffchainWorker")
+                    .propagate(false)
+                    .longevity(5)
+                    .and_provides((*proposal_id, proposal.unwrap().created_at))
+                    .build()
+            } else {
+				InvalidTransaction::Call.into()
+			}
+		}
+	}
     
     #[pallet::error]
     pub enum Error<T> {
@@ -103,7 +178,9 @@ pub mod pallet {
         /// Reach depth limit of nested proposals
         ReachDepthLimit,
         /// Self-referential proposal
-        SelfReferential
+        SelfReferential,
+        /// Not expired yet
+        NotExpired
     }
     
     #[pallet::event]
@@ -131,6 +208,10 @@ pub mod pallet {
             member: T::AccountId,
             proposal_id: ProposalId,
             state: ProposalState
+        },
+        /// Expired
+        Expired {
+            proposal_id: ProposalId
         }
     }
     
@@ -172,8 +253,6 @@ pub mod pallet {
             -> DispatchResultWithPostInfo
         {
             let member = ensure_signed(origin)?;
-            let pending = PendingProposals::<T>::get(&member);
-            let author = pending.get(&proposal_id).ok_or(Error::<T>::NotFound)?;
             let proposal = ProposalRepository::<T>::get(&proposal_id).ok_or(Error::<T>::NotFound)?;
             let maybe_batch_exec_result: Option<DispatchResultWithPostInfo> =
                 StorageWrite::<T>::new()
@@ -188,6 +267,26 @@ pub mod pallet {
             if let Some(batch_exec_result) = maybe_batch_exec_result {
                 let _batch_exec_ok = batch_exec_result?;
             }
+            Ok(Some(0).into())
+        }
+        
+        #[pallet::weight(10_000)]
+        pub fn expire(
+            origin: OriginFor<T>,
+            proposal_id: ProposalId,
+        )
+            -> DispatchResultWithPostInfo
+        {
+            ensure_none(origin)?;
+            
+            let proposal = ProposalRepository::<T>::get(proposal_id)
+                .ok_or_else(|| Error::<T>::NotFound)?;
+            
+            StorageWrite::<T>::new().commit(move |ops| {
+                let now = pallet_timestamp::Module::<T>::get();
+                proposal.expire(now, ops)
+            })?;
+            
             Ok(Some(0).into())
         }
     }

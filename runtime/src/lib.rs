@@ -53,6 +53,7 @@ pub mod deip_account;
 
 /// Import the template pallet.
 pub use pallet_template;
+// use frame_benchmarking::frame_support::pallet_prelude::Get;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -282,10 +283,24 @@ impl pallet_deip::Config for Runtime {
     type Currency = Balances;
 }
 
+parameter_types! {
+	pub const ProposalTtl: u64 = 7 * DAYS as u64 * MILLISECS_PER_BLOCK;
+    pub const ProposalExpirePeriod: BlockNumber = HOURS;
+}
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+    where Call: From<C>
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = Call;
+}
+
 impl pallet_deip_proposal::pallet::Config for Runtime {
     type Event = Event;
     type Call = Call;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
+    type Ttl = ProposalTtl;
+    type ExpirePeriod = ProposalExpirePeriod;
 }
 
 impl pallet_deip_org::Config for Runtime {
@@ -337,7 +352,7 @@ construct_runtime!(
 		// Include the custom logic from the template pallet in the runtime.
 		TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
 		Deip: pallet_deip::{Module, Call, Storage, Event<T>, Config},
-		DeipProposal: pallet_deip_proposal::{Module, Call, Storage, Event<T>, Config},
+		DeipProposal: pallet_deip_proposal::{Module, Call, Storage, Event<T>, Config, ValidateUnsigned},
 		DeipOrg: pallet_deip_org::{Module, Call, Storage, Event<T>, Config},
 		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
 	}

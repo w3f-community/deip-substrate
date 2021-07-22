@@ -51,7 +51,8 @@ pub struct DeipProposal<T: Config> {
     /// Proposal state
     pub(super) state: ProposalState,
     /// Proposal author
-    pub(super) author: T::AccountId
+    pub(super) author: T::AccountId,
+    pub(super) created_at: T::Moment
 }
 
 /// Proposal state
@@ -129,7 +130,8 @@ impl<T: Config> DeipProposal<T> {
         batch: InputProposalBatch<T>,
         author: T::AccountId,
         external_id: Option<ProposalId>,
-        storage_ops: &mut StorageOpsT<T>
+        storage_ops: &mut StorageOpsT<T>,
+        created_at: T::Moment
     )
         -> Result<(), Error<T>>
     {
@@ -172,7 +174,8 @@ impl<T: Config> DeipProposal<T> {
             batch,
             decisions,
             state: ProposalState::Pending,
-            author
+            author,
+            created_at
         };
         storage_ops.push_op(StorageOps::DepositEvent(Event::<T>::Proposed {
             author: proposal.author.clone(),
@@ -253,5 +256,17 @@ impl<T: Config> DeipProposal<T> {
                 matches!(x, ProposalMemberDecision::Approve)
             });
         approved && matches!(self.state, ProposalState::Pending)
+    }
+    
+    pub fn expired(&self, now: T::Moment) -> bool {
+        (self.created_at + T::Ttl::get()) <= now 
+            && matches!(self.state, ProposalState::Pending)
+    }
+    
+    pub fn expire(self, now: T::Moment, storage_ops: &mut StorageOpsT<T>) -> Result<(), Error<T>>{
+        ensure!(self.expired(now), Error::<T>::NotExpired);
+        storage_ops.push_op(StorageOps::DepositEvent(Event::<T>::Expired { proposal_id: self.id }));
+        storage_ops.push_op(StorageOps::DeleteProposal(self));
+        Ok(())
     }
 }

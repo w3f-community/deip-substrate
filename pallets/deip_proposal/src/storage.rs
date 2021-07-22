@@ -45,7 +45,6 @@ impl<T: Config> StorageOp for StorageOps<T> {
                 let DeipProposal::<T> {
                     id: proposal_id,
                     decisions,
-                    author,
                     .. 
                 } = proposal;
                 let members = decisions.keys();

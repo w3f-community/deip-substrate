@@ -20,6 +20,7 @@ pub fn propose<T: Config>(
                 author,
                 external_id,
                 ops,
+                pallet_timestamp::Module::<T>::get()
             )
         })
 }
