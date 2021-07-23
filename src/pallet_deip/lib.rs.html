@@ -935,6 +935,68 @@
 <span id="932">932</span>
 <span id="933">933</span>
 <span id="934">934</span>
+<span id="935">935</span>
+<span id="936">936</span>
+<span id="937">937</span>
+<span id="938">938</span>
+<span id="939">939</span>
+<span id="940">940</span>
+<span id="941">941</span>
+<span id="942">942</span>
+<span id="943">943</span>
+<span id="944">944</span>
+<span id="945">945</span>
+<span id="946">946</span>
+<span id="947">947</span>
+<span id="948">948</span>
+<span id="949">949</span>
+<span id="950">950</span>
+<span id="951">951</span>
+<span id="952">952</span>
+<span id="953">953</span>
+<span id="954">954</span>
+<span id="955">955</span>
+<span id="956">956</span>
+<span id="957">957</span>
+<span id="958">958</span>
+<span id="959">959</span>
+<span id="960">960</span>
+<span id="961">961</span>
+<span id="962">962</span>
+<span id="963">963</span>
+<span id="964">964</span>
+<span id="965">965</span>
+<span id="966">966</span>
+<span id="967">967</span>
+<span id="968">968</span>
+<span id="969">969</span>
+<span id="970">970</span>
+<span id="971">971</span>
+<span id="972">972</span>
+<span id="973">973</span>
+<span id="974">974</span>
+<span id="975">975</span>
+<span id="976">976</span>
+<span id="977">977</span>
+<span id="978">978</span>
+<span id="979">979</span>
+<span id="980">980</span>
+<span id="981">981</span>
+<span id="982">982</span>
+<span id="983">983</span>
+<span id="984">984</span>
+<span id="985">985</span>
+<span id="986">986</span>
+<span id="987">987</span>
+<span id="988">988</span>
+<span id="989">989</span>
+<span id="990">990</span>
+<span id="991">991</span>
+<span id="992">992</span>
+<span id="993">993</span>
+<span id="994">994</span>
+<span id="995">995</span>
+<span id="996">996</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -960,13 +1022,15 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! * `add_domain` - Add cryptographic hash of DomainId</span>
 <span class="doccomment">//! * `create_project` - Create Project belongs to Account (Team)</span>
+<span class="doccomment">//! * [`create_investment_opportunity`](./enum.Call.html#variant.create_investment_opportunity)</span>
+<span class="doccomment">//! * [`invest`](./enum.Call.html#variant.invest)</span>
 <span class="doccomment">//! * `update_project` - Update Project info</span>
 <span class="doccomment">//! * `create_project_content` - Create Project Content (Digital Asset)</span>
 <span class="doccomment">//! * `create_project_nda` - Create NDA contract between sides</span>
 <span class="doccomment">//! * `create_nda_content_access_request` - Some side request access to the data of contract</span>
 <span class="doccomment">//! * `fulfill_nda_content_access_request` - Granter fulfill access request to the data</span>
 <span class="doccomment">//! * `reject_nda_content_access_request` - Granter reject access request to the data</span>
-<span class="doccomment">//! *  `create_review` - Create Review</span>
+<span class="doccomment">//! * `create_review` - Create Review</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [`Call`]: ./enum.Call.html</span>
 <span class="doccomment">//! [`Config`]: ./trait.Config.html</span>
@@ -995,10 +1059,13 @@
 <span class="kw">mod</span> <span class="ident">tests</span>;
 
 <span class="kw">mod</span> <span class="ident">project_token_sale</span>;
-<span class="kw">use</span> <span class="ident">project_token_sale</span>::{<span class="ident">Id</span> <span class="kw">as</span> <span class="ident">ProjectTokenSaleId</span>,
+<span class="kw">use</span> <span class="ident">project_token_sale</span>::{<span class="ident">Id</span> <span class="kw">as</span> <span class="ident">InvestmentId</span>,
     <span class="ident">Status</span> <span class="kw">as</span> <span class="ident">ProjectTokenSaleStatus</span>,
     <span class="ident">Info</span> <span class="kw">as</span> <span class="ident">ProjectTokenSale</span>,
     <span class="ident">TokenInfo</span> <span class="kw">as</span> <span class="ident">ProjectTokenSaleTokenInfo</span>};
+
+<span class="kw">mod</span> <span class="ident">project_token_sale_contribution</span>;
+<span class="kw">use</span> <span class="ident">project_token_sale_contribution</span>::{<span class="ident">Contribution</span> <span class="kw">as</span> <span class="ident">ProjectTokenSaleContribution</span>};
 
 <span class="doccomment">/// A maximum number of Domains. When domains reaches this number, no new domains can be added.</span>
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_DOMAINS</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">100</span>;
@@ -1065,6 +1132,26 @@
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">ProjectContent</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::AccountId</span><span class="op">&gt;</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectTokenSaleOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">ProjectTokenSale</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">pallet_timestamp::Config</span><span class="op">&gt;</span><span class="ident">::Moment</span>, <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::Currency</span> <span class="kw">as</span> <span class="ident">Currency</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::AccountId</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Balance</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectTokenSaleContributionOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleContribution</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::AccountId</span>, <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">pallet_timestamp::Config</span><span class="op">&gt;</span><span class="ident">::Moment</span><span class="op">&gt;</span>;
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">serde</span>(<span class="ident">rename_all</span> <span class="op">=</span> <span class="string">&quot;camelCase&quot;</span>))]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">InvestmentOpportunity</span><span class="op">&lt;</span><span class="ident">Moment</span>, <span class="ident">Balance</span><span class="op">&gt;</span> {
+    <span class="ident">ProjectTokenSale</span> {
+        <span class="doccomment">/// a moment when the sale starts. Must be later than current moment.</span>
+        <span class="ident">start_time</span>: <span class="ident">Moment</span>,
+        <span class="doccomment">/// a moment when the sale ends. Must be later than `start_time`.</span>
+        <span class="ident">end_time</span>: <span class="ident">Moment</span>,
+        <span class="doccomment">/// amount of units to raise. This must be greater or equal to `ExistentialDeposit`</span>
+        <span class="doccomment">/// (see [frame_support::traits::Currency] for details).</span>
+        <span class="ident">soft_cap</span>: <span class="ident">Balance</span>,
+        <span class="doccomment">/// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.</span>
+        <span class="ident">hard_cap</span>: <span class="ident">Balance</span>,
+        <span class="doccomment">/// specifies how many tokens of the project are intended to sale.</span>
+        <span class="ident">security_tokens_on_sale</span>: <span class="ident">u64</span>,
+    },
+}
 
 <span class="doccomment">/// Review </span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">Default</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
@@ -1239,11 +1326,13 @@
         <span class="doccomment">/// Event emitted when a token sale for project has been created.</span>
         <span class="ident">ProjectTokenSaleCreated</span>(<span class="ident">ProjectId</span>, <span class="ident">ProjectTokenSale</span>),
         <span class="doccomment">/// Event emitted when a token sale for project has been activated.</span>
-        <span class="ident">ProjectTokenSaleActivated</span>(<span class="ident">ProjectId</span>, <span class="ident">ProjectTokenSaleId</span>),
+        <span class="ident">ProjectTokenSaleActivated</span>(<span class="ident">ProjectId</span>, <span class="ident">InvestmentId</span>),
         <span class="doccomment">/// Event emitted when a token sale for project has finished.</span>
-        <span class="ident">ProjectTokenSaleFinished</span>(<span class="ident">ProjectId</span>, <span class="ident">ProjectTokenSaleId</span>),
+        <span class="ident">ProjectTokenSaleFinished</span>(<span class="ident">ProjectId</span>, <span class="ident">InvestmentId</span>),
         <span class="doccomment">/// Event emitted when a token sale for project has expired.</span>
-        <span class="ident">ProjectTokenSaleExpired</span>(<span class="ident">ProjectId</span>, <span class="ident">ProjectTokenSaleId</span>),
+        <span class="ident">ProjectTokenSaleExpired</span>(<span class="ident">ProjectId</span>, <span class="ident">InvestmentId</span>),
+        <span class="doccomment">/// Event emitted when DAO contributed to the project token sale</span>
+        <span class="ident">ProjectTokenSaleContributed</span>(<span class="ident">InvestmentId</span>, <span class="ident">AccountId</span>),
     }
 }
 
@@ -1316,12 +1405,17 @@
         <span class="comment">// Project token sale errors</span>
         <span class="ident">TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment</span>,
         <span class="ident">TokenSaleEndTimeMustBeLaterStartTime</span>,
-        <span class="ident">TokenSaleSoftCapShouldBePositive</span>,
+        <span class="ident">TokenSaleSoftCapMustBeGreaterOrEqualMinimum</span>,
         <span class="ident">TokenSaleHardCapShouldBeGreaterOrEqualSoftCap</span>,
         <span class="ident">TokenSaleScheduledAlready</span>,
         <span class="ident">TokenSaleAlreadyExists</span>,
         <span class="ident">TokenSaleBalanceIsNotEnough</span>,
         <span class="ident">TokenSaleProjectReservedOverflow</span>,
+
+        <span class="comment">// Possible errors when DAO tries to contribute to a project token sale</span>
+        <span class="ident">ContributionProjectTokenSaleNotFound</span>,
+        <span class="ident">ContributionProjectTokenSaleNotActive</span>,
+        <span class="ident">ContributionNotEnoughFunds</span>,
     }
 }
 
@@ -1334,13 +1428,13 @@
 
         <span class="ident">ProjectTokens</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectTokenSaleTokenInfo</span>;
 
-        <span class="ident">ProjectTokenSaleMap</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">project_token_sale</span>): <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectTokenSaleId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectTokenSaleOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
-        <span class="ident">ProjectTokenSaleByProjectIdStatus</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">token_sales</span>): <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ProjectId</span>, <span class="ident">ProjectTokenSaleStatus</span>, <span class="ident">ProjectTokenSaleId</span>)<span class="op">&gt;</span>;
+        <span class="ident">ProjectTokenSaleMap</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">project_token_sale</span>): <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">InvestmentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectTokenSaleOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+        <span class="ident">ProjectTokenSaleByProjectIdStatus</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">token_sales</span>): <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ProjectId</span>, <span class="ident">ProjectTokenSaleStatus</span>, <span class="ident">InvestmentId</span>)<span class="op">&gt;</span>;
         <span class="doccomment">/// Index for fast lookup a token sale by its end time</span>
-        <span class="ident">ProjectTokenSaleEndTimes</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">T::Moment</span>, <span class="ident">ProjectTokenSaleId</span>)<span class="op">&gt;</span>;
+        <span class="ident">ProjectTokenSaleEndTimes</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">T::Moment</span>, <span class="ident">InvestmentId</span>)<span class="op">&gt;</span>;
 
-        <span class="doccomment">/// temporary index for fast lookup contributions by project&#39;s id</span>
-        <span class="ident">ProjectTokenSaleContributionIndex</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectTokenSaleId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">T::AccountId</span>, <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>;
+        <span class="doccomment">/// Contains contributions to project token sales from DAOs</span>
+        <span class="ident">ProjectTokenSaleContributions</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">InvestmentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">T::AccountId</span>, <span class="ident">ProjectTokenSaleContributionOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>;
 
         <span class="doccomment">/// temporary object that holds information about how many project&#39;s tokens</span>
         <span class="doccomment">/// belong to the user</span>
@@ -1439,18 +1533,48 @@
             <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectCreated</span>(<span class="ident">account</span>, <span class="ident">project</span>));
         }
 
+        <span class="doccomment">/// Allows DAO to create an investment opportunity.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// The origin for this call must be _Signed_.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// - `external_id`: id of the sale. Must be unique.</span>
+        <span class="doccomment">/// - `project_id`: id of the project which tokens are intended to sale.</span>
+        <span class="doccomment">/// - `investment_type`: specifies type of created investment opportunity. For possible</span>
+        <span class="doccomment">/// variants and details see [`InvestmentOpportunity`].</span>
         <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
-        <span class="kw">fn</span> <span class="ident">create_project_token_sale</span>(<span class="ident">origin</span>,
-            <span class="ident">external_id</span>: <span class="ident">ProjectTokenSaleId</span>,
+        <span class="kw">fn</span> <span class="ident">create_investment_opportunity</span>(<span class="ident">origin</span>,
+            <span class="ident">external_id</span>: <span class="ident">InvestmentId</span>,
             <span class="ident">project_id</span>: <span class="ident">ProjectId</span>,
-            <span class="ident">start_time</span>: <span class="ident">T::Moment</span>,
-            <span class="ident">end_time</span>: <span class="ident">T::Moment</span>,
-            <span class="ident">soft_cap</span>: <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-            <span class="ident">hard_cap</span>: <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-            <span class="ident">security_tokens_on_sale</span>: <span class="ident">u64</span>,
+            <span class="ident">investment_type</span>: <span class="ident">InvestmentOpportunity</span><span class="op">&lt;</span><span class="ident">T::Moment</span>, <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-            <span class="self">Self</span><span class="ident">::create_project_token_sale_impl</span>(<span class="ident">account</span>, <span class="ident">external_id</span>, <span class="ident">project_id</span>, <span class="ident">start_time</span>, <span class="ident">end_time</span>, <span class="ident">soft_cap</span>, <span class="ident">hard_cap</span>, <span class="ident">security_tokens_on_sale</span>)
+
+            <span class="kw">match</span> <span class="ident">investment_type</span> {
+                <span class="ident">InvestmentOpportunity::ProjectTokenSale</span>{
+                    <span class="ident">start_time</span>,
+                    <span class="ident">end_time</span>,
+                    <span class="ident">soft_cap</span>,
+                    <span class="ident">hard_cap</span>,
+                    <span class="ident">security_tokens_on_sale</span>,
+                } <span class="op">=</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::create_project_token_sale_impl</span>(<span class="ident">account</span>, <span class="ident">external_id</span>, <span class="ident">project_id</span>, <span class="ident">start_time</span>, <span class="ident">end_time</span>, <span class="ident">soft_cap</span>, <span class="ident">hard_cap</span>, <span class="ident">security_tokens_on_sale</span>)
+            }
+        }
+
+        <span class="doccomment">/// Allows DAO to invest to an opportunity.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// The origin for this call must be _Signed_.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// - `id`: identifier of the investment opportunity</span>
+        <span class="doccomment">/// - `amount`: amount of units to invest. The account should have enough funds on</span>
+        <span class="doccomment">///     the balance. This amount is reserved until the investment finished or expired</span>
+        <span class="doccomment">/// (see [frame_support::traits::ReservableCurrency] for details).</span>
+        <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
+        <span class="kw">fn</span> <span class="ident">invest</span>(<span class="ident">origin</span>,
+            <span class="ident">id</span>: <span class="ident">InvestmentId</span>,
+            <span class="ident">amount</span>: <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+        ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
+            <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
+            <span class="self">Self</span><span class="ident">::contribute_to_project_token_sale_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">amount</span>)
         }
 
         <span class="doccomment">/// Allow a user to update project.</span>

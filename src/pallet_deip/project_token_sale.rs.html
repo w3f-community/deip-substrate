@@ -298,9 +298,69 @@
 <span id="295">295</span>
 <span id="296">296</span>
 <span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="kw-2">*</span>;
 
+<span class="kw">use</span> <span class="ident">frame_support::traits</span>::{<span class="ident">ExistenceRequirement</span>, <span class="ident">Imbalance</span>, <span class="ident">WithdrawReasons</span>};
 <span class="kw">use</span> <span class="ident">sp_runtime</span>::{<span class="ident">traits::Saturating</span>, <span class="ident">SaturatedConversion</span>};
 
 <span class="doccomment">/// Unique ProjectTokenSale ID reference</span>
@@ -337,20 +397,20 @@
 <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">serde</span>(<span class="ident">rename_all</span> <span class="op">=</span> <span class="string">&quot;camelCase&quot;</span>))]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">Moment</span>, <span class="ident">Balance</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Reference for external world and uniques control</span>
-    <span class="ident">external_id</span>: <span class="ident">Id</span>,
+    <span class="kw">pub</span> <span class="ident">external_id</span>: <span class="ident">Id</span>,
     <span class="doccomment">/// Reference to the Project</span>
-    <span class="ident">project_id</span>: <span class="ident">ProjectId</span>,
+    <span class="kw">pub</span> <span class="ident">project_id</span>: <span class="ident">ProjectId</span>,
     <span class="doccomment">/// When the sale starts</span>
-    <span class="ident">start_time</span>: <span class="ident">Moment</span>,
+    <span class="kw">pub</span> <span class="ident">start_time</span>: <span class="ident">Moment</span>,
     <span class="doccomment">/// When it supposed to end</span>
-    <span class="ident">end_time</span>: <span class="ident">Moment</span>,
-    <span class="ident">status</span>: <span class="ident">Status</span>,
+    <span class="kw">pub</span> <span class="ident">end_time</span>: <span class="ident">Moment</span>,
+    <span class="kw">pub</span> <span class="ident">status</span>: <span class="ident">Status</span>,
     <span class="doccomment">/// How many contributions already reserved</span>
-    <span class="ident">total_amount</span>: <span class="ident">Balance</span>,
-    <span class="ident">soft_cap</span>: <span class="ident">Balance</span>,
-    <span class="ident">hard_cap</span>: <span class="ident">Balance</span>,
+    <span class="kw">pub</span> <span class="ident">total_amount</span>: <span class="ident">Balance</span>,
+    <span class="kw">pub</span> <span class="ident">soft_cap</span>: <span class="ident">Balance</span>,
+    <span class="kw">pub</span> <span class="ident">hard_cap</span>: <span class="ident">Balance</span>,
     <span class="doccomment">/// How many tokens supposed to sale</span>
-    <span class="ident">security_tokens_on_sale</span>: <span class="ident">u64</span>,
+    <span class="kw">pub</span> <span class="ident">security_tokens_on_sale</span>: <span class="ident">u64</span>,
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span><span class="op">&gt;</span> <span class="ident">Module</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
@@ -380,8 +440,8 @@
         );
 
         <span class="macro">ensure!</span>(
-            <span class="ident">soft_cap</span> <span class="op">&gt;</span> <span class="number">0u32</span>.<span class="ident">into</span>(),
-            <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::TokenSaleSoftCapShouldBePositive</span>
+            <span class="ident">soft_cap</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">T::Currency::minimum_balance</span>(),
+            <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::TokenSaleSoftCapMustBeGreaterOrEqualMinimum</span>
         );
         <span class="macro">ensure!</span>(
             <span class="ident">hard_cap</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">soft_cap</span>,
@@ -466,6 +526,27 @@
         <span class="prelude-val">Ok</span>(())
     }
 
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">collect_funds</span>(<span class="ident">sale_id</span>: <span class="ident">Id</span>, <span class="ident">amount</span>: <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), ()<span class="op">&gt;</span> {
+        <span class="ident">ProjectTokenSaleMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::mutate_exists</span>(<span class="ident">sale_id</span>, <span class="op">|</span><span class="ident">sale</span><span class="op">|</span> <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), ()<span class="op">&gt;</span> {
+            <span class="kw">match</span> <span class="ident">sale</span>.<span class="ident">as_mut</span>() {
+                <span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">s</span>.<span class="ident">total_amount</span> <span class="op">=</span> <span class="ident">amount</span>.<span class="ident">saturating_add</span>(<span class="ident">s</span>.<span class="ident">total_amount</span>),
+                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Err</span>(()),
+            }
+            <span class="prelude-val">Ok</span>(())
+        })
+    }
+
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">finish_project_token_sale_by_id</span>(<span class="ident">sale_id</span>: <span class="ident">Id</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), ()<span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="ident">ProjectTokenSaleMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">sale_id</span>) {
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(()),
+            <span class="prelude-val">Ok</span>(<span class="ident">sale</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="self">Self</span><span class="ident">::update_status</span>(<span class="kw-2">&amp;</span><span class="ident">sale</span>, <span class="ident">Status::Finished</span>);
+                <span class="self">Self</span><span class="ident">::finish_project_token_sale</span>(<span class="kw-2">&amp;</span><span class="ident">sale</span>);
+                <span class="prelude-val">Ok</span>(())
+            }
+        }
+    }
+
     <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">process_project_token_sales</span>() {
         <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">pallet_timestamp::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>();
 
@@ -489,9 +570,12 @@
         <span class="kw">let</span> <span class="ident">token_sales_by_end_time</span> <span class="op">=</span> <span class="ident">token_sales_by_end_time</span>;
         <span class="kw">for</span> (<span class="kw">_</span>, <span class="ident">sale_id</span>) <span class="kw">in</span> <span class="ident">token_sales_by_end_time</span>.<span class="ident">iter</span>() {
             <span class="kw">let</span> <span class="ident">sale</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">sale_id</span>);
-            <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">sale</span>.<span class="ident">status</span>, <span class="ident">ProjectTokenSaleStatus::Inactive</span>) {
-                <span class="self">Self</span><span class="ident">::update_status</span>(<span class="kw-2">&amp;</span><span class="ident">sale</span>, <span class="ident">ProjectTokenSaleStatus::Active</span>);
-                <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectTokenSaleActivated</span>(<span class="ident">sale</span>.<span class="ident">project_id</span>, <span class="kw-2">*</span><span class="ident">sale_id</span>));
+            <span class="kw">if</span> <span class="ident">now</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">sale</span>.<span class="ident">start_time</span> <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(<span class="ident">sale</span>.<span class="ident">status</span>, <span class="ident">Status::Inactive</span>) {
+                <span class="self">Self</span><span class="ident">::update_status</span>(<span class="kw-2">&amp;</span><span class="ident">sale</span>, <span class="ident">Status::Active</span>);
+                <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectTokenSaleActivated</span>(
+                    <span class="ident">sale</span>.<span class="ident">project_id</span>,
+                    <span class="kw-2">*</span><span class="ident">sale_id</span>,
+                ));
             }
         }
 
@@ -541,13 +625,17 @@
             <span class="ident">token_info</span>.<span class="ident">reserved</span> <span class="op">=</span> <span class="number">0</span>;
         });
 
-        <span class="kw">let</span> <span class="ident">contributors</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleContributionIndex</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">sale</span>.<span class="ident">external_id</span>);
-        <span class="kw">for</span> <span class="ident">contribution</span> <span class="kw">in</span> <span class="ident">contributors</span> {
-            <span class="ident">T::Currency::unreserve</span>(<span class="kw-2">&amp;</span><span class="ident">contribution</span>.<span class="number">0</span>, <span class="ident">contribution</span>.<span class="number">1</span>);
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="kw-2">ref</span> <span class="ident">c</span>) <span class="op">=</span> <span class="ident">ProjectTokenSaleContributions</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">sale</span>.<span class="ident">external_id</span>) {
+            <span class="kw">for</span> (<span class="kw">_</span>, <span class="kw-2">ref</span> <span class="ident">contribution</span>) <span class="kw">in</span> <span class="ident">c</span> {
+                <span class="ident">T::Currency::unreserve</span>(<span class="kw-2">&amp;</span><span class="ident">contribution</span>.<span class="ident">owner</span>, <span class="ident">contribution</span>.<span class="ident">amount</span>);
+            }
+            <span class="ident">ProjectTokenSaleContributions</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::remove</span>(<span class="ident">sale</span>.<span class="ident">external_id</span>);
         }
 
-        <span class="ident">ProjectTokenSaleContributionIndex</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::remove</span>(<span class="ident">sale</span>.<span class="ident">external_id</span>);
-        <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectTokenSaleExpired</span>(<span class="ident">sale</span>.<span class="ident">project_id</span>, <span class="ident">sale</span>.<span class="ident">external_id</span>));
+        <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectTokenSaleExpired</span>(
+            <span class="ident">sale</span>.<span class="ident">project_id</span>,
+            <span class="ident">sale</span>.<span class="ident">external_id</span>,
+        ));
     }
 
     <span class="kw">fn</span> <span class="ident">finish_project_token_sale</span>(<span class="ident">sale</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectTokenSaleOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) {
@@ -556,44 +644,74 @@
             <span class="ident">token_info</span>.<span class="ident">reserved</span> <span class="op">=</span> <span class="number">0</span>;
         });
 
-        <span class="kw">let</span> <span class="ident">contributors</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleContributionIndex</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">sale</span>.<span class="ident">external_id</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">contributors</span>.<span class="ident">iter</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">imbalance</span> <span class="op">=</span> <span class="ident">T::Currency::deposit_creating</span>(
+            <span class="kw-2">&amp;</span><span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">sale</span>.<span class="ident">project_id</span>).<span class="ident">team_id</span>,
+            <span class="ident">sale</span>.<span class="ident">total_amount</span>,
+        );
 
-        <span class="kw">let</span> <span class="ident">first_contribution</span> <span class="op">=</span> <span class="ident">iter</span>
+        <span class="kw">let</span> <span class="ident">contributions</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleContributions</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">sale</span>.<span class="ident">external_id</span>)
+            .<span class="ident">expect</span>(<span class="string">&quot;Token sale is about to finish, but there are no contributions?&quot;</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">contributions</span>.<span class="ident">iter</span>();
+
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw-2">ref</span> <span class="ident">first_contribution</span>) <span class="op">=</span> <span class="ident">iter</span>
             .<span class="ident">next</span>()
             .<span class="ident">expect</span>(<span class="string">&quot;Token sale is about to finish, but there are no contributors?&quot;</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total_token_amount</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="kw">for</span> <span class="ident">contribution</span> <span class="kw">in</span> <span class="ident">iter</span> {
-            <span class="ident">T::Currency::repatriate_reserved</span>(
-                <span class="kw-2">&amp;</span><span class="ident">contribution</span>.<span class="number">0</span>,
-                <span class="kw-2">&amp;</span><span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">sale</span>.<span class="ident">project_id</span>).<span class="ident">team_id</span>,
-                <span class="ident">contribution</span>.<span class="number">1</span>,
-                <span class="ident">frame_support::traits::BalanceStatus::Free</span>,
+        <span class="kw">let</span> <span class="ident">withdraw</span> <span class="op">=</span> <span class="op">|</span><span class="ident">who</span>, <span class="ident">value</span><span class="op">|</span> {
+            <span class="ident">T::Currency::unreserve</span>(<span class="ident">who</span>, <span class="ident">value</span>);
+            <span class="ident">T::Currency::withdraw</span>(
+                <span class="ident">who</span>,
+                <span class="ident">value</span>,
+                <span class="ident">WithdrawReasons::TRANSFER</span>,
+                <span class="ident">ExistenceRequirement::KeepAlive</span>,
             )
-            .<span class="ident">expect</span>(<span class="string">&quot;Corresponding amount should be reserved earlier&quot;</span>);
+            .<span class="ident">expect</span>(<span class="string">&quot;Required amount just unreserved&quot;</span>)
+        };
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total_token_amount</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="number">0</span>;
+        <span class="kw">for</span> (<span class="kw">_</span>, <span class="kw-2">ref</span> <span class="ident">contribution</span>) <span class="kw">in</span> <span class="ident">iter</span> {
+            <span class="ident">imbalance</span> <span class="op">=</span> <span class="ident">imbalance</span>
+                .<span class="ident">offset</span>(<span class="ident">withdraw</span>(<span class="kw-2">&amp;</span><span class="ident">contribution</span>.<span class="ident">owner</span>, <span class="ident">contribution</span>.<span class="ident">amount</span>))
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;total_amount shouldn&#39;t be lesser than a part&quot;</span>));
 
             <span class="comment">// similiar to frame_support::traits::Imbalance::ration</span>
             <span class="kw">let</span> <span class="ident">token_amount</span> <span class="op">=</span> <span class="ident">contribution</span>
-                .<span class="number">1</span>
+                .<span class="ident">amount</span>
                 .<span class="ident">saturating_mul</span>(<span class="ident">sale</span>.<span class="ident">security_tokens_on_sale</span>.<span class="ident">saturated_into</span>())
                 <span class="op">/</span> <span class="ident">sale</span>.<span class="ident">total_amount</span>;
             <span class="kw">let</span> <span class="ident">token_amount</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="ident">token_amount</span>.<span class="ident">saturated_into</span>();
             <span class="ident">total_token_amount</span> <span class="op">+</span><span class="op">=</span> <span class="ident">token_amount</span>;
 
-            <span class="ident">OwnedProjectTokens</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::insert</span>(<span class="ident">contribution</span>.<span class="number">0</span>.<span class="ident">clone</span>(), <span class="ident">sale</span>.<span class="ident">project_id</span>, <span class="ident">token_amount</span>);
+            <span class="ident">OwnedProjectTokens</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::insert</span>(
+                <span class="ident">contribution</span>.<span class="ident">owner</span>.<span class="ident">clone</span>(),
+                <span class="ident">sale</span>.<span class="ident">project_id</span>,
+                <span class="ident">token_amount</span>,
+            );
         }
 
         <span class="comment">// process the remainder</span>
+        <span class="ident">imbalance</span>
+            .<span class="ident">offset</span>(<span class="ident">withdraw</span>(
+                <span class="kw-2">&amp;</span><span class="ident">first_contribution</span>.<span class="ident">owner</span>,
+                <span class="ident">first_contribution</span>.<span class="ident">amount</span>,
+            ))
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;total_amount shouldn&#39;t be lesser than a part&quot;</span>))
+            .<span class="ident">drop_zero</span>()
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;all contributions should be processed&quot;</span>));
+
         <span class="ident">OwnedProjectTokens</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::insert</span>(
-            <span class="ident">first_contribution</span>.<span class="number">0</span>.<span class="ident">clone</span>(),
+            <span class="ident">first_contribution</span>.<span class="ident">owner</span>.<span class="ident">clone</span>(),
             <span class="ident">sale</span>.<span class="ident">project_id</span>,
-            <span class="ident">sale</span>.<span class="ident">security_tokens_on_sale</span> <span class="op">-</span> <span class="ident">total_token_amount</span>,
+            <span class="ident">sale</span>.<span class="ident">security_tokens_on_sale</span>
+                .<span class="ident">saturating_sub</span>(<span class="ident">total_token_amount</span>),
         );
 
-        <span class="ident">ProjectTokenSaleContributionIndex</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::remove</span>(<span class="ident">sale</span>.<span class="ident">external_id</span>);
+        <span class="ident">ProjectTokenSaleContributions</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::remove</span>(<span class="ident">sale</span>.<span class="ident">external_id</span>);
 
-        <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectTokenSaleFinished</span>(<span class="ident">sale</span>.<span class="ident">project_id</span>, <span class="ident">sale</span>.<span class="ident">external_id</span>));
+        <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectTokenSaleFinished</span>(
+            <span class="ident">sale</span>.<span class="ident">project_id</span>,
+            <span class="ident">sale</span>.<span class="ident">external_id</span>,
+        ));
     }
 }
 </pre></div>
