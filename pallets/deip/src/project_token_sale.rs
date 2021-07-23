@@ -1,5 +1,6 @@
 use crate::*;
 
+use frame_support::traits::{ExistenceRequirement, Imbalance, WithdrawReasons};
 use sp_runtime::{traits::Saturating, SaturatedConversion};
 
 /// Unique ProjectTokenSale ID reference
@@ -36,20 +37,20 @@ pub struct TokenInfo {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Info<Moment, Balance> {
     /// Reference for external world and uniques control
-    external_id: Id,
+    pub external_id: Id,
     /// Reference to the Project
-    project_id: ProjectId,
+    pub project_id: ProjectId,
     /// When the sale starts
-    start_time: Moment,
+    pub start_time: Moment,
     /// When it supposed to end
-    end_time: Moment,
-    status: Status,
+    pub end_time: Moment,
+    pub status: Status,
     /// How many contributions already reserved
-    total_amount: Balance,
-    soft_cap: Balance,
-    hard_cap: Balance,
+    pub total_amount: Balance,
+    pub soft_cap: Balance,
+    pub hard_cap: Balance,
     /// How many tokens supposed to sale
-    security_tokens_on_sale: u64,
+    pub security_tokens_on_sale: u64,
 }
 
 impl<T: Config> Module<T> {
@@ -79,8 +80,8 @@ impl<T: Config> Module<T> {
         );
 
         ensure!(
-            soft_cap > 0u32.into(),
-            Error::<T>::TokenSaleSoftCapShouldBePositive
+            soft_cap >= T::Currency::minimum_balance(),
+            Error::<T>::TokenSaleSoftCapMustBeGreaterOrEqualMinimum
         );
         ensure!(
             hard_cap >= soft_cap,
@@ -165,6 +166,27 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    pub(super) fn collect_funds(sale_id: Id, amount: BalanceOf<T>) -> Result<(), ()> {
+        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |sale| -> Result<(), ()> {
+            match sale.as_mut() {
+                Some(s) => s.total_amount = amount.saturating_add(s.total_amount),
+                None => return Err(()),
+            }
+            Ok(())
+        })
+    }
+
+    pub(super) fn finish_project_token_sale_by_id(sale_id: Id) -> Result<(), ()> {
+        match ProjectTokenSaleMap::<T>::try_get(sale_id) {
+            Err(_) => Err(()),
+            Ok(sale) => {
+                Self::update_status(&sale, Status::Finished);
+                Self::finish_project_token_sale(&sale);
+                Ok(())
+            }
+        }
+    }
+
     pub(super) fn process_project_token_sales() {
         let now = pallet_timestamp::Module::<T>::get();
 
@@ -188,9 +210,12 @@ impl<T: Config> Module<T> {
         let token_sales_by_end_time = token_sales_by_end_time;
         for (_, sale_id) in token_sales_by_end_time.iter() {
             let sale = ProjectTokenSaleMap::<T>::get(sale_id);
-            if matches!(sale.status, ProjectTokenSaleStatus::Inactive) {
-                Self::update_status(&sale, ProjectTokenSaleStatus::Active);
-                Self::deposit_event(RawEvent::ProjectTokenSaleActivated(sale.project_id, *sale_id));
+            if now >= sale.start_time && matches!(sale.status, Status::Inactive) {
+                Self::update_status(&sale, Status::Active);
+                Self::deposit_event(RawEvent::ProjectTokenSaleActivated(
+                    sale.project_id,
+                    *sale_id,
+                ));
             }
         }
 
@@ -240,13 +265,17 @@ impl<T: Config> Module<T> {
             token_info.reserved = 0;
         });
 
-        let contributors = ProjectTokenSaleContributionIndex::<T>::get(sale.external_id);
-        for contribution in contributors {
-            T::Currency::unreserve(&contribution.0, contribution.1);
+        if let Ok(ref c) = ProjectTokenSaleContributions::<T>::try_get(sale.external_id) {
+            for (_, ref contribution) in c {
+                T::Currency::unreserve(&contribution.owner, contribution.amount);
+            }
+            ProjectTokenSaleContributions::<T>::remove(sale.external_id);
         }
 
-        ProjectTokenSaleContributionIndex::<T>::remove(sale.external_id);
-        Self::deposit_event(RawEvent::ProjectTokenSaleExpired(sale.project_id, sale.external_id));
+        Self::deposit_event(RawEvent::ProjectTokenSaleExpired(
+            sale.project_id,
+            sale.external_id,
+        ));
     }
 
     fn finish_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
@@ -255,43 +284,73 @@ impl<T: Config> Module<T> {
             token_info.reserved = 0;
         });
 
-        let contributors = ProjectTokenSaleContributionIndex::<T>::get(sale.external_id);
-        let mut iter = contributors.iter();
+        let mut imbalance = T::Currency::deposit_creating(
+            &ProjectMap::<T>::get(sale.project_id).team_id,
+            sale.total_amount,
+        );
 
-        let first_contribution = iter
+        let contributions = ProjectTokenSaleContributions::<T>::try_get(sale.external_id)
+            .expect("Token sale is about to finish, but there are no contributions?");
+        let mut iter = contributions.iter();
+
+        let (_, ref first_contribution) = iter
             .next()
             .expect("Token sale is about to finish, but there are no contributors?");
 
-        let mut total_token_amount: u64 = 0;
-        for contribution in iter {
-            T::Currency::repatriate_reserved(
-                &contribution.0,
-                &ProjectMap::<T>::get(sale.project_id).team_id,
-                contribution.1,
-                frame_support::traits::BalanceStatus::Free,
+        let withdraw = |who, value| {
+            T::Currency::unreserve(who, value);
+            T::Currency::withdraw(
+                who,
+                value,
+                WithdrawReasons::TRANSFER,
+                ExistenceRequirement::KeepAlive,
             )
-            .expect("Corresponding amount should be reserved earlier");
+            .expect("Required amount just unreserved")
+        };
+
+        let mut total_token_amount: u64 = 0;
+        for (_, ref contribution) in iter {
+            imbalance = imbalance
+                .offset(withdraw(&contribution.owner, contribution.amount))
+                .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"));
 
             // similiar to frame_support::traits::Imbalance::ration
             let token_amount = contribution
-                .1
+                .amount
                 .saturating_mul(sale.security_tokens_on_sale.saturated_into())
                 / sale.total_amount;
             let token_amount: u64 = token_amount.saturated_into();
             total_token_amount += token_amount;
 
-            OwnedProjectTokens::<T>::insert(contribution.0.clone(), sale.project_id, token_amount);
+            OwnedProjectTokens::<T>::insert(
+                contribution.owner.clone(),
+                sale.project_id,
+                token_amount,
+            );
         }
 
         // process the remainder
+        imbalance
+            .offset(withdraw(
+                &first_contribution.owner,
+                first_contribution.amount,
+            ))
+            .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"))
+            .drop_zero()
+            .unwrap_or_else(|_| panic!("all contributions should be processed"));
+
         OwnedProjectTokens::<T>::insert(
-            first_contribution.0.clone(),
+            first_contribution.owner.clone(),
             sale.project_id,
-            sale.security_tokens_on_sale - total_token_amount,
+            sale.security_tokens_on_sale
+                .saturating_sub(total_token_amount),
         );
 
-        ProjectTokenSaleContributionIndex::<T>::remove(sale.external_id);
+        ProjectTokenSaleContributions::<T>::remove(sale.external_id);
 
-        Self::deposit_event(RawEvent::ProjectTokenSaleFinished(sale.project_id, sale.external_id));
+        Self::deposit_event(RawEvent::ProjectTokenSaleFinished(
+            sale.project_id,
+            sale.external_id,
+        ));
     }
 }

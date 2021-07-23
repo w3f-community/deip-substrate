@@ -22,13 +22,15 @@
 //!
 //! * `add_domain` - Add cryptographic hash of DomainId
 //! * `create_project` - Create Project belongs to Account (Team)
+//! * [`create_investment_opportunity`](./enum.Call.html#variant.create_investment_opportunity)
+//! * [`invest`](./enum.Call.html#variant.invest)
 //! * `update_project` - Update Project info
 //! * `create_project_content` - Create Project Content (Digital Asset)
 //! * `create_project_nda` - Create NDA contract between sides
 //! * `create_nda_content_access_request` - Some side request access to the data of contract
 //! * `fulfill_nda_content_access_request` - Granter fulfill access request to the data
 //! * `reject_nda_content_access_request` - Granter reject access request to the data
-//! *  `create_review` - Create Review
+//! * `create_review` - Create Review
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -57,10 +59,13 @@ mod mock;
 mod tests;
 
 mod project_token_sale;
-use project_token_sale::{Id as ProjectTokenSaleId,
+use project_token_sale::{Id as InvestmentId,
     Status as ProjectTokenSaleStatus,
     Info as ProjectTokenSale,
     TokenInfo as ProjectTokenSaleTokenInfo};
+
+mod project_token_sale_contribution;
+use project_token_sale_contribution::{Contribution as ProjectTokenSaleContribution};
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
@@ -127,6 +132,26 @@ pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
+pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<<T as system::Config>::AccountId, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub enum InvestmentOpportunity<Moment, Balance> {
+    ProjectTokenSale {
+        /// a moment when the sale starts. Must be later than current moment.
+        start_time: Moment,
+        /// a moment when the sale ends. Must be later than `start_time`.
+        end_time: Moment,
+        /// amount of units to raise. This must be greater or equal to `ExistentialDeposit`
+        /// (see [frame_support::traits::Currency] for details).
+        soft_cap: Balance,
+        /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
+        hard_cap: Balance,
+        /// specifies how many tokens of the project are intended to sale.
+        security_tokens_on_sale: u64,
+    },
+}
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -301,11 +326,13 @@ decl_event! {
         /// Event emitted when a token sale for project has been created.
         ProjectTokenSaleCreated(ProjectId, ProjectTokenSale),
         /// Event emitted when a token sale for project has been activated.
-        ProjectTokenSaleActivated(ProjectId, ProjectTokenSaleId),
+        ProjectTokenSaleActivated(ProjectId, InvestmentId),
         /// Event emitted when a token sale for project has finished.
-        ProjectTokenSaleFinished(ProjectId, ProjectTokenSaleId),
+        ProjectTokenSaleFinished(ProjectId, InvestmentId),
         /// Event emitted when a token sale for project has expired.
-        ProjectTokenSaleExpired(ProjectId, ProjectTokenSaleId),
+        ProjectTokenSaleExpired(ProjectId, InvestmentId),
+        /// Event emitted when DAO contributed to the project token sale
+        ProjectTokenSaleContributed(InvestmentId, AccountId),
     }
 }
 
@@ -378,12 +405,17 @@ decl_error! {
         // Project token sale errors
         TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment,
         TokenSaleEndTimeMustBeLaterStartTime,
-        TokenSaleSoftCapShouldBePositive,
+        TokenSaleSoftCapMustBeGreaterOrEqualMinimum,
         TokenSaleHardCapShouldBeGreaterOrEqualSoftCap,
         TokenSaleScheduledAlready,
         TokenSaleAlreadyExists,
         TokenSaleBalanceIsNotEnough,
         TokenSaleProjectReservedOverflow,
+
+        // Possible errors when DAO tries to contribute to a project token sale
+        ContributionProjectTokenSaleNotFound,
+        ContributionProjectTokenSaleNotActive,
+        ContributionNotEnoughFunds,
     }
 }
 
@@ -396,13 +428,13 @@ decl_storage! {
 
         ProjectTokens: map hasher(identity) ProjectId => ProjectTokenSaleTokenInfo;
 
-        ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) ProjectTokenSaleId => ProjectTokenSaleOf<T>;
-        ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, ProjectTokenSaleId)>;
+        ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) InvestmentId => ProjectTokenSaleOf<T>;
+        ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, InvestmentId)>;
         /// Index for fast lookup a token sale by its end time
-        ProjectTokenSaleEndTimes: Vec<(T::Moment, ProjectTokenSaleId)>;
+        ProjectTokenSaleEndTimes: Vec<(T::Moment, InvestmentId)>;
 
-        /// temporary index for fast lookup contributions by project's id
-        ProjectTokenSaleContributionIndex: map hasher(identity) ProjectTokenSaleId => Vec<(T::AccountId, BalanceOf<T>)>;
+        /// Contains contributions to project token sales from DAOs
+        ProjectTokenSaleContributions: map hasher(identity) InvestmentId => Vec<(T::AccountId, ProjectTokenSaleContributionOf<T>)>;
 
         /// temporary object that holds information about how many project's tokens
         /// belong to the user
@@ -501,18 +533,48 @@ decl_module! {
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
         }
 
+        /// Allows DAO to create an investment opportunity.
+        ///
+        /// The origin for this call must be _Signed_.
+        ///
+        /// - `external_id`: id of the sale. Must be unique.
+        /// - `project_id`: id of the project which tokens are intended to sale.
+        /// - `investment_type`: specifies type of created investment opportunity. For possible
+        /// variants and details see [`InvestmentOpportunity`].
         #[weight = 10_000]
-        fn create_project_token_sale(origin,
-            external_id: ProjectTokenSaleId,
+        fn create_investment_opportunity(origin,
+            external_id: InvestmentId,
             project_id: ProjectId,
-            start_time: T::Moment,
-            end_time: T::Moment,
-            soft_cap: BalanceOf<T>,
-            hard_cap: BalanceOf<T>,
-            security_tokens_on_sale: u64,
+            investment_type: InvestmentOpportunity<T::Moment, BalanceOf<T>>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
+
+            match investment_type {
+                InvestmentOpportunity::ProjectTokenSale{
+                    start_time,
+                    end_time,
+                    soft_cap,
+                    hard_cap,
+                    security_tokens_on_sale,
+                } => Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
+            }
+        }
+
+        /// Allows DAO to invest to an opportunity.
+        ///
+        /// The origin for this call must be _Signed_.
+        ///
+        /// - `id`: identifier of the investment opportunity
+        /// - `amount`: amount of units to invest. The account should have enough funds on
+        ///     the balance. This amount is reserved until the investment finished or expired
+        /// (see [frame_support::traits::ReservableCurrency] for details).
+        #[weight = 10_000]
+        fn invest(origin,
+            id: InvestmentId,
+            amount: BalanceOf<T>
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::contribute_to_project_token_sale_impl(account, id, amount)
         }
 
         /// Allow a user to update project.
