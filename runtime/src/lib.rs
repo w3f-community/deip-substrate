@@ -355,6 +355,9 @@ impl pallet_assets::Config for Runtime {
 	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_deip_assets::Config for Runtime {
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -377,7 +380,8 @@ construct_runtime!(
 		DeipProposal: pallet_deip_proposal::{Module, Call, Storage, Event<T>, Config, ValidateUnsigned},
 		DeipOrg: pallet_deip_org::{Module, Call, Storage, Event<T>, Config},
 		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
-		Assets: pallet_assets::{Module, Call, Storage, Event<T>},
+		Assets: pallet_assets::{Module, Storage, Event<T>},
+		DeipAssets: pallet_deip_assets::{Module, Call},
 	}
 );
 

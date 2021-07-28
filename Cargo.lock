@@ -3583,6 +3583,7 @@ dependencies = [
  "pallet-aura",
  "pallet-balances",
  "pallet-deip",
+ "pallet-deip-assets",
  "pallet-deip-org",
  "pallet-deip-proposal",
  "pallet-grandpa",
@@ -3818,6 +3819,19 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-assets"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "parity-scale-codec",
+ "serde",
  "sp-runtime",
  "sp-std",
 ]
