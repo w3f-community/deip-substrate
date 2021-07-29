@@ -355,7 +355,17 @@ impl pallet_assets::Config for Runtime {
 	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_deip_assets::traits::DeipProjectsInfo for Runtime {
+	type ProjectId = pallet_deip::ProjectId;
+
+	fn exists(id: &Self::ProjectId) -> bool {
+		let projects = &Deip::projects();
+		projects.binary_search_by_key(&id, |&(ref p, _)| p).is_ok()
+	}
+}
+
 impl pallet_deip_assets::Config for Runtime {
+	type ProjectsInfo = Self;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

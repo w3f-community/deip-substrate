@@ -33,6 +33,8 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+pub mod traits;
+
 #[doc(inline)]
 pub use pallet::*;
 
@@ -48,9 +50,18 @@ pub mod pallet {
 
     use pallet_assets::WeightInfo;
 
+    use super::traits::DeipProjectsInfo;
+
+    type DeipProjectIdOf<T> = <<T as Config>::ProjectsInfo as DeipProjectsInfo>::ProjectId;
+    type AssetsAssetIdOf<T> = <T as pallet_assets::Config>::AssetId;
+    type AssetsBalanceOf<T> = <T as pallet_assets::Config>::Balance;
+    type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
+
     /// Configuration trait
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_assets::Config {}
+    pub trait Config: frame_system::Config + pallet_assets::Config {
+        type ProjectsInfo: DeipProjectsInfo;
+    }
 
     #[doc(hidden)]
     #[pallet::pallet]
@@ -62,10 +73,19 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
     #[pallet::error]
-    pub enum Error<T> {}
+    pub enum Error<T> {
+        ProjectDoesNotExist,
+        ProjectSecurityTokenCannotBeDestroyed,
+        ProjectSecurityTokenCannotBeBurned,
+    }
 
-    type AssetsBalanceOf<T> = <T as pallet_assets::Config>::Balance;
-    type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
+    #[pallet::storage]
+    pub(super) type AssetIdByProjectId<T: Config> =
+        StorageMap<_, Identity, DeipProjectIdOf<T>, Vec<AssetsAssetIdOf<T>>, OptionQuery>;
+
+    #[pallet::storage]
+    pub(super) type ProjectIdByAssetId<T: Config> =
+        StorageMap<_, Identity, AssetsAssetIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -76,9 +96,32 @@ pub mod pallet {
             admin: <T::Lookup as StaticLookup>::Source,
             max_zombies: u32,
             min_balance: AssetsBalanceOf<T>,
+            project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
+            if let Some(ref id) = project_id {
+                ensure!(T::ProjectsInfo::exists(id), Error::<T>::ProjectDoesNotExist);
+            }
+
             let call = pallet_assets::Call::<T>::create(id, admin, max_zombies, min_balance);
-            call.dispatch_bypass_filter(origin)
+            let result = call.dispatch_bypass_filter(origin);
+            if result.is_err() {
+                return result;
+            }
+
+            if let Some(project_id) = project_id {
+                ProjectIdByAssetId::<T>::insert(id, project_id.clone());
+                AssetIdByProjectId::<T>::mutate_exists(project_id, |security_tokens| {
+                    let mut_security_tokens = match security_tokens.as_mut() {
+                        None => {
+                            *security_tokens = Some(vec![id]);
+                            return;
+                        }
+                        Some(c) => c.push(id),
+                    };
+                });
+            }
+
+            result
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::destroy(*zombies_witness))]
@@ -87,6 +130,11 @@ pub mod pallet {
             #[pallet::compact] id: T::AssetId,
             #[pallet::compact] zombies_witness: u32,
         ) -> DispatchResultWithPostInfo {
+            ensure!(
+                !ProjectIdByAssetId::<T>::contains_key(id),
+                Error::<T>::ProjectSecurityTokenCannotBeDestroyed
+            );
+
             let call = pallet_assets::Call::<T>::destroy(id, zombies_witness);
             call.dispatch_bypass_filter(origin)
         }
@@ -109,6 +157,11 @@ pub mod pallet {
             who: <T::Lookup as StaticLookup>::Source,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
+            ensure!(
+                !ProjectIdByAssetId::<T>::contains_key(id),
+                Error::<T>::ProjectSecurityTokenCannotBeBurned
+            );
+
             let call = pallet_assets::Call::<T>::burn(id, who, amount);
             call.dispatch_bypass_filter(origin)
         }
