@@ -11,9 +11,9 @@
 //!
 //! ### Dispatchable Functions
 //!
-//! * [`create`](./enum.Call.html#variant.create)
+//! * [`create_asset`](./enum.Call.html#variant.create_asset)
 //! * [`destroy`](./enum.Call.html#variant.destroy)
-//! * [`mint`](./enum.Call.html#variant.mint)
+//! * [`issue_asset`](./enum.Call.html#variant.issue_asset)
 //! * [`burn`](./enum.Call.html#variant.burn)
 //! * [`transfer`](./enum.Call.html#variant.transfer)
 //! * [`freeze`](./enum.Call.html#variant.freeze)
@@ -85,7 +85,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
-        pub(super) fn create(
+        pub(super) fn create_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
             admin: <T::Lookup as StaticLookup>::Source,
@@ -135,7 +135,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
-        pub(super) fn mint(
+        pub(super) fn issue_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
             beneficiary: <T::Lookup as StaticLookup>::Source,
