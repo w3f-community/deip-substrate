@@ -391,7 +391,7 @@ construct_runtime!(
 		DeipOrg: pallet_deip_org::{Module, Call, Storage, Event<T>, Config},
 		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
 		Assets: pallet_assets::{Module, Storage, Event<T>},
-		DeipAssets: pallet_deip_assets::{Module, Call},
+		DeipAssets: pallet_deip_assets::{Module, Storage, Call},
 	}
 );
 
