@@ -29,9 +29,6 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
 
 pub mod traits;
 
@@ -41,7 +38,6 @@ pub use pallet::*;
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
-    use frame_support::dispatch::DispatchResult;
     use frame_support::pallet_prelude::*;
     use frame_support::traits::UnfilteredDispatchable;
     use frame_system::pallet_prelude::*;
@@ -57,7 +53,6 @@ pub mod pallet {
     type AssetsBalanceOf<T> = <T as pallet_assets::Config>::Balance;
     type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
 
-    /// Configuration trait
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_assets::Config {
         type ProjectsInfo: DeipProjectsInfo;
@@ -111,7 +106,7 @@ pub mod pallet {
             if let Some(project_id) = project_id {
                 ProjectIdByAssetId::<T>::insert(id, project_id.clone());
                 AssetIdByProjectId::<T>::mutate_exists(project_id, |security_tokens| {
-                    let mut_security_tokens = match security_tokens.as_mut() {
+                    match security_tokens.as_mut() {
                         None => {
                             *security_tokens = Some(vec![id]);
                             return;
