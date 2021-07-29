@@ -223,5 +223,7 @@
     "zombies": "u32",
     "accounts": "u32",
     "is_frozen": "bool"
-  }
+  },
+  "DeipProjectIdOf": "H160",
+  "AssetsAssetIdOf": "u32"
 }
