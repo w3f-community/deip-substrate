@@ -8,6 +8,7 @@ use frame_system as system;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+type Balance = u128;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -17,6 +18,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
+		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
 		Deip: pallet_deip::{Module, Call, Storage, Event<T>, Config},
 		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
 	}
@@ -45,20 +47,37 @@ impl system::Config for Test {
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
 }
 
+parameter_types! {
+	pub const ExistentialDeposit: u64 = 1;
+}
+
+impl pallet_balances::Config for Test {
+	type MaxLocks = ();
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = Event;
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+}
+
 impl pallet_deip::Config for Test {
 	type Event = Event;
+	type DeipAccountId = Self::AccountId;
+	type Currency = Balances;
 }
 
 parameter_types! {
 	pub const MinimumPeriod: u64 = 5;
 }
+
 impl pallet_timestamp::Config for Test {
 	type Moment = u64;
 	type OnTimestampSet = ();
