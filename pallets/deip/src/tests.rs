@@ -12,7 +12,7 @@ fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountI
 	let domain_id = DomainId::random();
 	let account_id: <Test as system::Config>::AccountId = maybe_account_id.unwrap_or(DEFAULT_ACCOUNT_ID);
 	let project_id = ProjectId::random();
-	
+
 	assert_ok!(Deip::add_domain(Origin::signed(account_id), Domain { external_id: domain_id.clone() }));
 
 	let project = ProjectOf::<Test> {
@@ -22,8 +22,14 @@ fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountI
 		description: H256::random(),
 		domains: vec![domain_id],
 	};
-	
-	assert_ok!(Deip::create_project(Origin::signed(account_id), project.clone()));
+
+	assert_ok!(Deip::create_project(Origin::signed(account_id),
+		project.is_private,
+		project.external_id.clone(),
+		project.team_id.clone(),
+		project.description.clone(),
+		project.domains.clone(),
+	));
 
 	(project_id, project, domain_id, account_id)
 }
@@ -168,17 +174,14 @@ fn cant_add_project_with_non_exixsted_domain() {
 	new_test_ext().execute_with(|| {
 		let domain = DomainId::random();
 		let account_id = DEFAULT_ACCOUNT_ID;
-		
-		let project = Project {
-			is_private: false,
-			external_id: ProjectId::random(),
-			team_id: account_id,
-			description: H256::random(),
-			domains: vec![domain],
-		};
-		
+
 		assert_noop!(
-			Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID), project.clone()),
+			Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID),
+				false,
+				ProjectId::random(),
+				account_id,
+				H256::random(),
+				vec![domain]),
 			Error::<Test>::DomainNotExists
 		);
 	})
@@ -190,13 +193,16 @@ fn cant_add_duplicated_project() {
 		let (_, project, ..) = create_ok_project(None);
 
 		assert_noop!(
-			Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID), project.clone()),
+			Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID),
+				project.is_private,
+				project.external_id,
+				project.team_id,
+				project.description,
+				project.domains),
 			Error::<Test>::ProjectAlreadyExists
 		);
-
 	})
 }
-
 
 #[test]
 fn update_project() {
@@ -204,21 +210,15 @@ fn update_project() {
 		let (project_id, ..) = create_ok_project(None);
 
 		let new_description = H256::random();
-		let new_members = vec![1,2];
 
-		assert_ok!(Deip::update_project(Origin::signed(DEFAULT_ACCOUNT_ID), project_id, Some(new_description), Some(true), Some(new_members.clone())));
-
+		assert_ok!(Deip::update_project(Origin::signed(DEFAULT_ACCOUNT_ID), project_id, Some(new_description), Some(true)));
 
 		let project_stored = ProjectMap::<Test>::get(project_id);
 
 		assert_eq!(project_stored.description, new_description);
 		assert_eq!(project_stored.is_private, true);
-		assert_eq!(project_stored.members, new_members);
-
-
 	})
 }
-
 
 #[test]
 fn cant_update_project_not_belonged_to_your_signature() {
@@ -229,10 +229,9 @@ fn cant_update_project_not_belonged_to_your_signature() {
 		let (project_id, ..) = create_ok_project(Some(account_id));
 
 		let new_description = H256::random();
-		let new_members = vec![1,2];
 
 		assert_noop!(
-			Deip::update_project(Origin::signed(wrong_account_id), project_id, Some(new_description), Some(true), Some(new_members.clone())),
+			Deip::update_project(Origin::signed(wrong_account_id), project_id, Some(new_description), Some(true)),
 			Error::<Test>::NoPermission
 		);
 	})
@@ -244,12 +243,11 @@ fn cant_update_not_existed_project() {
 		let project_id = ProjectId::random();
 
 		assert_noop!(
-			Deip::update_project(Origin::signed(DEFAULT_ACCOUNT_ID), project_id, None, None, None),
+			Deip::update_project(Origin::signed(DEFAULT_ACCOUNT_ID), project_id, None, None),
 			Error::<Test>::NoSuchProject
 		);
 	})
 }
-
 
 #[test]
 fn create_project_content() {
@@ -257,40 +255,30 @@ fn create_project_content() {
 		let (project_id, ..) = create_ok_project(None);
 		let project_content_id =  ProjectContentId::random();
 
-		let project_content = ProjectContentOf::<Test> {
-			external_id: project_content_id,
-			project_external_id: project_id,
-			team_id: DEFAULT_ACCOUNT_ID,
-			content_type: ProjectContentType::Announcement,
-			description: H256::random(),
-			content: H256::random(),
-			authors: vec![DEFAULT_ACCOUNT_ID],
-			references: None
-			
-		};
-		
-
-		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content.clone()));
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+			project_content_id,
+			project_id,
+			DEFAULT_ACCOUNT_ID,
+			ProjectContentType::Announcement,
+			H256::random(),
+			H256::random(),
+			vec![DEFAULT_ACCOUNT_ID],
+			None));
 
 		let project_content_list = ProjectsContent::<Test>::get();
-		let project_content_stored = ProjectContentMap::<Test>::get(project_id, project_content_id);
 
 		assert!(
 			<ProjectContentMap<Test>>::contains_key(project_id, project_content_id),
 			"Project Content Map did not contain key, value was `{}{}`",
-            project_id,
+			project_id,
 			project_content_id
-
 		);
-
-		assert_eq!(project_content, project_content_stored);
 
 		assert!(
 			project_content_list.binary_search_by_key(&project_content_id, |&(external_id, ..)| external_id).is_ok(),
 			"Projects Contntent List did not contain the content, value was `{}`",
-            project_content_id
+			project_content_id
 		);
-
 	})
 }
 
@@ -298,51 +286,47 @@ fn create_project_content() {
 fn create_project_content_with_references() {
 	new_test_ext().execute_with(|| {
 		let (project_id, ..) = create_ok_project(None);
+
 		let project_content_id = ProjectContentId::random();
+		let description = H256::random();
+		let content = H256::random();
 
-		let project_content = ProjectContentOf::<Test> {
-			external_id: project_content_id,
-			project_external_id: project_id,
-			team_id: DEFAULT_ACCOUNT_ID,
-			content_type: ProjectContentType::Announcement,
-			description: H256::random(),
-			content: H256::random(),
-			authors: vec![DEFAULT_ACCOUNT_ID],
-			references: None	
-		};
-		
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+			project_content_id,
+			project_id,
+			DEFAULT_ACCOUNT_ID,
+			ProjectContentType::Announcement,
+			description,
+			content,
+			vec![DEFAULT_ACCOUNT_ID],
+			None));
 
-		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content.clone()));
+		let project_content_with_reference_id = ProjectContentId::random();
 
-		let project_content_with_reference_id =  ProjectContentId::random();
-
-		let project_content_with_reference = ProjectContentOf::<Test> {
-			references: Some(vec![project_content_id]),
-			external_id: project_content_with_reference_id,
-			..project_content.clone()
-		};
-
-		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content_with_reference.clone()));
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+			project_content_with_reference_id,
+			project_id,
+			DEFAULT_ACCOUNT_ID,
+			ProjectContentType::Announcement,
+			description,
+			content,
+			vec![DEFAULT_ACCOUNT_ID],
+			Some(vec![project_content_id])));
 
 		let project_content_list = ProjectsContent::<Test>::get();
-		let project_content_stored = ProjectContentMap::<Test>::get(project_id, project_content_with_reference_id);
 
 		assert!(
 			<ProjectContentMap<Test>>::contains_key(project_id, project_content_with_reference_id),
 			"Project Content Map did not contain key, value was `{}{}`",
-            project_id,
+			project_id,
 			project_content_with_reference_id
-
 		);
-
-		assert_eq!(project_content_with_reference, project_content_stored);
 
 		assert!(
 			project_content_list.binary_search_by_key(&project_content_with_reference_id, |&(external_id, ..)| external_id).is_ok(),
 			"Projects Contntent List did not contain the content, value was `{}`",
-            project_content_with_reference_id
+			project_content_with_reference_id
 		);
-
 	})
 }
 
@@ -351,50 +335,50 @@ fn cant_add_duplicated_project_content() {
 	new_test_ext().execute_with(|| {
 		let (project_id, ..) = create_ok_project(None);
 
-		let project_content = ProjectContentOf::<Test> {
-			external_id: ProjectContentId::random(),
-			project_external_id: project_id,
-			team_id: DEFAULT_ACCOUNT_ID,
-			content_type: ProjectContentType::Announcement,
-			description: H256::random(),
-			content: H256::random(),
-			authors: vec![DEFAULT_ACCOUNT_ID],
-			references: None
-			
-		};
-		
+		let content_id = ProjectContentId::random();
+		let description = H256::random();
+		let content = H256::random();
 
-		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content.clone()));
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+			content_id,
+			project_id,
+			DEFAULT_ACCOUNT_ID,
+			ProjectContentType::Announcement,
+			description,
+			content,
+			vec![DEFAULT_ACCOUNT_ID],
+			None));
 
 		assert_noop!(
-			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+				content_id,
+				project_id,
+				DEFAULT_ACCOUNT_ID,
+				ProjectContentType::Announcement,
+				description,
+				content,
+				vec![DEFAULT_ACCOUNT_ID],
+				None),
 			Error::<Test>::ProjectContentAlreadyExists
 		);
-
 	})
 }
-
 
 #[test]
 fn cant_add_project_content_with_wrong_project_reference() {
 	new_test_ext().execute_with(|| {
-		let project_content = ProjectContentOf::<Test> {
-			external_id: ProjectContentId::random(),
-			project_external_id: ProjectId::random(),
-			team_id: DEFAULT_ACCOUNT_ID,
-			content_type: ProjectContentType::Announcement,
-			description: H256::random(),
-			content: H256::random(),
-			authors: vec![DEFAULT_ACCOUNT_ID],
-			references: None
-			
-		};
-
 		assert_noop!(
-			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+				ProjectContentId::random(),
+				ProjectId::random(),
+				DEFAULT_ACCOUNT_ID,
+				ProjectContentType::Announcement,
+				H256::random(),
+				H256::random(),
+				vec![DEFAULT_ACCOUNT_ID],
+				None),
 			Error::<Test>::NoSuchProject
 		);
-
 	})
 }
 
@@ -404,23 +388,18 @@ fn cant_add_project_content_to_incorrect_team() {
 		let (project_id, ..) = create_ok_project(None);
 		let wrong_account_id = 234;
 
-		let project_content = ProjectContentOf::<Test> {
-			external_id: ProjectContentId::random(),
-			project_external_id: project_id,
-			team_id: wrong_account_id,
-			content_type: ProjectContentType::Announcement,
-			description: H256::random(),
-			content: H256::random(),
-			authors: vec![DEFAULT_ACCOUNT_ID],
-			references: None
-		};
-		
-
 		assert_noop!(
-			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+				ProjectContentId::random(),
+				project_id,
+				wrong_account_id,
+				ProjectContentType::Announcement,
+				H256::random(),
+				H256::random(),
+				vec![DEFAULT_ACCOUNT_ID],
+				None),
 			Error::<Test>::ProjectNotBelongToTeam
 		);
-
 	})
 }
 
@@ -428,61 +407,54 @@ fn cant_add_project_content_to_incorrect_team() {
 fn cant_add_project_content_to_finished_project() {
 	new_test_ext().execute_with(|| {
 		let (project_id, ..) = create_ok_project(None);
-
-		let project_content = ProjectContentOf::<Test> {
-			external_id: ProjectContentId::random(),
-			project_external_id: project_id,
-			team_id: DEFAULT_ACCOUNT_ID,
-			content_type: ProjectContentType::FinalResult,
-			description: H256::random(),
-			content: H256::random(),
-			authors: vec![DEFAULT_ACCOUNT_ID],
-			references: None
-			
-		};
-
-		let another_proeject_content = ProjectContentOf::<Test> {
-			external_id: ProjectContentId::random(),
-			content_type: ProjectContentType::MilestoneCode,
-			..project_content.clone()
-		};
 		
+		let description = H256::random();
+		let content = H256::random();
 
-		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content));
+		assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+			ProjectContentId::random(),
+			project_id,
+			DEFAULT_ACCOUNT_ID,
+			ProjectContentType::FinalResult,
+			description,
+			content,
+			vec![DEFAULT_ACCOUNT_ID],
+			None,));
 
 		assert_noop!(
-			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), another_proeject_content),
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+				ProjectContentId::random(),
+				project_id,
+				DEFAULT_ACCOUNT_ID,
+				ProjectContentType::MilestoneCode,
+				description,
+				content,
+				vec![DEFAULT_ACCOUNT_ID],
+				None,),
 			Error::<Test>::ProjectAlreadyFinished
 		);
 	})
 }
-
 
 #[test]
 fn cant_add_project_content_with_wrong_references() {
 	new_test_ext().execute_with(|| {
 		let (project_id, ..) = create_ok_project(None);
 		
-		let project_content = ProjectContentOf::<Test> {
-			external_id: ProjectContentId::random(),
-			project_external_id: project_id,
-			team_id: DEFAULT_ACCOUNT_ID,
-			content_type: ProjectContentType::Announcement,
-			description: H256::random(),
-			content: H256::random(),
-			authors: vec![DEFAULT_ACCOUNT_ID],
-			references: Some(vec![ProjectContentId::random()])
-			
-		};
-
 		assert_noop!(
-			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID), project_content),
+			Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+				ProjectContentId::random(),
+				project_id,
+				DEFAULT_ACCOUNT_ID,
+				ProjectContentType::Announcement,
+				H256::random(),
+				H256::random(),
+				vec![DEFAULT_ACCOUNT_ID],
+				Some(vec![ProjectContentId::random()]),),
 			Error::<Test>::NoSuchReference
 		);
-
 	})
 }
-
 
 #[test]
 fn create_project_nda() {
@@ -496,7 +468,6 @@ fn create_project_nda() {
 			<NdaMap<Test>>::contains_key(project_nda_id),
 			"NDA Map did not contain key, value was `{}`",
 			project_nda_id
-
 		);
 
 		assert_eq!(expected_nda, nda_stored);
@@ -506,7 +477,6 @@ fn create_project_nda() {
 			"NDA List did not contain the NDA, value was `{}`",
             project_nda_id
 		);
-
 	})
 }
 
@@ -516,12 +486,11 @@ fn cant_create_project_nda_ends_in_past() {
 		let (project_id, ..) = create_ok_project(None);
 		let project_nda_id =  NdaId::random();		
 		let end_date = 0;
-		
+
 		let contract_hash = H256::random();
 		let maybe_start_date = None;
 		let parties = vec![DEFAULT_ACCOUNT_ID];
 		let projects = vec![project_id];
-		
 
 		assert_noop!(
 			Deip::create_project_nda(
@@ -535,7 +504,6 @@ fn cant_create_project_nda_ends_in_past() {
 			),
 			Error::<Test>::NdaEndDateMustBeLaterCurrentMoment
 		);
-
 	})
 }
 
@@ -544,15 +512,14 @@ fn cant_create_project_nda_with_start_date_greater_end_date() {
 	new_test_ext().execute_with(|| {
 		let (project_id, ..) = create_ok_project(None);
 		let project_nda_id =  NdaId::random();		
-		
+
 		let end_date = 1;
 		let maybe_start_date = Some(3);
-		
+
 		let contract_hash = H256::random();
-		
+
 		let parties = vec![DEFAULT_ACCOUNT_ID];
 		let projects = vec![project_id];
-		
 
 		assert_noop!(
 			Deip::create_project_nda(
@@ -566,10 +533,8 @@ fn cant_create_project_nda_with_start_date_greater_end_date() {
 			),
 			Error::<Test>::NdaStartDateMustBeLessThanEndDate
 		);
-
 	})
 }
-
 
 #[test]
 fn cant_create_project_nda_with_non_existed_project() {
@@ -635,7 +600,6 @@ fn cant_create_project_nda_with_not_correct_parties() {
 			),
 			Error::<Test>::TeamOfAllProjectsMustSpecifiedAsParty
 		);
-
 	})
 }
 
@@ -655,7 +619,6 @@ fn cant_create_duplicated_project_nda() {
 		let maybe_start_date = None;
 		let parties = vec![DEFAULT_ACCOUNT_ID];
 		let projects = vec![project_id];
-		
 
 		assert_noop!(
 			Deip::create_project_nda(
@@ -669,7 +632,6 @@ fn cant_create_duplicated_project_nda() {
 			),
 			Error::<Test>::NdaAlreadyExists
 		);
-
 	})
 }
 
@@ -898,6 +860,5 @@ fn cant_reject_finalized_nda_content_access_request() {
 			),
 			Error::<Test>::NdaAccessRequestAlreadyFinalized
 		);
-
 	})
 }
