@@ -277,11 +277,19 @@ impl pallet_template::Config for Runtime {
 	type Event = Event;
 }
 
-impl pallet_deip::traits::DeipAssetSystem for Runtime {
+impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 	type Balance = u64;
 	type AssetId = u32;
 
 	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
+		unimplemented!();
+	}
+	
+	fn transactionally_reserve(
+        account: &AccountId,
+        project_id: ProjectId,
+        security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
+    ) -> Result<(), pallet_deip::traits::FreezeError> {
 		unimplemented!();
 	}
 }

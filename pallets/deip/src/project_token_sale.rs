@@ -2,7 +2,10 @@ use crate::traits::DeipAssetSystem;
 use crate::*;
 
 use frame_support::traits::{ExistenceRequirement, Imbalance, WithdrawReasons};
-use sp_runtime::{traits::{Saturating, Zero}, SaturatedConversion};
+use sp_runtime::{
+    traits::{Saturating, Zero},
+    SaturatedConversion,
+};
 
 /// Unique ProjectTokenSale ID reference
 pub type Id = H160;
@@ -131,6 +134,11 @@ impl<T: Config> Module<T> {
             Err(i) => i,
         };
 
+        match T::AssetSystem::transactionally_reserve(&account, project_id, &security_tokens_on_sale) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+
         let new_project_token_sale = ProjectTokenSale {
             external_id: external_id,
             project_id: project_id,
@@ -142,29 +150,7 @@ impl<T: Config> Module<T> {
             ..Default::default()
         };
 
-        todo!();
-        /* ProjectTokens::mutate_exists(project_id, |maybe_project| -> DispatchResult {
-            let project = maybe_project.as_mut().ok_or(Error::<T>::NoSuchProject)?;
-
-            let new_total = project
-                .total
-                .checked_sub(security_tokens_on_sale)
-                .ok_or(Error::<T>::TokenSaleBalanceIsNotEnough)?;
-            let new_reserved = project
-                .reserved
-                .checked_add(security_tokens_on_sale)
-                .ok_or(Error::<T>::TokenSaleProjectReservedOverflow)?;
-
-            project.total = new_total;
-            project.reserved = new_reserved;
-
-            Ok(())
-        })?; */
-
-        token_sales.insert(
-            index,
-            (project_id, ProjectTokenSaleStatus::Inactive, external_id),
-        );
+        token_sales.insert(index, (project_id, Status::Inactive, external_id));
         ProjectTokenSaleByProjectIdStatus::put(token_sales);
         ProjectTokenSaleMap::<T>::insert(external_id, new_project_token_sale.clone());
         ProjectTokenSaleEndTimes::<T>::mutate(|v| {

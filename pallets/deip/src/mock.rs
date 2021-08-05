@@ -68,11 +68,19 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-impl pallet_deip::traits::DeipAssetSystem for Test {
+impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
 	type Balance = u64;
 	type AssetId = u32;
 
 	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<super::ProjectId> {
+		unimplemented!();
+	}
+
+    fn transactionally_reserve(
+        account: &u64,
+        project_id: super::ProjectId,
+        security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
+    ) -> Result<(), super::traits::FreezeError> {
 		unimplemented!();
 	}
 }

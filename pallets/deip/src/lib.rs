@@ -113,7 +113,7 @@ pub trait Config: frame_system::Config + pallet_timestamp::Config {
 
     type Currency: ReservableCurrency<Self::AccountId>;
 
-    type AssetSystem: traits::DeipAssetSystem;
+    type AssetSystem: traits::DeipAssetSystem<Self::AccountId>;
 }
 
 /// Unique Project ID reference
@@ -129,16 +129,17 @@ pub type NdaAccessRequestId = H160;
 /// Unique Review reference 
 pub type ReviewId = H160;
 
-pub type ProjectOf<T> = Project<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type ReviewOf<T> = Review<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
-pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
+type AccountIdOf<T> = <T as system::Config>::AccountId;
+pub type ProjectOf<T> = Project<<T as system::Config>::Hash, AccountIdOf<T>>;
+pub type ReviewOf<T> = Review<<T as system::Config>::Hash, AccountIdOf<T>>;
+pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, <T as pallet_timestamp::Config>::Moment>;
+pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, AccountIdOf<T>>;
+pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
-pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<<T as system::Config>::AccountId, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
-type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem>::AssetId;
-type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem>::Balance;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<AccountIdOf<T>, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
+type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
