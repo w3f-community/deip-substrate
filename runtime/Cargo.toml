@@ -30,6 +30,7 @@ pallet-deip = { path = "../pallets/deip", default-features = false }
 deip-runtime-api = {default-features = false, path = "../pallets/deip/runtime-api" }
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
 pallet-deip-org = { path = "../pallets/deip_org", default-features = false }
+pallet-deip-assets = { path = "../pallets/deip_assets", default-features = false }
 
 # Substrate dependencies
 frame-benchmarking = { default-features = false, optional = true, version = '3.0.0' }
@@ -48,6 +49,7 @@ pallet-transaction-payment = { default-features = false, version = '3.0.0' }
 pallet-transaction-payment-rpc-runtime-api = { default-features = false, version = '3.0.0' }
 pallet-multisig = { version = "3.0.0", default-features = false }
 pallet-utility =  { version = "3.0.0", default-features = false }
+pallet-assets =  { version = "3.0.0", default-features = false }
 sp-api = { default-features = false, version = '3.0.0' }
 sp-block-builder = { default-features = false, version = '3.0.0' }
 sp-consensus-aura = { default-features = false, version = '0.9.0' }
@@ -95,6 +97,8 @@ std = [
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-multisig/std',
     'pallet-utility/std',
+    'pallet-assets/std',
+    'pallet-deip-assets/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-consensus-aura/std',
