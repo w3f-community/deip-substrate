@@ -72,6 +72,8 @@ pub mod pallet {
         ProjectDoesNotExist,
         ProjectSecurityTokenCannotBeDestroyed,
         ProjectSecurityTokenCannotBeBurned,
+        ProjectSecurityTokenCannotBeFreezed,
+        ProjectSecurityTokenAccountCannotBeFreezed,
     }
 
     #[pallet::storage]
@@ -260,6 +262,11 @@ pub mod pallet {
             #[pallet::compact] id: T::AssetId,
             who: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResultWithPostInfo {
+            ensure!(
+                !ProjectIdByAssetId::<T>::contains_key(id),
+                Error::<T>::ProjectSecurityTokenAccountCannotBeFreezed
+            );
+
             let call = pallet_assets::Call::<T>::freeze(id, who);
             call.dispatch_bypass_filter(origin)
         }
@@ -279,6 +286,11 @@ pub mod pallet {
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
         ) -> DispatchResultWithPostInfo {
+            ensure!(
+                !ProjectIdByAssetId::<T>::contains_key(id),
+                Error::<T>::ProjectSecurityTokenCannotBeFreezed
+            );
+
             let call = pallet_assets::Call::<T>::freeze_asset(id);
             call.dispatch_bypass_filter(origin)
         }
