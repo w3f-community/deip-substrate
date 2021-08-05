@@ -26,13 +26,6 @@ impl Default for Status {
     }
 }
 
-/// Contains information about tokens of the project
-#[derive(Encode, Decode, Default)]
-pub struct TokenInfo {
-    pub total: u64,
-    pub reserved: u64,
-}
-
 /// The object represents a sale of project's tokens with
 /// various parameters.
 /// It is connected to the specific project.

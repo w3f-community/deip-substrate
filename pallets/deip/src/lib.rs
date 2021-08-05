@@ -61,8 +61,7 @@ mod tests;
 mod project_token_sale;
 use project_token_sale::{Id as InvestmentId,
     Status as ProjectTokenSaleStatus,
-    Info as ProjectTokenSale,
-    TokenInfo as ProjectTokenSaleTokenInfo};
+    Info as ProjectTokenSale};
 
 mod project_token_sale_contribution;
 use project_token_sale_contribution::{Contribution as ProjectTokenSaleContribution};
@@ -436,8 +435,6 @@ decl_storage! {
         /// Project list, guarantees uniquest and provides Project listing
         Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
 
-        ProjectTokens: map hasher(identity) ProjectId => ProjectTokenSaleTokenInfo;
-
         ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) InvestmentId => ProjectTokenSaleOf<T>;
         ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, InvestmentId)>;
         /// Index for fast lookup a token sale by its end time
@@ -445,10 +442,6 @@ decl_storage! {
 
         /// Contains contributions to project token sales from DAOs
         ProjectTokenSaleContributions: map hasher(identity) InvestmentId => Vec<(T::AccountId, ProjectTokenSaleContributionOf<T>)>;
-
-        /// temporary object that holds information about how many project's tokens
-        /// belong to the user
-        OwnedProjectTokens: double_map hasher(blake2_128_concat) T::AccountId, hasher(identity) ProjectId => u64;
 
         /// Map to Project Content Info
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
@@ -537,7 +530,6 @@ decl_module! {
 
             // Store the projects related to account
             ProjectMap::<T>::insert(project.external_id, project.clone());
-            ProjectTokens::insert(project.external_id, ProjectTokenSaleTokenInfo{ total: 100_000u64, reserved: 0u64 });
 
             // Emit an event that the project was created.
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
