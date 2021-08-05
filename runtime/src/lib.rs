@@ -292,6 +292,10 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
     ) -> Result<(), ()> {
 		DeipAssets::transactionally_reserve(account, project_id, security_tokens_on_sale)
 	}
+
+	fn transactionally_unreserve(project_id: ProjectId, account: &AccountId) -> Result<(), ()> {
+		DeipAssets::transactionally_unreserve(project_id, account)
+	}
 }
 
 impl pallet_deip::Config for Runtime {

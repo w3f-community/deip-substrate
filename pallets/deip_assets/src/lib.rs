@@ -41,7 +41,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::{traits::UnfilteredDispatchable, transactional};
     use frame_system::{pallet_prelude::*, RawOrigin};
-    use sp_runtime::traits::StaticLookup;
+    use sp_runtime::traits::{StaticLookup, Zero};
     use sp_std::prelude::*;
 
     use pallet_assets::WeightInfo;
@@ -108,6 +108,35 @@ pub mod pallet {
             for (id, amount) in security_tokens_on_sale {
                 let call = pallet_assets::Call::<T>::transfer(*id, project_source.clone(), *amount);
                 let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
+                if result.is_err() {
+                    return Err(());
+                }
+            }
+
+            Ok(())
+        }
+
+        #[transactional]
+        pub fn transactionally_unreserve(
+            project_id: DeipProjectIdOf<T>,
+            account: &T::AccountId,
+        ) -> Result<(), ()> {
+            let project_account = Self::project_key(&project_id);
+            let account_source = <T::Lookup as StaticLookup>::unlookup(account.clone());
+
+            let security_tokens = match AssetIdByProjectId::<T>::try_get(project_id) {
+                Err(_) => return Err(()),
+                Ok(c) => c,
+            };
+
+            for id in &security_tokens {
+                let amount = pallet_assets::Module::<T>::balance(*id, project_account.clone());
+                if amount.is_zero() {
+                    continue;
+                }
+
+                let call = pallet_assets::Call::<T>::transfer(*id, account_source.clone(), amount);
+                let result = call.dispatch_bypass_filter(RawOrigin::Signed(project_account.clone()).into());
                 if result.is_err() {
                     return Err(());
                 }
