@@ -134,7 +134,9 @@ impl<T: Config> Module<T> {
             Err(i) => i,
         };
 
-        if let Err(_) = T::AssetSystem::transactionally_reserve(&account, project_id, &security_tokens_on_sale) {
+        if let Err(_) =
+            T::AssetSystem::transactionally_reserve(&account, project_id, &security_tokens_on_sale)
+        {
             return Err(Error::<T>::TokenSaleBalanceIsNotEnough.into());
         }
 
@@ -255,17 +257,12 @@ impl<T: Config> Module<T> {
     }
 
     fn refund_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
-        ProjectTokens::mutate_exists(sale.project_id, |maybe_project| {
-            let token_info = maybe_project.as_mut().expect("we keep collections in sync");
+        let team_id = &ProjectMap::<T>::try_get(sale.project_id)
+            .expect("checked in create method")
+            .team_id;
 
-            let restored_total = token_info
-                .total
-                .checked_add(token_info.reserved)
-                .expect("reserved + total can't exceed u64");
-
-            token_info.total = restored_total;
-            token_info.reserved = 0;
-        });
+        T::AssetSystem::transactionally_unreserve(sale.project_id, team_id)
+            .expect("assets should be reserved earlier");
 
         if let Ok(ref c) = ProjectTokenSaleContributions::<T>::try_get(sale.external_id) {
             for (_, ref contribution) in c {

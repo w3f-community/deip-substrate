@@ -116,6 +116,7 @@ pub mod pallet {
             Ok(())
         }
 
+        /// This could fail if the new project team is a zombie in pallet_assets-terms.
         #[transactional]
         pub fn transactionally_unreserve(
             project_id: DeipProjectIdOf<T>,
@@ -171,10 +172,7 @@ pub mod pallet {
                 ProjectIdByAssetId::<T>::insert(id, project_id.clone());
                 AssetIdByProjectId::<T>::mutate_exists(project_id, |security_tokens| {
                     match security_tokens.as_mut() {
-                        None => {
-                            *security_tokens = Some(vec![id]);
-                            return;
-                        }
+                        None => *security_tokens = Some(vec![id]),
                         Some(c) => c.push(id),
                     };
                 });
