@@ -416,7 +416,6 @@ decl_error! {
         TokenSaleScheduledAlready,
         TokenSaleAlreadyExists,
         TokenSaleBalanceIsNotEnough,
-        TokenSaleProjectReservedOverflow,
         TokenSaleAssetIsNotSecurityToken,
         TokenSaleProjectNotTokenizedWithSecurityToken,
         TokenSaleAssetAmountMustBePositive,
