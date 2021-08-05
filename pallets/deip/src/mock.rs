@@ -83,6 +83,10 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
     ) -> Result<(), ()> {
 		unimplemented!();
 	}
+
+	fn transactionally_unreserve(project_id: super::ProjectId, account: &u64) -> Result<(), ()> {
+		unimplemented!();
+	}
 }
 
 impl pallet_deip::Config for Test {
