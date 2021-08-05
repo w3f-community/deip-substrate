@@ -954,6 +954,13 @@ fn project_token_sale_hard_cap_reached() {
 			hard_cap / 2,
 		));
 
+		// investors should get their tokens in any case
+		let call = pallet_deip_assets::Call::<Test>::freeze(usd_id, BOB_ACCOUNT_ID);
+		let _result = call.dispatch_bypass_filter(Origin::signed(*account_id));
+
+		let call = pallet_deip_assets::Call::<Test>::freeze_asset(eur_id);
+		let _result = call.dispatch_bypass_filter(Origin::signed(*account_id));
+
 		assert_ok!(Deip::contribute_to_project_token_sale_impl(
 			ALICE_ACCOUNT_ID,
 			sale_id,
@@ -1029,6 +1036,14 @@ fn project_token_sale_expired() {
 			sale_id,
 			soft_cap / 2,
 		));
+
+		// since the sale expired the tokens should be transfered back to
+		// the seller doesn't matter if assets/accounts frozen or not
+		let call = pallet_deip_assets::Call::<Test>::freeze(eur_id, BOB_ACCOUNT_ID);
+		let _result = call.dispatch_bypass_filter(Origin::signed(*account_id));
+
+		let call = pallet_deip_assets::Call::<Test>::freeze_asset(usd_id);
+		let _result = call.dispatch_bypass_filter(Origin::signed(*account_id));
 
 		let end_block = start_block + duration_in_blocks + 1;
 		while System::block_number() < end_block {
