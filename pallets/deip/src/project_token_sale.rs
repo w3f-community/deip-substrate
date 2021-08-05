@@ -85,6 +85,10 @@ impl<T: Config> Module<T> {
             Error::<T>::TokenSaleHardCapShouldBeGreaterOrEqualSoftCap
         );
 
+        ensure!(
+            !security_tokens_on_sale.is_empty(),
+            Error::<T>::TokenSaleSecurityTokenNotSpecified
+        );
         for (asset_id, asset_amount) in &security_tokens_on_sale {
             match T::AssetSystem::try_get_tokenized_project(&asset_id) {
                 None => return Err(Error::<T>::TokenSaleAssetIsNotSecurityToken.into()),
@@ -94,9 +98,8 @@ impl<T: Config> Module<T> {
                 ),
             };
 
-            let zero: DeipAssetBalanceOf<T> = Zero::zero();
             ensure!(
-                asset_amount > &zero,
+                !asset_amount.is_zero(),
                 Error::<T>::TokenSaleAssetAmountMustBePositive
             );
         }
