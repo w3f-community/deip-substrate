@@ -303,7 +303,7 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 		id: Self::AssetId,
 		amount: Self::Balance,
 	) -> Result<(), ()> {
-		unimplemented!();
+		DeipAssets::transfer_from_project(project_id, who, id, amount)
 	}
 }
 

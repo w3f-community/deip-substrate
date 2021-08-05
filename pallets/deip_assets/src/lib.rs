@@ -137,10 +137,30 @@ pub mod pallet {
                 }
 
                 let call = pallet_assets::Call::<T>::transfer(*id, account_source.clone(), amount);
-                let result = call.dispatch_bypass_filter(RawOrigin::Signed(project_account.clone()).into());
+                let result =
+                    call.dispatch_bypass_filter(RawOrigin::Signed(project_account.clone()).into());
                 if result.is_err() {
                     return Err(());
                 }
+            }
+
+            Ok(())
+        }
+
+        pub fn transfer_from_project(
+            project_id: DeipProjectIdOf<T>,
+            who: &T::AccountId,
+            id: T::AssetId,
+            amount: T::Balance,
+        ) -> Result<(), ()> {
+            let project_account = Self::project_key(&project_id);
+            let account_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
+
+            let call = pallet_assets::Call::<T>::transfer(id, account_source, amount);
+            let result =
+                call.dispatch_bypass_filter(RawOrigin::Signed(project_account.clone()).into());
+            if result.is_err() {
+                return Err(());
             }
 
             Ok(())
