@@ -275,18 +275,18 @@ pub mod pallet {
     
     impl<T: Config> Pallet<T> {
         pub fn org_key(org_name: &OrgName) -> T::AccountId {
-            let entropy = (org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
+            let entropy = (b"deip/DAOs/", org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
             T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
         }
     }
 
     pub fn org_key2<T: frame_system::Config>(org_name: &OrgName) -> T::AccountId {
-        let entropy = (org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
+        let entropy = (b"deip/DAOs/", org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
         T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
     }
     
     pub fn org_key3<T: Decode + Default>(org_name: &OrgName) -> T {
-        let entropy = (org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
+        let entropy = (b"deip/DAOs/", org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
         T::decode(&mut &entropy[..]).unwrap_or_default()
     }
     
