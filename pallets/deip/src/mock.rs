@@ -11,6 +11,9 @@ pub const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
 pub const ALICE_ACCOUNT_ID: <Test as system::Config>::AccountId = 124;
 pub const BOB_ACCOUNT_ID: <Test as system::Config>::AccountId = 125;
 
+pub const INIT_TIMESTAMP: u64 = 30_000;
+pub const BLOCK_TIME: u64 = 1_000;
+
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 type Balance = u128;
@@ -192,6 +195,9 @@ pub fn new_test_ext2() -> sp_io::TestExternalities {
 	.unwrap();
 
 	let mut ext = sp_io::TestExternalities::new(t);
-	ext.execute_with(|| System::set_block_number(1));
+	ext.execute_with(|| {
+		System::set_block_number(1);
+		Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
+	});
 	ext
 }
