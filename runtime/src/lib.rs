@@ -282,15 +282,15 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 	type AssetId = u32;
 
 	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
-		unimplemented!();
+		DeipAssets::try_get_tokenized_project(id)
 	}
 	
 	fn transactionally_reserve(
         account: &AccountId,
         project_id: ProjectId,
         security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
-    ) -> Result<(), pallet_deip::traits::FreezeError> {
-		unimplemented!();
+    ) -> Result<(), ()> {
+		DeipAssets::transactionally_reserve(account, project_id, security_tokens_on_sale)
 	}
 }
 

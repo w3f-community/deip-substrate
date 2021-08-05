@@ -80,7 +80,7 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
         account: &u64,
         project_id: super::ProjectId,
         security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
-    ) -> Result<(), super::traits::FreezeError> {
+    ) -> Result<(), ()> {
 		unimplemented!();
 	}
 }

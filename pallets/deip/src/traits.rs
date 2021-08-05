@@ -3,10 +3,6 @@ use crate::*;
 use codec::HasCompact;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 
-pub enum FreezeError {
-    BalanceIsNotEnough,
-}
-
 pub trait DeipAssetSystem<AccountId> {
     /// The units in which asset balances are recorded.
     type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
@@ -22,5 +18,5 @@ pub trait DeipAssetSystem<AccountId> {
         account: &AccountId,
         project_id: ProjectId,
         security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
-    ) -> Result<(), FreezeError>;
+    ) -> Result<(), ()>;
 }

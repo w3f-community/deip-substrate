@@ -39,8 +39,8 @@ pub use pallet::*;
 #[doc(hidden)]
 pub mod pallet {
     use frame_support::pallet_prelude::*;
-    use frame_support::traits::UnfilteredDispatchable;
-    use frame_system::pallet_prelude::*;
+    use frame_support::{traits::UnfilteredDispatchable, transactional};
+    use frame_system::{pallet_prelude::*, RawOrigin};
     use sp_runtime::traits::StaticLookup;
     use sp_std::prelude::*;
 
@@ -81,6 +81,41 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type ProjectIdByAssetId<T: Config> =
         StorageMap<_, Identity, AssetsAssetIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
+
+    impl<T: Config> Pallet<T> {
+        pub fn project_key(id: &DeipProjectIdOf<T>) -> T::AccountId {
+            let entropy =
+                (b"deip/projects/", id.as_ref()).using_encoded(sp_io::hashing::blake2_256);
+            T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
+        }
+
+        pub fn try_get_tokenized_project(id: &T::AssetId) -> Option<DeipProjectIdOf<T>> {
+            match ProjectIdByAssetId::<T>::try_get(*id) {
+                Ok(project_id) => Some(project_id),
+                Err(_) => None,
+            }
+        }
+
+        #[transactional]
+        pub fn transactionally_reserve(
+            account: &T::AccountId,
+            project_id: DeipProjectIdOf<T>,
+            security_tokens_on_sale: &[(T::AssetId, T::Balance)],
+        ) -> Result<(), ()> {
+            let project_account = Self::project_key(&project_id);
+            let project_source = <T::Lookup as StaticLookup>::unlookup(project_account);
+
+            for (id, amount) in security_tokens_on_sale {
+                let call = pallet_assets::Call::<T>::transfer(*id, project_source.clone(), *amount);
+                let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
+                if result.is_err() {
+                    return Err(());
+                }
+            }
+
+            Ok(())
+        }
+    }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {

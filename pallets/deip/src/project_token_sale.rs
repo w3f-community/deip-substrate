@@ -134,10 +134,9 @@ impl<T: Config> Module<T> {
             Err(i) => i,
         };
 
-        match T::AssetSystem::transactionally_reserve(&account, project_id, &security_tokens_on_sale) {
-            Ok(_) => (),
-            Err(_) => (),
-        };
+        if let Err(_) = T::AssetSystem::transactionally_reserve(&account, project_id, &security_tokens_on_sale) {
+            return Err(Error::<T>::TokenSaleBalanceIsNotEnough.into());
+        }
 
         let new_project_token_sale = ProjectTokenSale {
             external_id: external_id,
