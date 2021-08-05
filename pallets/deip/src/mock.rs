@@ -68,10 +68,20 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
+impl pallet_deip::traits::DeipAssetSystem for Test {
+	type Balance = u64;
+	type AssetId = u32;
+
+	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<super::ProjectId> {
+		unimplemented!();
+	}
+}
+
 impl pallet_deip::Config for Test {
 	type Event = Event;
 	type DeipAccountId = Self::AccountId;
 	type Currency = Balances;
+	type AssetSystem = Self;
 }
 
 parameter_types! {

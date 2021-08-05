@@ -67,6 +67,8 @@ use project_token_sale::{Id as InvestmentId,
 mod project_token_sale_contribution;
 use project_token_sale_contribution::{Contribution as ProjectTokenSaleContribution};
 
+pub mod traits;
+
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
 
@@ -110,6 +112,8 @@ pub trait Config: frame_system::Config + pallet_timestamp::Config {
     type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
 
     type Currency: ReservableCurrency<Self::AccountId>;
+
+    type AssetSystem: traits::DeipAssetSystem;
 }
 
 /// Unique Project ID reference
@@ -130,14 +134,16 @@ pub type ReviewOf<T> = Review<<T as system::Config>::Hash, <T as system::Config>
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>>;
+pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
 pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<<T as system::Config>::AccountId, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem>::AssetId;
+type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem>::Balance;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum InvestmentOpportunity<Moment, Balance> {
+pub enum InvestmentOpportunity<Moment, Balance, AssetId, AssetBalance> {
     ProjectTokenSale {
         /// a moment when the sale starts. Must be later than current moment.
         start_time: Moment,
@@ -149,7 +155,7 @@ pub enum InvestmentOpportunity<Moment, Balance> {
         /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
         hard_cap: Balance,
         /// specifies how many tokens of the project are intended to sale.
-        security_tokens_on_sale: u64,
+        security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
     },
 }
 
@@ -411,6 +417,9 @@ decl_error! {
         TokenSaleAlreadyExists,
         TokenSaleBalanceIsNotEnough,
         TokenSaleProjectReservedOverflow,
+        TokenSaleAssetIsNotSecurityToken,
+        TokenSaleProjectNotTokenizedWithSecurityToken,
+        TokenSaleAssetAmountMustBePositive,
 
         // Possible errors when DAO tries to contribute to a project token sale
         ContributionProjectTokenSaleNotFound,
@@ -545,7 +554,7 @@ decl_module! {
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
             project_id: ProjectId,
-            investment_type: InvestmentOpportunity<T::Moment, BalanceOf<T>>,
+            investment_type: InvestmentOpportunity<T::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
 

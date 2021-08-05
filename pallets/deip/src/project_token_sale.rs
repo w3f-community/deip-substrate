@@ -1,7 +1,8 @@
+use crate::traits::DeipAssetSystem;
 use crate::*;
 
 use frame_support::traits::{ExistenceRequirement, Imbalance, WithdrawReasons};
-use sp_runtime::{traits::Saturating, SaturatedConversion};
+use sp_runtime::{traits::{Saturating, Zero}, SaturatedConversion};
 
 /// Unique ProjectTokenSale ID reference
 pub type Id = H160;
@@ -35,7 +36,7 @@ pub struct TokenInfo {
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct Info<Moment, Balance> {
+pub struct Info<Moment, Balance, AssetId, AssetBalance> {
     /// Reference for external world and uniques control
     pub external_id: Id,
     /// Reference to the Project
@@ -50,7 +51,7 @@ pub struct Info<Moment, Balance> {
     pub soft_cap: Balance,
     pub hard_cap: Balance,
     /// How many tokens supposed to sale
-    pub security_tokens_on_sale: u64,
+    pub security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
 }
 
 impl<T: Config> Module<T> {
@@ -62,7 +63,7 @@ impl<T: Config> Module<T> {
         end_time: T::Moment,
         soft_cap: BalanceOf<T>,
         hard_cap: BalanceOf<T>,
-        security_tokens_on_sale: u64,
+        security_tokens_on_sale: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
     ) -> DispatchResult {
         ensure!(
             !ProjectTokenSaleMap::<T>::contains_key(external_id),
@@ -87,6 +88,22 @@ impl<T: Config> Module<T> {
             hard_cap >= soft_cap,
             Error::<T>::TokenSaleHardCapShouldBeGreaterOrEqualSoftCap
         );
+
+        for (asset_id, asset_amount) in &security_tokens_on_sale {
+            match T::AssetSystem::try_get_tokenized_project(&asset_id) {
+                None => return Err(Error::<T>::TokenSaleAssetIsNotSecurityToken.into()),
+                Some(id) => ensure!(
+                    id == project_id,
+                    Error::<T>::TokenSaleProjectNotTokenizedWithSecurityToken
+                ),
+            };
+
+            let zero: DeipAssetBalanceOf<T> = Zero::zero();
+            ensure!(
+                asset_amount > &zero,
+                Error::<T>::TokenSaleAssetAmountMustBePositive
+            );
+        }
 
         let projects = Projects::<T>::get();
         match projects.binary_search_by_key(&project_id, |&(p, _)| p) {
@@ -119,14 +136,14 @@ impl<T: Config> Module<T> {
             project_id: project_id,
             start_time: start_time,
             end_time: end_time,
-            status: ProjectTokenSaleStatus::Inactive,
             soft_cap: soft_cap,
             hard_cap: hard_cap,
             security_tokens_on_sale: security_tokens_on_sale,
             ..Default::default()
         };
 
-        ProjectTokens::mutate_exists(project_id, |maybe_project| -> DispatchResult {
+        todo!();
+        /* ProjectTokens::mutate_exists(project_id, |maybe_project| -> DispatchResult {
             let project = maybe_project.as_mut().ok_or(Error::<T>::NoSuchProject)?;
 
             let new_total = project
@@ -142,7 +159,7 @@ impl<T: Config> Module<T> {
             project.reserved = new_reserved;
 
             Ok(())
-        })?;
+        })?; */
 
         token_sales.insert(
             index,
@@ -315,12 +332,14 @@ impl<T: Config> Module<T> {
                 .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"));
 
             // similiar to frame_support::traits::Imbalance::ration
-            let token_amount = contribution
-                .amount
-                .saturating_mul(sale.security_tokens_on_sale.saturated_into())
-                / sale.total_amount;
-            let token_amount: u64 = token_amount.saturated_into();
-            total_token_amount += token_amount;
+            todo!();
+            let token_amount = 0u64;
+            // let token_amount = contribution
+            //     .amount
+            //     .saturating_mul(sale.security_tokens_on_sale.saturated_into())
+            //     / sale.total_amount;
+            // let token_amount: u64 = token_amount.saturated_into();
+            // total_token_amount += token_amount;
 
             OwnedProjectTokens::<T>::insert(
                 contribution.owner.clone(),
@@ -339,12 +358,12 @@ impl<T: Config> Module<T> {
             .drop_zero()
             .unwrap_or_else(|_| panic!("all contributions should be processed"));
 
-        OwnedProjectTokens::<T>::insert(
+        /* OwnedProjectTokens::<T>::insert(
             first_contribution.owner.clone(),
             sale.project_id,
             sale.security_tokens_on_sale
                 .saturating_sub(total_token_amount),
-        );
+        ); */
 
         ProjectTokenSaleContributions::<T>::remove(sale.external_id);
 

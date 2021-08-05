@@ -277,10 +277,20 @@ impl pallet_template::Config for Runtime {
 	type Event = Event;
 }
 
+impl pallet_deip::traits::DeipAssetSystem for Runtime {
+	type Balance = u64;
+	type AssetId = u32;
+
+	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
+		unimplemented!();
+	}
+}
+
 impl pallet_deip::Config for Runtime {
-    type Event = Event;
-    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
-    type Currency = Balances;
+	type Event = Event;
+	type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
+	type Currency = Balances;
+	type AssetSystem = Self;
 }
 
 parameter_types! {
