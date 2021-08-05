@@ -278,11 +278,6 @@ impl<T: Config> Module<T> {
     }
 
     fn finish_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
-        ProjectTokens::mutate_exists(sale.project_id, |maybe_project| {
-            let token_info = maybe_project.as_mut().expect("we keep collections in sync");
-            token_info.reserved = 0;
-        });
-
         let mut imbalance = T::Currency::deposit_creating(
             &ProjectMap::<T>::get(sale.project_id).team_id,
             sale.total_amount,
@@ -307,30 +302,31 @@ impl<T: Config> Module<T> {
             .expect("Required amount just unreserved")
         };
 
-        let mut total_token_amount: u64 = 0;
         for (_, ref contribution) in iter {
+            for (asset_id, asset_amount) in &sale.security_tokens_on_sale {
+                // similiar to frame_support::traits::Imbalance::ration
+                let token_amount = contribution
+                    .amount
+                    .saturated_into::<u128>()
+                    .saturating_mul(asset_amount.clone().saturated_into())
+                    / sale.total_amount.saturated_into::<u128>();
+                let token_amount: DeipAssetBalanceOf<T> = token_amount.saturated_into();
+                if token_amount.is_zero() {
+                    continue;
+                }
+
+                todo!();
+                // T::AssetInfo::transfer(sale.project_id, contribution.owner, asset_id, token_amount);
+            }
+
             imbalance = imbalance
                 .offset(withdraw(&contribution.owner, contribution.amount))
                 .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"));
-
-            // similiar to frame_support::traits::Imbalance::ration
-            todo!();
-            let token_amount = 0u64;
-            // let token_amount = contribution
-            //     .amount
-            //     .saturating_mul(sale.security_tokens_on_sale.saturated_into())
-            //     / sale.total_amount;
-            // let token_amount: u64 = token_amount.saturated_into();
-            // total_token_amount += token_amount;
-
-            OwnedProjectTokens::<T>::insert(
-                contribution.owner.clone(),
-                sale.project_id,
-                token_amount,
-            );
         }
 
         // process the remainder
+        T::AssetSystem::transactionally_unreserve(sale.project_id, &first_contribution.owner)
+            .expect("remaining assets should be reserved earlier");
         imbalance
             .offset(withdraw(
                 &first_contribution.owner,
@@ -339,13 +335,6 @@ impl<T: Config> Module<T> {
             .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"))
             .drop_zero()
             .unwrap_or_else(|_| panic!("all contributions should be processed"));
-
-        /* OwnedProjectTokens::<T>::insert(
-            first_contribution.owner.clone(),
-            sale.project_id,
-            sale.security_tokens_on_sale
-                .saturating_sub(total_token_amount),
-        ); */
 
         ProjectTokenSaleContributions::<T>::remove(sale.external_id);
 
