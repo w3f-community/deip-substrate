@@ -87,6 +87,15 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
 	fn transactionally_unreserve(project_id: super::ProjectId, account: &u64) -> Result<(), ()> {
 		unimplemented!();
 	}
+
+	fn transfer(
+		project_id: super::ProjectId,
+		who: &u64,
+		id: Self::AssetId,
+		amount: Self::Balance,
+	) -> Result<(), ()> {
+		unimplemented!();
+	}
 }
 
 impl pallet_deip::Config for Test {

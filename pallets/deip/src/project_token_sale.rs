@@ -308,8 +308,13 @@ impl<T: Config> Module<T> {
                     continue;
                 }
 
-                todo!();
-                // T::AssetInfo::transfer(sale.project_id, contribution.owner, asset_id, token_amount);
+                T::AssetSystem::transfer(
+                    sale.project_id,
+                    &contribution.owner,
+                    *asset_id,
+                    token_amount,
+                )
+                .expect("Required token_amount should be reserved");
             }
 
             imbalance = imbalance

@@ -296,6 +296,15 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 	fn transactionally_unreserve(project_id: ProjectId, account: &AccountId) -> Result<(), ()> {
 		DeipAssets::transactionally_unreserve(project_id, account)
 	}
+
+	fn transfer(
+		project_id: ProjectId,
+		who: &AccountId,
+		id: Self::AssetId,
+		amount: Self::Balance,
+	) -> Result<(), ()> {
+		unimplemented!();
+	}
 }
 
 impl pallet_deip::Config for Runtime {

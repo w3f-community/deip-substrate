@@ -23,4 +23,12 @@ pub trait DeipAssetSystem<AccountId> {
     /// Transfers all assets currently owned by `project_id` to `account` in
     /// a transactional way.
     fn transactionally_unreserve(project_id: ProjectId, account: &AccountId) -> Result<(), ()>;
+
+    /// Transfers `amount` of assets `id` owned by `project_id` to `who`.
+    fn transfer(
+        project_id: ProjectId,
+        who: &AccountId,
+        id: Self::AssetId,
+        amount: Self::Balance,
+    ) -> Result<(), ()>;
 }
