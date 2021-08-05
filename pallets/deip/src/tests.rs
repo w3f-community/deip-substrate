@@ -4,7 +4,6 @@ use sp_core::H256;
 use frame_support::{assert_ok, assert_noop};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
 const DAY_IN_MILLIS: u64 = 86400000;
 
 fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountId>) 
@@ -860,5 +859,35 @@ fn cant_reject_finalized_nda_content_access_request() {
 			),
 			Error::<Test>::NdaAccessRequestAlreadyFinalized
 		);
+	})
+}
+
+#[test]
+fn project_token_sale_create_should_fail() {
+	new_test_ext2().execute_with(|| {
+		let (ref project_id, ..) = create_ok_project(None);
+
+		let start_time = pallet_timestamp::Module::<Test>::get();
+		assert_noop!(Deip::create_project_token_sale_impl(DEFAULT_ACCOUNT_ID,
+			H160::random(),
+			*project_id,
+			start_time,
+			start_time + 1,
+			100u32.into(),
+			120u32.into(),
+			vec![(0u32.into(), 100u32.into()), (14u32.into(), 200u32.into())]
+		),
+		Error::<Test>::TokenSaleAssetIsNotSecurityToken);
+
+		assert_noop!(Deip::create_project_token_sale_impl(DEFAULT_ACCOUNT_ID,
+			H160::random(),
+			*project_id,
+			start_time,
+			start_time + 1,
+			100u32.into(),
+			120u32.into(),
+			vec![]
+		),
+		Error::<Test>::TokenSaleSecurityTokenNotSpecified);
 	})
 }

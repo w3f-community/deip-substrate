@@ -420,6 +420,7 @@ decl_error! {
         TokenSaleAssetIsNotSecurityToken,
         TokenSaleProjectNotTokenizedWithSecurityToken,
         TokenSaleAssetAmountMustBePositive,
+        TokenSaleSecurityTokenNotSpecified,
 
         // Possible errors when DAO tries to contribute to a project token sale
         ContributionProjectTokenSaleNotFound,

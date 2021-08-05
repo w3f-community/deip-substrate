@@ -42,7 +42,7 @@ pub mod pallet {
     use frame_support::{traits::UnfilteredDispatchable, transactional};
     use frame_system::{pallet_prelude::*, RawOrigin};
     use sp_runtime::traits::{StaticLookup, Zero};
-    use sp_std::prelude::*;
+    use sp_std::{prelude::*, vec};
 
     use pallet_assets::WeightInfo;
 
