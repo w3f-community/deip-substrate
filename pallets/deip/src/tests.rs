@@ -1,7 +1,8 @@
 use crate::*;
 use crate::{mock::*};
 use sp_core::H256;
-use frame_support::{assert_ok, assert_noop};
+use frame_support::{assert_ok, assert_noop,
+	traits::{Get, UnfilteredDispatchable}};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const DAY_IN_MILLIS: u64 = 86400000;
@@ -101,6 +102,27 @@ fn create_ok_nda_content_access_request(project_nda_id: NdaId) -> (NdaAccessRequ
 	};
 
 	(access_request_id, expected_nda_request)
+}
+
+fn create_issue_asset(
+	account_id: AccountIdOf<Test>,
+	id: DeipAssetIdOf<Test>,
+	amount: DeipAssetBalanceOf<Test>,
+	project_id: Option<ProjectId>,
+) {
+	let call = pallet_deip_assets::Call::<Test>::create_asset(
+		id,
+		account_id,
+		100u32,
+		1u32.into(),
+		project_id,
+	);
+	let result = call.dispatch_bypass_filter(Origin::signed(account_id));
+	assert_ok!(result);
+
+	let call = pallet_deip_assets::Call::<Test>::issue_asset(id, account_id, amount);
+	let result = call.dispatch_bypass_filter(Origin::signed(account_id));
+	assert_ok!(result);
 }
 
 #[test]
@@ -889,5 +911,63 @@ fn project_token_sale_create_should_fail() {
 			vec![]
 		),
 		Error::<Test>::TokenSaleSecurityTokenNotSpecified);
+	})
+}
+
+#[test]
+fn project_token_sale_hard_cap_reached() {
+	new_test_ext2().execute_with(|| {
+		let (ref project_id, .., ref account_id) = create_ok_project(None);
+
+		let usd_id = 0u32;
+		let usd_total = 100_000u64;
+		create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
+
+		let eur_id = 1u32;
+		let eur_total = 80_000u64;
+		create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
+
+		let balance_before = <Test as crate::Config>::Currency::total_balance(account_id);
+
+		let start_time = pallet_timestamp::Module::<Test>::get();
+		let sale_id = H160::random();
+		let soft_cap: u128 = (<ExistentialDeposit as Get<u64>>::get() * 1000).into();
+		let hard_cap: u128 = (<ExistentialDeposit as Get<u64>>::get() * 1200).into();
+		let usd_to_sale = 80_000u64;
+		let eur_to_sale = 75_000u64;
+		assert_ok!(Deip::create_project_token_sale_impl(
+			DEFAULT_ACCOUNT_ID,
+			sale_id,
+			*project_id,
+			start_time,
+			start_time + 100,
+			soft_cap,
+			hard_cap,
+			vec![(usd_id, usd_to_sale), (eur_id, eur_to_sale)]
+		));
+
+		Deip::process_project_token_sales();
+
+		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+			BOB_ACCOUNT_ID,
+			sale_id,
+			hard_cap / 2,
+		));
+
+		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+			ALICE_ACCOUNT_ID,
+			sale_id,
+			hard_cap / 2,
+		));
+
+		assert_eq!(Assets::balance(usd_id, BOB_ACCOUNT_ID), usd_to_sale / 2);
+		assert_eq!(Assets::balance(usd_id, ALICE_ACCOUNT_ID), usd_to_sale / 2);
+		assert_eq!(Assets::balance(usd_id, *account_id), Assets::total_supply(usd_id) - usd_to_sale);
+
+		assert_eq!(Assets::balance(eur_id, BOB_ACCOUNT_ID), eur_to_sale / 2);
+		assert_eq!(Assets::balance(eur_id, ALICE_ACCOUNT_ID), eur_to_sale / 2);
+		assert_eq!(Assets::balance(eur_id, *account_id), Assets::total_supply(eur_id) - eur_to_sale);
+
+		assert_eq!(<Test as crate::Config>::Currency::total_balance(account_id), hard_cap + balance_before);
 	})
 }

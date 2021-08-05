@@ -5,10 +5,11 @@ use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	BuildStorage,
 };
 
 pub const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
+pub const ALICE_ACCOUNT_ID: <Test as system::Config>::AccountId = 124;
+pub const BOB_ACCOUNT_ID: <Test as system::Config>::AccountId = 125;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -172,10 +173,20 @@ pub fn new_test_ext2() -> sp_io::TestExternalities {
 		.build_storage::<Test>()
 		.unwrap();
 	pallet_balances::GenesisConfig::<Test> {
-		balances: vec![(
-			DEFAULT_ACCOUNT_ID,
-			(100 * <ExistentialDeposit as Get<u64>>::get()).into(),
-		)],
+		balances: vec![
+			(
+				DEFAULT_ACCOUNT_ID,
+				(1000 * <ExistentialDeposit as Get<u64>>::get()).into(),
+			),
+			(
+				ALICE_ACCOUNT_ID,
+				(2000 * <ExistentialDeposit as Get<u64>>::get()).into(),
+			),
+			(
+				BOB_ACCOUNT_ID,
+				(2500 * <ExistentialDeposit as Get<u64>>::get()).into(),
+			),
+		],
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
