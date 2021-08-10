@@ -277,10 +277,41 @@ impl pallet_template::Config for Runtime {
 	type Event = Event;
 }
 
+impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
+	type Balance = u64;
+	type AssetId = u32;
+
+	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
+		DeipAssets::try_get_tokenized_project(id)
+	}
+	
+	fn transactionally_reserve(
+        account: &AccountId,
+        project_id: ProjectId,
+        security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
+    ) -> Result<(), ()> {
+		DeipAssets::transactionally_reserve(account, project_id, security_tokens_on_sale)
+	}
+
+	fn transactionally_unreserve(project_id: ProjectId, account: &AccountId) -> Result<(), ()> {
+		DeipAssets::transactionally_unreserve(project_id, account)
+	}
+
+	fn transfer(
+		project_id: ProjectId,
+		who: &AccountId,
+		id: Self::AssetId,
+		amount: Self::Balance,
+	) -> Result<(), ()> {
+		DeipAssets::transfer_from_project(project_id, who, id, amount)
+	}
+}
+
 impl pallet_deip::Config for Runtime {
-    type Event = Event;
-    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
-    type Currency = Balances;
+	type Event = Event;
+	type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
+	type Currency = Balances;
+	type AssetSystem = Self;
 }
 
 parameter_types! {

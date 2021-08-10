@@ -184,10 +184,6 @@
     "amount": "Balance",
     "time": "Moment"
   },
-  "ProjectTokenSaleTokenInfo": {
-    "total": "u64",
-    "reserved": "u64"
-  },
   "InvestmentOpportunity": {
     "_enum": {
       "ProjectTokenSale": {

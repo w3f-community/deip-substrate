@@ -61,11 +61,12 @@ mod tests;
 mod project_token_sale;
 use project_token_sale::{Id as InvestmentId,
     Status as ProjectTokenSaleStatus,
-    Info as ProjectTokenSale,
-    TokenInfo as ProjectTokenSaleTokenInfo};
+    Info as ProjectTokenSale};
 
 mod project_token_sale_contribution;
 use project_token_sale_contribution::{Contribution as ProjectTokenSaleContribution};
+
+pub mod traits;
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
@@ -110,6 +111,8 @@ pub trait Config: frame_system::Config + pallet_timestamp::Config {
     type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
 
     type Currency: ReservableCurrency<Self::AccountId>;
+
+    type AssetSystem: traits::DeipAssetSystem<Self::AccountId>;
 }
 
 /// Unique Project ID reference
@@ -125,19 +128,22 @@ pub type NdaAccessRequestId = H160;
 /// Unique Review reference 
 pub type ReviewId = H160;
 
-pub type ProjectOf<T> = Project<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type ReviewOf<T> = Review<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type NdaOf<T> = Nda<<T as system::Config>::Hash, <T as system::Config>::AccountId, <T as pallet_timestamp::Config>::Moment>;
-pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, <T as system::Config>::AccountId>;
-pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>>;
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
-pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<<T as system::Config>::AccountId, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+type AccountIdOf<T> = <T as system::Config>::AccountId;
+pub type ProjectOf<T> = Project<<T as system::Config>::Hash, AccountIdOf<T>>;
+pub type ReviewOf<T> = Review<<T as system::Config>::Hash, AccountIdOf<T>>;
+pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, <T as pallet_timestamp::Config>::Moment>;
+pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, AccountIdOf<T>>;
+pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, AccountIdOf<T>>;
+pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<AccountIdOf<T>, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
+type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum InvestmentOpportunity<Moment, Balance> {
+pub enum InvestmentOpportunity<Moment, Balance, AssetId, AssetBalance> {
     ProjectTokenSale {
         /// a moment when the sale starts. Must be later than current moment.
         start_time: Moment,
@@ -149,7 +155,7 @@ pub enum InvestmentOpportunity<Moment, Balance> {
         /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
         hard_cap: Balance,
         /// specifies how many tokens of the project are intended to sale.
-        security_tokens_on_sale: u64,
+        security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
     },
 }
 
@@ -410,7 +416,10 @@ decl_error! {
         TokenSaleScheduledAlready,
         TokenSaleAlreadyExists,
         TokenSaleBalanceIsNotEnough,
-        TokenSaleProjectReservedOverflow,
+        TokenSaleAssetIsNotSecurityToken,
+        TokenSaleProjectNotTokenizedWithSecurityToken,
+        TokenSaleAssetAmountMustBePositive,
+        TokenSaleSecurityTokenNotSpecified,
 
         // Possible errors when DAO tries to contribute to a project token sale
         ContributionProjectTokenSaleNotFound,
@@ -426,8 +435,6 @@ decl_storage! {
         /// Project list, guarantees uniquest and provides Project listing
         Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
 
-        ProjectTokens: map hasher(identity) ProjectId => ProjectTokenSaleTokenInfo;
-
         ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) InvestmentId => ProjectTokenSaleOf<T>;
         ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, InvestmentId)>;
         /// Index for fast lookup a token sale by its end time
@@ -435,10 +442,6 @@ decl_storage! {
 
         /// Contains contributions to project token sales from DAOs
         ProjectTokenSaleContributions: map hasher(identity) InvestmentId => Vec<(T::AccountId, ProjectTokenSaleContributionOf<T>)>;
-
-        /// temporary object that holds information about how many project's tokens
-        /// belong to the user
-        OwnedProjectTokens: double_map hasher(blake2_128_concat) T::AccountId, hasher(identity) ProjectId => u64;
 
         /// Map to Project Content Info
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
@@ -527,7 +530,6 @@ decl_module! {
 
             // Store the projects related to account
             ProjectMap::<T>::insert(project.external_id, project.clone());
-            ProjectTokens::insert(project.external_id, ProjectTokenSaleTokenInfo{ total: 100_000u64, reserved: 0u64 });
 
             // Emit an event that the project was created.
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
@@ -545,7 +547,7 @@ decl_module! {
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
             project_id: ProjectId,
-            investment_type: InvestmentOpportunity<T::Moment, BalanceOf<T>>,
+            investment_type: InvestmentOpportunity<T::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
 

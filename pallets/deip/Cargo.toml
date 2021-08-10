@@ -31,6 +31,8 @@ serde = { version = "1.0.119", optional = true, features = ["derive"]}
 sp-io = { default-features = false, version = '3.0.0' }
 sp-runtime = { default-features = false, version = '3.0.0' }
 pallet-balances = { default-features = false, version = '3.0.0' }
+pallet-assets = { default-features = false, version = '3.0.0' }
+pallet-deip-assets = { path = "../deip_assets", default-features = false }
 
 [features]
 default = ['std']

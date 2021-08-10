@@ -3813,7 +3813,9 @@ version = "3.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-assets",
  "pallet-balances",
+ "pallet-deip-assets",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
@@ -3832,6 +3834,7 @@ dependencies = [
  "pallet-assets",
  "parity-scale-codec",
  "serde",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
