@@ -1,11 +1,16 @@
 use crate::*;
 use crate::{mock::*};
-use sp_core::H256;
+use sp_core::{H256, offchain::{OffchainExt, TransactionPoolExt, testing::*}};
 use frame_support::{assert_ok, assert_noop,
-	traits::{Get, UnfilteredDispatchable, OnFinalize, OnInitialize}};
+	traits::{Get, UnfilteredDispatchable, OnFinalize, OnInitialize, OffchainWorker}};
 use std::time::{SystemTime, UNIX_EPOCH};
+use sp_io::TestExternalities;
+use sp_std::sync::Arc;
+use parking_lot::RwLock;
 
 const DAY_IN_MILLIS: u64 = 86400000;
+
+type BlockNumber = <Test as system::Config>::BlockNumber;
 
 fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountId>) 
 	-> (ProjectId, ProjectOf<Test>, DomainId, <Test as system::Config>::AccountId, ) {
@@ -123,6 +128,43 @@ fn create_issue_asset(
 	let call = pallet_deip_assets::Call::<Test>::issue_asset(id, account_id, amount);
 	let result = call.dispatch_bypass_filter(Origin::signed(account_id));
 	assert_ok!(result);
+}
+
+/// convert an externalities to one that can handle offchain worker tests.
+/// Check substrate-v3.0.0/frame/staking/src/tests.rs +3452
+fn offchainify(ext: &mut TestExternalities, iterations: u32) -> Arc<RwLock<PoolState>> {
+	let (offchain, offchain_state) = TestOffchainExt::new();
+	let (pool, pool_state) = TestTransactionPoolExt::new();
+
+	let mut seed = [0_u8; 32];
+	seed[0..4].copy_from_slice(&iterations.to_le_bytes());
+	offchain_state.write().seed = seed;
+
+	ext.register_extension(OffchainExt::new(offchain));
+	ext.register_extension(TransactionPoolExt::new(pool));
+
+	pool_state
+}
+
+fn decode_validate_deip_call(encoded: &[u8]) -> crate::Call<Test> {
+	let mut encoded = encoded.clone();
+	let extrinsic: Extrinsic = Decode::decode(&mut encoded).unwrap();
+
+	let call = extrinsic.call;
+	let inner = match call {
+		mock::Call::Deip(inner) => inner,
+		_ => unreachable!(),
+	};
+
+	assert_eq!(
+		<Deip as sp_runtime::traits::ValidateUnsigned>::validate_unsigned(
+			TransactionSource::Local,
+			&inner,
+		).is_ok(),
+		true
+	);
+
+	inner
 }
 
 #[test]
@@ -916,7 +958,9 @@ fn project_token_sale_create_should_fail() {
 
 #[test]
 fn project_token_sale_hard_cap_reached() {
-	new_test_ext2().execute_with(|| {
+	let mut ext = new_test_ext2();
+	let state = offchainify(&mut ext, 2);
+	ext.execute_with(|| {
 		let (ref project_id, .., ref account_id) = create_ok_project(None);
 
 		let usd_id = 0u32;
@@ -946,7 +990,14 @@ fn project_token_sale_hard_cap_reached() {
 			vec![(usd_id, usd_to_sale), (eur_id, eur_to_sale)]
 		));
 
-		Deip::process_project_token_sales();
+		Deip::offchain_worker(System::block_number());
+		assert_eq!(state.read().transactions.len(), 1);
+
+		let inner = decode_validate_deip_call(&state.read().transactions[0]);
+		match inner {
+			crate::Call::activate_project_token_sale(id) => Deip::activate_project_token_sale_impl(id).unwrap(),
+			_ => unreachable!(),
+		};
 
 		assert_ok!(Deip::contribute_to_project_token_sale_impl(
 			BOB_ACCOUNT_ID,
@@ -981,7 +1032,9 @@ fn project_token_sale_hard_cap_reached() {
 
 #[test]
 fn project_token_sale_expired() {
-	new_test_ext2().execute_with(|| {
+	let mut ext = new_test_ext2();
+	let state = offchainify(&mut ext, 2);
+	ext.execute_with(|| {
 		let (ref project_id, .., ref account_id) = create_ok_project(None);
 
 		let usd_id = 0u32;
@@ -1018,12 +1071,22 @@ fn project_token_sale_expired() {
 		let start_block = System::block_number() + start_time_in_blocks + 1;
 		while System::block_number() < start_block {
 			let block_number = System::block_number();
-			System::on_finalize(block_number);
-			Deip::process_project_token_sales();
+			<System as OnFinalize<BlockNumber>>::on_finalize(block_number);
+			Deip::offchain_worker(System::block_number());
 			System::set_block_number(block_number + 1);
-			System::on_initialize(System::block_number());
+			<System as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
 			Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
 		}
+
+		assert_eq!(state.read().transactions.len(), 1);
+
+		let inner = decode_validate_deip_call(&state.read().transactions[0]);
+		match inner {
+			crate::Call::activate_project_token_sale(id) => Deip::activate_project_token_sale_impl(id).unwrap(),
+			_ => unreachable!(),
+		};
+
+		state.write().transactions.clear();
 
 		assert_ok!(Deip::contribute_to_project_token_sale_impl(
 			BOB_ACCOUNT_ID,
@@ -1048,12 +1111,18 @@ fn project_token_sale_expired() {
 		let end_block = start_block + duration_in_blocks + 1;
 		while System::block_number() < end_block {
 			let block_number = System::block_number();
-			System::on_finalize(block_number);
-			Deip::process_project_token_sales();
+			<System as OnFinalize<BlockNumber>>::on_finalize(block_number);
+			Deip::offchain_worker(System::block_number());
 			System::set_block_number(block_number + 1);
-			System::on_initialize(System::block_number());
+			<System as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
 			Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
 		}
+
+		let inner = decode_validate_deip_call(&state.read().transactions[0]);
+		match inner {
+			crate::Call::expire_project_token_sale(id) => Deip::expire_project_token_sale_impl(id).unwrap(),
+			_ => unreachable!(),
+		};
 
 		assert_eq!(<Test as crate::Config>::Currency::free_balance(&BOB_ACCOUNT_ID), bob_balance_before);
 		assert_eq!(<Test as crate::Config>::Currency::free_balance(&ALICE_ACCOUNT_ID), alice_balance_before);

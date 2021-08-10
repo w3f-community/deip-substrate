@@ -150,13 +150,6 @@ impl<T: Config> Module<T> {
         token_sales.insert(index, (project_id, Status::Inactive, external_id));
         ProjectTokenSaleByProjectIdStatus::put(token_sales);
         ProjectTokenSaleMap::<T>::insert(external_id, new_project_token_sale.clone());
-        ProjectTokenSaleEndTimes::<T>::mutate(|v| {
-            let index = match v.binary_search_by_key(&end_time, |&(e, _)| e) {
-                Ok(i) => i,
-                Err(i) => i,
-            };
-            v.insert(index, (end_time, external_id));
-        });
 
         Self::deposit_event(RawEvent::ProjectTokenSaleCreated(
             project_id,
@@ -181,58 +174,126 @@ impl<T: Config> Module<T> {
             Err(_) => Err(()),
             Ok(sale) => {
                 Self::update_status(&sale, Status::Finished);
-                Self::finish_project_token_sale(&sale);
+                Self::process_project_token_sale_contributions(&sale);
                 Ok(())
             }
         }
     }
 
-    pub(super) fn process_project_token_sales() {
-        let now = pallet_timestamp::Module::<T>::get();
+    pub(super) fn activate_project_token_sale_impl(sale_id: Id) -> DispatchResult {
+        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
+            let sale = match maybe_sale.as_mut() {
+                None => return Err(Error::<T>::TokenSaleNotFound.into()),
+                Some(s) => s,
+            };
 
-        let mut token_sales_by_end_time = ProjectTokenSaleEndTimes::<T>::get();
-        let i = token_sales_by_end_time.partition_point(|&(e, _)| e <= now);
-        for (_, sale_id) in token_sales_by_end_time.drain(..i) {
-            let sale = ProjectTokenSaleMap::<T>::get(sale_id);
-            if !matches!(sale.status, ProjectTokenSaleStatus::Active) {
-                continue;
-            }
+            match sale.status {
+                Status::Active => return Ok(()),
+                Status::Inactive => ensure!(
+                    pallet_timestamp::Module::<T>::get() >= sale.start_time,
+                    Error::<T>::TokenSaleShouldBeStarted
+                ),
+                _ => return Err(Error::<T>::TokenSaleShouldBeInactive.into()),
+            };
 
-            if sale.total_amount < sale.soft_cap {
-                Self::update_status(&sale, ProjectTokenSaleStatus::Expired);
-                Self::refund_project_token_sale(&sale);
-            } else if sale.total_amount >= sale.soft_cap {
-                Self::update_status(&sale, ProjectTokenSaleStatus::Finished);
-                Self::finish_project_token_sale(&sale);
-            }
-        }
+            Self::update_status_index(sale, Status::Active);
+            sale.status = Status::Active;
+            Self::deposit_event(RawEvent::ProjectTokenSaleActivated(
+                sale.project_id,
+                sale_id,
+            ));
 
-        let token_sales_by_end_time = token_sales_by_end_time;
-        for (_, sale_id) in token_sales_by_end_time.iter() {
-            let sale = ProjectTokenSaleMap::<T>::get(sale_id);
-            if now >= sale.start_time && matches!(sale.status, Status::Inactive) {
-                Self::update_status(&sale, Status::Active);
-                Self::deposit_event(RawEvent::ProjectTokenSaleActivated(
-                    sale.project_id,
-                    *sale_id,
-                ));
-            }
-        }
-
-        ProjectTokenSaleEndTimes::<T>::put(token_sales_by_end_time);
+            Ok(())
+        })
     }
 
-    fn update_status(sale: &ProjectTokenSaleOf<T>, new_status: ProjectTokenSaleStatus) {
+    pub(super) fn expire_project_token_sale_impl(sale_id: Id) -> DispatchResult {
+        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
+            let sale = match maybe_sale.as_mut() {
+                None => return Err(Error::<T>::TokenSaleNotFound.into()),
+                Some(s) => s,
+            };
+
+            match sale.status {
+                Status::Expired => return Ok(()),
+                Status::Active => ensure!(
+                    pallet_timestamp::Module::<T>::get() >= sale.end_time,
+                    Error::<T>::TokenSaleExpirationWrongState
+                ),
+                _ => return Err(Error::<T>::TokenSaleShouldBeActive.into()),
+            };
+
+            Self::update_status_index(sale, Status::Expired);
+            sale.status = Status::Expired;
+
+            Self::refund_project_token_sale(sale);
+
+            Ok(())
+        })
+    }
+
+    pub(super) fn finish_project_token_sale_impl(sale_id: Id) -> DispatchResult {
+        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
+            let sale = match maybe_sale.as_mut() {
+                None => return Err(Error::<T>::TokenSaleNotFound.into()),
+                Some(s) => s,
+            };
+
+            match sale.status {
+                Status::Finished => return Ok(()),
+                Status::Active => (),
+                _ => return Err(Error::<T>::TokenSaleShouldBeActive.into()),
+            };
+
+            Self::update_status_index(sale, Status::Finished);
+            sale.status = Status::Finished;
+
+            Self::process_project_token_sale_contributions(sale);
+
+            Ok(())
+        })
+    }
+
+    pub(super) fn process_project_token_sales_offchain() {
+        let now = pallet_timestamp::Module::<T>::get();
+        for (id, sale) in ProjectTokenSaleMap::<T>::iter() {
+            if sale.end_time <= now && matches!(sale.status, Status::Active) {
+                if sale.total_amount < sale.soft_cap {
+                    let call = Call::expire_project_token_sale(id);
+                    let submit =
+                        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+                    debug!("submit expire_project_token_sale: {}", submit.is_ok());
+                } else if sale.total_amount >= sale.soft_cap {
+                    let call = Call::finish_project_token_sale(id);
+                    let submit =
+                        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+                    debug!("submit finish_project_token_sale: {}", submit.is_ok());
+                }
+            } else if sale.end_time > now {
+                if now >= sale.start_time && matches!(sale.status, Status::Inactive) {
+                    let call = Call::activate_project_token_sale(id);
+                    let submit =
+                        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+                    debug!("submit activate_project_token_sale: {}", submit.is_ok());
+                }
+            }
+        }
+    }
+
+    fn update_status(sale: &ProjectTokenSaleOf<T>, new_status: Status) {
+        Self::update_status_index(sale, new_status);
+
         ProjectTokenSaleMap::<T>::mutate_exists(sale.external_id, |maybe_sale| -> () {
             let sale = maybe_sale.as_mut().expect("we keep collections in sync");
             sale.status = new_status;
         });
+    }
 
+    fn update_status_index(sale: &ProjectTokenSaleOf<T>, new_status: Status) {
         let mut token_sales = ProjectTokenSaleByProjectIdStatus::get();
         match new_status {
-            ProjectTokenSaleStatus::Finished
-            | ProjectTokenSaleStatus::Expired
-            | ProjectTokenSaleStatus::Active => {
+            Status::Inactive => (),
+            Status::Finished | Status::Expired | Status::Active => {
                 let old_index = token_sales
                     .binary_search_by_key(&(sale.project_id, sale.status), |&(p, t, _)| (p, t))
                     .expect("we keep collections in sync");
@@ -248,7 +309,6 @@ impl<T: Config> Module<T> {
                 token_sales.insert(index, (sale.project_id, new_status, sale.external_id));
                 ProjectTokenSaleByProjectIdStatus::put(token_sales);
             }
-            _ => (),
         }
     }
 
@@ -273,7 +333,7 @@ impl<T: Config> Module<T> {
         ));
     }
 
-    fn finish_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
+    fn process_project_token_sale_contributions(sale: &ProjectTokenSaleOf<T>) {
         let mut imbalance = T::Currency::deposit_creating(
             &ProjectMap::<T>::get(sale.project_id).team_id,
             sale.total_amount,
