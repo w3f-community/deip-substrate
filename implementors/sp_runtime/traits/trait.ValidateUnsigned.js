@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["pallet_deip"] = [{"text":"impl&lt;T:&nbsp;<a class=\"trait\" href=\"pallet_deip/trait.Config.html\" title=\"trait pallet_deip::Config\">Config</a>&gt; <a class=\"trait\" href=\"sp_runtime/traits/trait.ValidateUnsigned.html\" title=\"trait sp_runtime::traits::ValidateUnsigned\">ValidateUnsigned</a> for <a class=\"struct\" href=\"pallet_deip/struct.Module.html\" title=\"struct pallet_deip::Module\">Module</a>&lt;T&gt;","synthetic":false,"types":["pallet_deip::Module"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
