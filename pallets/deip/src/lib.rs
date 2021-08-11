@@ -30,7 +30,7 @@
 //! * `create_nda_content_access_request` - Some side request access to the data of contract
 //! * `fulfill_nda_content_access_request` - Granter fulfill access request to the data
 //! * `reject_nda_content_access_request` - Granter reject access request to the data
-//! * `create_review` - Create Review
+//! * [`create_review`](./enum.Call.html#variant.create_review)
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -74,6 +74,9 @@ mod contribution;
 use contribution::{Contribution as Investment};
 
 pub mod traits;
+
+mod review;
+pub use review::{Id as ReviewId, Review as Review};
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
@@ -134,8 +137,6 @@ pub type ProjectContentId = H160;
 pub type NdaId = H160;
 /// Unique NdaAccess Request reference 
 pub type NdaAccessRequestId = H160;
-/// Unique Review reference 
-pub type ReviewId = H160;
 
 type AccountIdOf<T> = <T as system::Config>::AccountId;
 pub type ProjectOf<T> = Project<<T as system::Config>::Hash, AccountIdOf<T>>;
@@ -148,27 +149,6 @@ pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::B
 pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
 pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
 pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
-
-/// Review 
-#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct Review<Hash, AccountId> {
-    /// Reference for external world and uniques control 
-    external_id: ReviewId,
-    /// Reference to the Team 
-    author: AccountId,
-    /// Hash of content
-    content: Hash,
-    /// List of Domains aka tags Project matches
-    domains: Vec<DomainId>,
-    /// Model number by which the evaluation is carried out
-    assessment_model: u32,
-    /// percent in "50.00 %" format
-    weight: Vec<u8>,
-    /// Reference to Project Content
-    project_content_external_id: ProjectContentId,
-}
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -862,9 +842,9 @@ decl_module! {
 
         /// Allow a user to create review.
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_.
         ///
-		/// - `review`: [Review](./struct.Review.html) to be created
+        /// - `review`: [Review](./struct.Review.html) to be created
         #[weight = 10_000]
         fn create_review(origin,
             external_id: ReviewId,
@@ -874,43 +854,11 @@ decl_module! {
             assessment_model: u32,
             weight: Vec<u8>,
             project_content_external_id: ProjectContentId,
-        ) {
+        ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            
-            let review = ReviewOf::<T> {
-                external_id,
-                author: author.into(),
-                content,
-                domains,
-                assessment_model,
-                weight,
-                project_content_external_id
-            };
-
-            let mut reviews = Reviews::<T>::get();
-
-            let index_to_insert_review = reviews.binary_search_by_key(&review.external_id, |&(a,_)| a)
-                .err().ok_or(Error::<T>::ReviewAlreadyExists)?;
-
-            ProjectsContent::<T>::get().iter().find(|(id, ..)| id == &review.project_content_external_id)
-                .ok_or(Error::<T>::NoSuchProjectContent)?;
-            
-            for domain in &review.domains {
-                ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
-            }
-
-            reviews.insert(index_to_insert_review, (review.external_id,  review.author.clone()));
-            Reviews::<T>::put(reviews);
-
-            // Store the content
-            ReviewMap::<T>::insert(review.external_id, review.clone());
-
-            // Emit an event that the content was created.
-            Self::deposit_event(RawEvent::ReviewCreated(account, review));
+            Self::create_review_impl(account, external_id, author, content, domains, assessment_model, weight, project_content_external_id)
         }
 
-
-        
         /// Allow a user to create domains.
         ///
 		/// The origin for this call must be _Signed_. 
