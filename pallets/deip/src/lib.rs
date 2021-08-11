@@ -73,10 +73,10 @@ pub use investment_opportunity::{Id as InvestmentId};
 mod contribution;
 use contribution::{Contribution as Investment};
 
-pub mod traits;
-
 mod review;
 pub use review::{Id as ReviewId, Review as Review};
+
+pub mod traits;
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
@@ -857,6 +857,18 @@ decl_module! {
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::create_review_impl(account, external_id, author, content, domains, assessment_model, weight, project_content_external_id)
+        }
+
+        /// Allows a user to vote for a review.
+        ///
+        /// The origin for this call must be _Signed_.
+        #[weight = 10_000]
+        fn vote_for_review(origin,
+            external_id: review::VoteId,
+            review_id: ReviewId,
+            domain_id: DomainId,
+        ) {
+            unimplemented!();
         }
 
         /// Allow a user to create domains.
