@@ -75,6 +75,7 @@ use contribution::{Contribution as Investment};
 
 mod review;
 pub use review::{Id as ReviewId, Review as Review};
+use review::{VoteId as DeipReviewVoteId, Vote as DeipReviewVote};
 
 pub mod traits;
 
@@ -139,16 +140,18 @@ pub type NdaId = H160;
 pub type NdaAccessRequestId = H160;
 
 type AccountIdOf<T> = <T as system::Config>::AccountId;
+type MomentOf<T> = <T as pallet_timestamp::Config>::Moment;
 pub type ProjectOf<T> = Project<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type ReviewOf<T> = Review<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, <T as pallet_timestamp::Config>::Moment>;
+pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, MomentOf<T>>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<<T as pallet_timestamp::Config>::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<MomentOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, MomentOf<T>>;
 pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
 pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
+type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -369,9 +372,13 @@ decl_error! {
         /// Nda access request already finalized
         NdaAccessRequestAlreadyFinalized,
 
-        /// Cannot add a review because a review with this ID is already a exists
+        /// Cannot add a review because a review with this ID already exists
         ReviewAlreadyExists,
-        
+        ReviewVoteAlreadyExists,
+        ReviewVoteNoSuchDomain,
+        ReviewVoteNoSuchReview,
+        ReviewVoteUnrelatedDomain,
+
         // ==== General =====
 
         /// Access Forbiten
@@ -432,6 +439,8 @@ decl_storage! {
         ReviewMap get(fn review): map hasher(identity) ReviewId => ReviewOf<T>;
         /// Review list, guarantees uniquest and provides Review listing
         Reviews get(fn reviews): Vec<(ReviewId, T::AccountId)>;
+
+        ReviewVoteMap: map hasher(identity) DeipReviewVoteId => DeipReviewVoteOf<T>;
 
         // The set of all Domains.
         Domains get(fn domains) config(): map hasher(blake2_128_concat) DomainId => Domain;
@@ -867,8 +876,9 @@ decl_module! {
             external_id: review::VoteId,
             review_id: ReviewId,
             domain_id: DomainId,
-        ) {
-            unimplemented!();
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::vote_for_review_impl(account, external_id, review_id, domain_id)
         }
 
         /// Allow a user to create domains.
