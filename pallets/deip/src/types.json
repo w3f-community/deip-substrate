@@ -221,5 +221,11 @@
     "is_frozen": "bool"
   },
   "DeipProjectIdOf": "H160",
-  "AssetsAssetIdOf": "u32"
+  "AssetId": {
+    "0": "H160"
+  },
+  "AssetsAssetIdOf": "AssetId",
+  "Compact<AssetId>": {
+    "0": "AssetId"
+  }
 }
