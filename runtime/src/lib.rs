@@ -397,6 +397,7 @@ impl pallet_deip_assets::traits::DeipProjectsInfo for Runtime {
 
 impl pallet_deip_assets::Config for Runtime {
 	type ProjectsInfo = Self;
+	type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
