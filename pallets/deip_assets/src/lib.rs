@@ -56,6 +56,7 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_assets::Config {
         type ProjectsInfo: DeipProjectsInfo;
+        type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
     }
 
     #[doc(hidden)]
@@ -175,7 +176,7 @@ pub mod pallet {
         pub(super) fn create_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
-            admin: <T::Lookup as StaticLookup>::Source,
+            admin: T::DeipAccountId,
             max_zombies: u32,
             min_balance: AssetsBalanceOf<T>,
             project_id: Option<DeipProjectIdOf<T>>,
@@ -184,7 +185,8 @@ pub mod pallet {
                 ensure!(T::ProjectsInfo::exists(id), Error::<T>::ProjectDoesNotExist);
             }
 
-            let call = pallet_assets::Call::<T>::create(id, admin, max_zombies, min_balance);
+            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
+            let call = pallet_assets::Call::<T>::create(id, admin_source, max_zombies, min_balance);
             let result = call.dispatch_bypass_filter(origin);
             if result.is_err() {
                 return result;
@@ -222,10 +224,11 @@ pub mod pallet {
         pub(super) fn issue_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
-            beneficiary: <T::Lookup as StaticLookup>::Source,
+            beneficiary: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let call = pallet_assets::Call::<T>::mint(id, beneficiary, amount);
+            let beneficiary_source = <T::Lookup as StaticLookup>::unlookup(beneficiary.into());
+            let call = pallet_assets::Call::<T>::mint(id, beneficiary_source, amount);
             call.dispatch_bypass_filter(origin)
         }
 
@@ -233,7 +236,7 @@ pub mod pallet {
         pub(super) fn burn(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
+            who: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             ensure!(
@@ -241,7 +244,8 @@ pub mod pallet {
                 Error::<T>::ProjectSecurityTokenCannotBeBurned
             );
 
-            let call = pallet_assets::Call::<T>::burn(id, who, amount);
+            let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
+            let call = pallet_assets::Call::<T>::burn(id, who_source, amount);
             call.dispatch_bypass_filter(origin)
         }
 
@@ -249,10 +253,11 @@ pub mod pallet {
         pub(super) fn transfer(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
-            target: <T::Lookup as StaticLookup>::Source,
+            target: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let call = pallet_assets::Call::<T>::transfer(id, target, amount);
+            let target_source = <T::Lookup as StaticLookup>::unlookup(target.into());
+            let call = pallet_assets::Call::<T>::transfer(id, target_source, amount);
             call.dispatch_bypass_filter(origin)
         }
 
@@ -260,14 +265,15 @@ pub mod pallet {
         pub(super) fn freeze(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
+            who: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             ensure!(
                 !ProjectIdByAssetId::<T>::contains_key(id),
                 Error::<T>::ProjectSecurityTokenAccountCannotBeFreezed
             );
 
-            let call = pallet_assets::Call::<T>::freeze(id, who);
+            let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
+            let call = pallet_assets::Call::<T>::freeze(id, who_source);
             call.dispatch_bypass_filter(origin)
         }
 
@@ -275,9 +281,10 @@ pub mod pallet {
         pub(super) fn thaw(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
+            who: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
-            let call = pallet_assets::Call::<T>::thaw(id, who);
+            let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
+            let call = pallet_assets::Call::<T>::thaw(id, who_source);
             call.dispatch_bypass_filter(origin)
         }
 
@@ -308,9 +315,10 @@ pub mod pallet {
         pub(super) fn transfer_ownership(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
-            owner: <T::Lookup as StaticLookup>::Source,
+            owner: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
-            let call = pallet_assets::Call::<T>::transfer_ownership(id, owner);
+            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
+            let call = pallet_assets::Call::<T>::transfer_ownership(id, owner_source);
             call.dispatch_bypass_filter(origin)
         }
 
@@ -318,11 +326,15 @@ pub mod pallet {
         pub(super) fn set_team(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
-            issuer: <T::Lookup as StaticLookup>::Source,
-            admin: <T::Lookup as StaticLookup>::Source,
-            freezer: <T::Lookup as StaticLookup>::Source,
+            issuer: T::DeipAccountId,
+            admin: T::DeipAccountId,
+            freezer: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
-            let call = pallet_assets::Call::<T>::set_team(id, issuer, admin, freezer);
+            let issuer_source = <T::Lookup as StaticLookup>::unlookup(issuer.into());
+            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
+            let freezer_source = <T::Lookup as StaticLookup>::unlookup(freezer.into());
+            let call =
+                pallet_assets::Call::<T>::set_team(id, issuer_source, admin_source, freezer_source);
             call.dispatch_bypass_filter(origin)
         }
 

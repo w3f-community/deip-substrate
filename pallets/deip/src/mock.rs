@@ -163,6 +163,7 @@ impl pallet_deip_assets::traits::DeipProjectsInfo for Test {
 
 impl pallet_deip_assets::Config for Test {
 	type ProjectsInfo = Self;
+	type DeipAccountId = Self::AccountId;
 }
 
 impl<LocalCall> system::offchain::SendTransactionTypes<LocalCall> for Test
