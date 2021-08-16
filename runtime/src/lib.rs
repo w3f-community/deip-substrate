@@ -51,6 +51,8 @@ pub mod app_tag_ext;
 
 pub mod deip_account;
 
+mod compact_h160;
+
 /// Import the template pallet.
 pub use pallet_template;
 // use frame_benchmarking::frame_support::pallet_prelude::Get;
@@ -80,6 +82,8 @@ pub type Hash = sp_core::H256;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
+
+pub type AssetId = compact_h160::H160;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -279,7 +283,7 @@ impl pallet_template::Config for Runtime {
 
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 	type Balance = u64;
-	type AssetId = u32;
+	type AssetId = AssetId;
 
 	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
 		DeipAssets::try_get_tokenized_project(id)
@@ -375,7 +379,7 @@ parameter_types! {
 impl pallet_assets::Config for Runtime {
 	type Event = Event;
 	type Balance = u64;
-	type AssetId = u32;
+	type AssetId = AssetId;
 	type Currency = Balances;
 	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type AssetDepositBase = AssetDepositBase;
