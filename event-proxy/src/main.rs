@@ -115,7 +115,12 @@ async fn main() {
                         Ok(subscription) => {
                             subscription_task_queue.push(subscription_task(subscription));
                         },
-                        Err(e) => { unimplemented!(); },
+                        Err(e) => {
+                            rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
+                                RpcClientBuilderActorInput::Input(()),
+                                &mut released_rpc_client_builder_actor_queue
+                            ).await);
+                        },
                     }
                 },
                 Some(BlockchainActorOutput::Ok(BlockchainActorOutputData::GetBlockHash(maybe_hash))) => {
@@ -127,7 +132,12 @@ async fn main() {
                                 &mut released_blockchain_actor_queue
                             ).await);
                         },
-                        Err(e) => { unimplemented!(); }
+                        Err(e) => {
+                            rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
+                                RpcClientBuilderActorInput::Input(()),
+                                &mut released_rpc_client_builder_actor_queue
+                            ).await);
+                        },
                     }
                 },
                 Some(BlockchainActorOutput::Ok(BlockchainActorOutputData::GetBlock(maybe_block))) => {
@@ -141,7 +151,12 @@ async fn main() {
                                 &mut released_message_broker_actor_queue
                             ).await);
                         },
-                        Err(e) => { unimplemented!(); }
+                        Err(e) => {
+                            rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
+                                RpcClientBuilderActorInput::Input(()),
+                                &mut released_rpc_client_builder_actor_queue
+                            ).await);
+                        },
                     }
                 },
                 Some(BlockchainActorOutput::Ok(BlockchainActorOutputData::SetClient)) => {
