@@ -1089,6 +1089,14 @@
 <span id="1087">1087</span>
 <span id="1088">1088</span>
 <span id="1089">1089</span>
+<span id="1090">1090</span>
+<span id="1091">1091</span>
+<span id="1092">1092</span>
+<span id="1093">1093</span>
+<span id="1094">1094</span>
+<span id="1095">1095</span>
+<span id="1096">1096</span>
+<span id="1097">1097</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -1601,7 +1609,7 @@
             <span class="comment">// This function will return an error if the extrinsic is not signed.</span>
             <span class="comment">// https://substrate.dev/docs/en/knowledgebase/runtime/origin</span>
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-            
+
             <span class="kw">let</span> <span class="ident">project</span> <span class="op">=</span> <span class="ident">ProjectOf</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
                 <span class="ident">is_private</span>,
                 <span class="ident">external_id</span>,
@@ -1609,7 +1617,9 @@
                 <span class="ident">description</span>,
                 <span class="ident">domains</span>
             };
-            
+
+            <span class="macro">ensure!</span>(<span class="ident">account</span> <span class="op">=</span><span class="op">=</span> <span class="ident">project</span>.<span class="ident">team_id</span>, <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::NoPermission</span>);
+
             <span class="kw">for</span> <span class="ident">domain</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">project</span>.<span class="ident">domains</span> {
                 <span class="macro">ensure!</span>(<span class="ident">Domains::contains_key</span>(<span class="kw-2">&amp;</span><span class="ident">domain</span>), <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::DomainNotExists</span>);
             }
@@ -2139,6 +2149,12 @@
     }
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project</span>(<span class="ident">project_id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
         <span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">project_id</span>)
+    }
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_get_project_team</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="kw-2">*</span><span class="ident">id</span>) {
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">None</span>,
+            <span class="prelude-val">Ok</span>(<span class="ident">project</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Some</span>(<span class="ident">project</span>.<span class="ident">team_id</span>),
+        }
     }
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_domains</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Domain</span><span class="op">&gt;</span> {
         <span class="op">&lt;</span><span class="ident">Domains</span> <span class="kw">as</span> <span class="ident">IterableStorageMap</span><span class="op">&lt;</span><span class="ident">DomainId</span>, <span class="ident">Domain</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::iter</span>()
