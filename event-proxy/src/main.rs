@@ -8,7 +8,7 @@ mod app;
 
 use std::time::Duration;
 
-use substrate_subxt::{ClientBuilder, Client, System};
+use substrate_subxt::{ClientBuilder, Client, system::System};
 use substrate_subxt::NodeTemplateRuntime;
 use substrate_subxt::{EventSubscription};
 
@@ -128,7 +128,7 @@ async fn main() {
                         Ok(maybe_hash) => {
                             let hash = maybe_hash.expect("EXISTENT BLOCK");
                             blockchain_actor_task_queue.push(init_actor_task::<_, _, BlockchainActorIO>(
-                                BlockchainActorInputData::get_block(hash),
+                                BlockchainActorInputData::get_block_events(hash),
                                 &mut released_blockchain_actor_queue
                             ).await);
                         },
@@ -145,11 +145,7 @@ async fn main() {
                         Ok(maybe_block) => {
                             let block = maybe_block.expect("EXISTENT BLOCK");
                             println!("BLOCK !!!!!!!!!!!!!!!!, {:?}", &block);
-                            let payload = serde_json::to_string_pretty(&block).unwrap();
-                            message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
-                                MessageBrokerActorInput::Input(payload),
-                                &mut released_message_broker_actor_queue
-                            ).await);
+                            unreachable!();
                         },
                         Err(e) => {
                             rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
@@ -164,6 +160,28 @@ async fn main() {
                         BlockchainActorInputData::subscribe_finalized_blocks(),
                         &mut released_blockchain_actor_queue
                     ).await);
+                },
+                Some(BlockchainActorOutput::Ok(BlockchainActorOutputData::GetBlockEvents(maybe_events))) => {
+                    match maybe_events {
+                        Ok(events) => {
+                            println!("EVENTS: {:?}", &events);
+                            for x in events.iter() {
+                                if let Some(known) = known_events::<RuntimeT>(x) {
+                                    let payload = serde_json::to_string_pretty(&known).unwrap();
+                                    message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
+                                        MessageBrokerActorInput::Input(payload),
+                                        &mut released_message_broker_actor_queue
+                                    ).await);
+                                }
+                            }
+                        },
+                        Err(e) => {
+                            rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
+                                RpcClientBuilderActorInput::Input(()),
+                                &mut released_rpc_client_builder_actor_queue
+                            ).await);
+                        },
+                    }
                 },
             }
         },
@@ -194,20 +212,6 @@ async fn main() {
             }
         },
     };}
-    
-    // let header = sub.next().await.unwrap().unwrap();
-    // let block = fetch_block(header.number, &mut b_io2).await;
-    // println!("BLOCK: {:?}", &block);
-    // let payload = serde_json::to_string_pretty(&block).unwrap();
-    // println!("{}", &payload);
-    // mb_o2.send(ActorDirective::Input(payload)).await.unwrap();
-    // 
-    // let sub = client.subscribe_finalized_events().await.unwrap();
-    // let events_decoder = client.events_decoder();
-    // let mut sub = EventSubscription::<RuntimeT>::new(
-    //     sub,
-    //     events_decoder
-    // );
 }
 
 type ReleasedActorQueue<T> = (mpsc::Sender<T>, mpsc::Receiver<T>);
