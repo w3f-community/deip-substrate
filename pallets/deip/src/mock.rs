@@ -19,6 +19,7 @@ pub type Extrinsic = TestXt<Call, ()>;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 type Balance = u128;
+type AccountId = u64;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -52,7 +53,7 @@ impl system::Config for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
+	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = Event;
@@ -152,12 +153,11 @@ impl pallet_assets::Config for Test {
 	type WeightInfo = pallet_assets::weights::SubstrateWeight<Test>;
 }
 
-impl pallet_deip_assets::traits::DeipProjectsInfo for Test {
+impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
 	type ProjectId = pallet_deip::ProjectId;
 
-	fn exists(id: &Self::ProjectId) -> bool {
-		let projects = &Deip::projects();
-		projects.binary_search_by_key(&id, |&(ref p, _)| p).is_ok()
+	fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
+		Deip::try_get_project_team(id)
 	}
 }
 

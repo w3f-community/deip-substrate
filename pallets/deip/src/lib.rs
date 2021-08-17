@@ -1050,6 +1050,12 @@ impl<T: Config> Module<T> {
     pub fn get_project(project_id: &ProjectId) -> ProjectOf<T> {
         ProjectMap::<T>::get(project_id)
     }
+    pub fn try_get_project_team(id: &ProjectId) -> Option<AccountIdOf<T>> {
+        match ProjectMap::<T>::try_get(*id) {
+            Err(_) => None,
+            Ok(project) => Some(project.team_id),
+        }
+    }
     pub fn get_domains() -> Vec<Domain> {
         <Domains as IterableStorageMap<DomainId, Domain>>::iter()
             .map(|(_id, domain)| domain)
