@@ -48,14 +48,15 @@ pub mod pallet {
 
     use super::traits::DeipProjectsInfo;
 
-    type DeipProjectIdOf<T> = <<T as Config>::ProjectsInfo as DeipProjectsInfo>::ProjectId;
+    type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+    type DeipProjectIdOf<T> = <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
     type AssetsAssetIdOf<T> = <T as pallet_assets::Config>::AssetId;
     type AssetsBalanceOf<T> = <T as pallet_assets::Config>::Balance;
     type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
 
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_assets::Config {
-        type ProjectsInfo: DeipProjectsInfo;
+        type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
         type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
     }
 
@@ -71,6 +72,7 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {
         ProjectDoesNotExist,
+        ProjectDoesNotBelongToTeam,
         ProjectSecurityTokenCannotBeDestroyed,
         ProjectSecurityTokenCannotBeBurned,
         ProjectSecurityTokenCannotBeFreezed,
@@ -182,7 +184,13 @@ pub mod pallet {
             project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
             if let Some(ref id) = project_id {
-                ensure!(T::ProjectsInfo::exists(id), Error::<T>::ProjectDoesNotExist);
+                match T::ProjectsInfo::try_get_project_team(id) {
+                    None => return Err(Error::<T>::ProjectDoesNotExist.into()),
+                    Some(team_id) => {
+                        let account = ensure_signed(origin.clone())?;
+                        ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
+                    }
+                };
             }
 
             let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());

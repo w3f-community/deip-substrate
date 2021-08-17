@@ -509,7 +509,7 @@ decl_module! {
             // This function will return an error if the extrinsic is not signed.
             // https://substrate.dev/docs/en/knowledgebase/runtime/origin
             let account = ensure_signed(origin)?;
-            
+
             let project = ProjectOf::<T> {
                 is_private,
                 external_id,
@@ -517,7 +517,9 @@ decl_module! {
                 description,
                 domains
             };
-            
+
+            ensure!(account == project.team_id, Error::<T>::NoPermission);
+
             for domain in &project.domains {
                 ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
             }
@@ -1047,6 +1049,12 @@ impl<T: Config> Module<T> {
     }
     pub fn get_project(project_id: &ProjectId) -> ProjectOf<T> {
         ProjectMap::<T>::get(project_id)
+    }
+    pub fn try_get_project_team(id: &ProjectId) -> Option<AccountIdOf<T>> {
+        match ProjectMap::<T>::try_get(*id) {
+            Err(_) => None,
+            Ok(project) => Some(project.team_id),
+        }
     }
     pub fn get_domains() -> Vec<Domain> {
         <Domains as IterableStorageMap<DomainId, Domain>>::iter()
