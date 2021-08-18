@@ -167,6 +167,10 @@
       "Inactive"
     ]
   },
+  "ProjectTokenSaleAssetPair": {
+    "id": "AssetId",
+    "amount": "AssetsBalanceOf"
+  },
   "ProjectTokenSale": {
     "external_id": "InvestmentId",
     "project_id": "ProjectId",
@@ -176,7 +180,7 @@
     "total_amount": "Balance",
     "soft_cap": "Balance",
     "hard_cap": "Balance",
-    "security_tokens_on_sale": "u64"
+    "security_tokens_on_sale": "Vec<ProjectTokenSaleAssetPair>"
   },
   "ProjectTokenSaleContribution": {
     "sale_id": "InvestmentId",
@@ -191,7 +195,7 @@
         "end_time": "Moment",
         "soft_cap": "Balance",
         "hard_cap": "Balance",
-        "security_tokens_on_sale": "u64"
+        "security_tokens_on_sale": "Vec<ProjectTokenSaleAssetPair>"
       }
     }
   },
