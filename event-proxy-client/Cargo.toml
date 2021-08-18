@@ -14,3 +14,5 @@ version = '3.0.0'
 rdkafka = { version = "=0.26.0", default_features = true, features = ["cmake-build"] }
 tokio = { version = "1", features = ["full"] }
 futures = "0.3.16"
+
+[workspace]

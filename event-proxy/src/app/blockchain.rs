@@ -3,9 +3,19 @@ use super::actor_io::*;
 
 use substrate_subxt::{Client, ChainBlock};
 use substrate_subxt::system::System;
+use substrate_subxt::{RawEvent, Phase, RuntimeError, Raw};
+use substrate_subxt::{EventsDecoder, Rpc};
+
 use jsonrpsee_ws_client::Subscription;
 
+use sp_runtime::generic::Block;
+use sp_runtime::traits::{Block as _Block, Header};
+
+use sp_core::storage::StorageKey;
+use sp_core::hashing::twox_128;
+
 use crate::RuntimeT;
+use crate::events::{known_events, KnownEvents, TypedEvent};
 
 pub struct BlockchainActor {
     client: Option<Client<RuntimeT>>,
@@ -16,12 +26,14 @@ impl BlockchainActor {
     }
 }
 
+pub type BlockT<T> = Block<<T as System>::Header, <T as System>::Extrinsic>;
+
 pub enum BlockchainActorInputData {
     SubscribeFinalizedBlocks,
     GetBlockHash(<RuntimeT as System>::BlockNumber),
     GetBlock(<RuntimeT as System>::Hash),
     SetClient(Client<RuntimeT>),
-    GetBlockEvents(<RuntimeT as System>::Hash),
+    GetBlockEvents(BlockT<RuntimeT>),
 }
 impl BlockchainActorInputData {
     pub fn subscribe_finalized_blocks() -> BlockchainActorInput {
@@ -36,8 +48,8 @@ impl BlockchainActorInputData {
     pub fn set_client(client: Client<RuntimeT>) -> BlockchainActorInput {
         ActorDirective::Input(Self::SetClient(client))
     }
-    pub fn get_block_events(hash: <RuntimeT as System>::Hash) -> BlockchainActorInput {
-        ActorDirective::Input(Self::GetBlockEvents(hash))
+    pub fn get_block_events(block: BlockT<RuntimeT>) -> BlockchainActorInput {
+        ActorDirective::Input(Self::GetBlockEvents(block))
     }
 }
 pub type BlockchainActorInput = ActorDirective<BlockchainActorInputData>;
@@ -51,7 +63,7 @@ pub enum BlockchainActorOutputData {
     GetBlockHash(Result<Option<<RuntimeT as System>::Hash>, substrate_subxt::Error>),
     GetBlock(Result<Option<ChainBlock<RuntimeT>>, substrate_subxt::Error>),
     SetClient,
-    GetBlockEvents(Result<Vec<RawEvent>, substrate_subxt::Error>),
+    GetBlockEvents(Result<Vec<Result<TypedEvent<RuntimeT>, codec::Error>>, substrate_subxt::Error>),
 }
 pub type BlockchainActorIO = ActorJack<BlockchainActorInput, BlockchainActorOutput>;
 pub type BlockchainActorIOPair = ActorJackPair<BlockchainActorIO, BlockchainActorInput, BlockchainActorOutput>;
@@ -93,20 +105,23 @@ for BlockchainActor
                 let _ = std::mem::replace(client, c);
                 BlockchainActorOutputData::SetClient
             },
-            BlockchainActorInputData::GetBlockEvents(hash) => {
-                let events = get_block_events(client, client.events_decoder(), hash).await;
+            BlockchainActorInputData::GetBlockEvents(block) => {
+                let events = get_block_events(
+                    client,
+                    client.events_decoder(),
+                    block.header().hash()
+                ).await;
+                let events = events.map(|ok| {
+                    ok.into_iter().filter_map(|x| { 
+                        known_events::<RuntimeT>(&x, &block).transpose()
+                    }).collect()
+                });
                 BlockchainActorOutputData::GetBlockEvents(events)
             },
         };
         BlockchainActorOutput::Ok(output)
     }
 }
-
-use sp_core::storage::StorageKey;
-use sp_core::hashing::twox_128;
-
-use substrate_subxt::{RawEvent, Phase, RuntimeError, Raw};
-use substrate_subxt::{EventsDecoder, Rpc};
 
 struct SystemEvents(StorageKey);
 impl SystemEvents {
@@ -127,13 +142,11 @@ impl From<SystemEvents> for StorageKey {
 async fn get_block_events(
     client: &Client<RuntimeT>,
     decoder: &EventsDecoder<RuntimeT>,
-    // header: &<RuntimeT as System>::Header,
     hash: <RuntimeT as System>::Hash
 )
     -> Result<Vec<RawEvent>, substrate_subxt::Error>
 {
     let change_set = client
-        // .query_storage_at(&[SystemEvents::new().into()], Some(header.hash()))
         .query_storage_at(&[SystemEvents::new().into()], Some(hash))
         .await?;
     

@@ -1,8 +1,11 @@
 use std::fmt::Debug;
 
-use substrate_subxt::{RawEvent, Event};
+use substrate_subxt::{RawEvent, Event, system::System};
 use codec::Decode;
-use serde::{Serialize, ser::{Serializer, SerializeStruct}};
+use serde::{Serialize, ser::{Serializer, SerializeStruct, SerializeMap}};
+
+use sp_runtime::generic::Block;
+use sp_runtime::traits::{Block as _Block, Header as _Header};
 
 use super::frame::{
     deip_proposal::{self, DeipProposal},
@@ -10,22 +13,32 @@ use super::frame::{
     deip_org::{self, DeipOrg}
 };
 
-struct TypedEvent<'a, T> {
-    r#type: &'a str,
-    data: &'a T
+#[derive(Serialize, Debug)]
+pub struct BlockMetadata<T: System> {
+    number: T::BlockNumber,
+    hash: T::Hash,
+    parent_hash: T::Hash,
 }
-impl<'a, T> TypedEvent<'a, T> {
-    fn new(r#type: &'a str, data: &'a T) -> Self {
-        TypedEvent { r#type, data }
-    }
+
+#[derive(Debug)]
+pub struct TypedEvent<T: Deip + DeipProposal + DeipOrg> {
+    r#type: String,
+    data: KnownEvents<T>,
+    block: BlockMetadata<T>,
 }
-impl<T: Serialize> Serialize for TypedEvent<'_, T> {
+// impl<'a, T> TypedEvent<'a, T> {
+//     fn new(r#type: &'a str, data: &'a T) -> Self {
+//         TypedEvent { r#type, data }
+//     }
+// }
+impl<T: Deip + DeipProposal + DeipOrg> Serialize for TypedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("TypedEvent", 2)?;
-        s.serialize_field("type", self.r#type)?;
-        s.serialize_field("data", self.data)?;
+        let mut s = serializer.serialize_map(None)?;
+        s.serialize_entry("type", &self.r#type)?;
+        s.serialize_entry("data", &self.data)?;
+        s.serialize_entry("block", &self.block)?;
         s.end()
     }
 }
@@ -36,74 +49,30 @@ impl<T: DeipProposal + Deip + DeipOrg> Serialize for KnownEvents<T> {
     {
         match self {
             // =============== DeipProposal:
-            ProposalProposed(e) => {
-                TypedEvent::new("proposal_proposed", e).serialize(serializer)
-            },
-            ProposalApproved(e) => {
-                TypedEvent::new("proposal_approved", e).serialize(serializer)
-            },
-            ProposalRevokedApproval(e) => {
-                TypedEvent::new("proposal_revokedApproval", e).serialize(serializer)
-            },
-            ProposalResolved(e) => {
-                TypedEvent::new("proposal_resolved", e).serialize(serializer)
-            },
-            ProposalExpired(e) => {
-                TypedEvent::new("proposal_expired", e).serialize(serializer)
-            },
+            ProposalProposed(e) => e.serialize(serializer),
+            ProposalApproved(e) => e.serialize(serializer),
+            ProposalRevokedApproval(e) => e.serialize(serializer),
+            ProposalResolved(e) => e.serialize(serializer),
+            ProposalExpired(e) => e.serialize(serializer),
             // =============== Deip:
-            ProjectCreated(e) => {
-                TypedEvent::new("project_created", e).serialize(serializer)
-            },
-            ProjectRemoved(e) => {
-                TypedEvent::new("project_removed", e).serialize(serializer)
-            },
-            ProjectUpdated(e) => {
-                TypedEvent::new("project_updated", e).serialize(serializer)
-            },
-            ProjectContentCreated(e) => {
-                TypedEvent::new("project_contentCreated", e).serialize(serializer)
-            },
-            NdaCreated(e) => {
-                TypedEvent::new("project_ndaCreated", e).serialize(serializer)
-            },
-            NdaAccessRequestCreated(e) => {
-                TypedEvent::new("project_ndaAccessRequestCreated", e).serialize(serializer)
-            },
-            NdaAccessRequestFulfilled(e) => {
-                TypedEvent::new("project_ndaAccessRequestFulfilled", e).serialize(serializer)
-            },
-            NdaAccessRequestRejected(e) => {
-                TypedEvent::new("project_ndaAccessRequestRejected", e).serialize(serializer)
-            },
-            DomainAdded(e) => {
-                TypedEvent::new("project_domainAdded", e).serialize(serializer)
-            },
-            ReviewCreated(e) => {
-                TypedEvent::new("project_reviewCreated", e).serialize(serializer)
-            },
-            ProjectTokenSaleCreated(e) => {
-                TypedEvent::new("project_tokenSaleCreated", e).serialize(serializer)
-            },
-            ProjectTokenSaleActivated(e) => {
-                TypedEvent::new("project_tokenSaleActivated", e).serialize(serializer)
-            },
-            ProjectTokenSaleFinished(e) => {
-                TypedEvent::new("project_tokenSaleFinished", e).serialize(serializer)
-            },
-            ProjectTokenSaleExpired(e) => {
-                TypedEvent::new("project_tokenSaleExpired", e).serialize(serializer)
-            },
-            ProjectTokenSaleContributed(e) => {
-                TypedEvent::new("project_tokenSaleContributed", e).serialize(serializer)
-            },
+            ProjectCreated(e) => e.serialize(serializer),
+            ProjectRemoved(e) => e.serialize(serializer),
+            ProjectUpdated(e) => e.serialize(serializer),
+            ProjectContentCreated(e) => e.serialize(serializer),
+            NdaCreated(e) => e.serialize(serializer),
+            NdaAccessRequestCreated(e) => e.serialize(serializer),
+            NdaAccessRequestFulfilled(e) => e.serialize(serializer),
+            NdaAccessRequestRejected(e) => e.serialize(serializer),
+            DomainAdded(e) => e.serialize(serializer),
+            ReviewCreated(e) => e.serialize(serializer),
+            ProjectTokenSaleCreated(e) => e.serialize(serializer),
+            ProjectTokenSaleActivated(e) => e.serialize(serializer),
+            ProjectTokenSaleFinished(e) => e.serialize(serializer),
+            ProjectTokenSaleExpired(e) => e.serialize(serializer),
+            ProjectTokenSaleContributed(e) => e.serialize(serializer),
             // =============== DeipOrg:
-            OrgCreate(e) => {
-                TypedEvent::new("dao_create", e).serialize(serializer)
-            },
-            OrgTransferOwnership(e) => {
-                TypedEvent::new("dao_transferOwnership", e).serialize(serializer)
-            },
+            OrgCreate(e) => e.serialize(serializer),
+            OrgTransferOwnership(e) => e.serialize(serializer),
         }
     }
 }
@@ -139,153 +108,200 @@ pub enum KnownEvents<T: DeipProposal + Deip + DeipOrg> {
     OrgTransferOwnership(deip_org::OrgTransferOwnershipEvent<T>),
 }
 
-pub fn known_events<T>(e: &RawEvent) -> Option<KnownEvents<T>> where T: DeipProposal + Deip + DeipOrg + Debug {
-    let event = match (e.module.as_str(), e.variant.as_str()) {
+pub fn known_events<T: DeipProposal + Deip + DeipOrg + Debug>(
+    raw: &RawEvent,
+    block: &Block<<T as System>::Header, <T as System>::Extrinsic>
+)
+    -> Result<Option<TypedEvent<T>>, codec::Error> 
+{
+    let block = BlockMetadata {
+        number: block.header().number().to_owned(),
+        hash: block.header().hash(),
+        parent_hash: block.header().parent_hash().to_owned()
+    };
+    let event = match (raw.module.as_str(), raw.variant.as_str()) {
         // =========== DeipProposal:
         (
             deip_proposal::ProposedEvent::<T>::MODULE,
             deip_proposal::ProposedEvent::<T>::EVENT
-        ) => { 
-            decode_event_data(e).map(|x| {
-                // println!("HERE: {:?}", &x);
-                ProposalProposed(x) })
+        ) => TypedEvent {
+            r#type: "proposal_proposed".to_string(),
+            data: decode_event_data(raw).map(ProposalProposed)?,
+            block,
         },
         (
             deip_proposal::ApprovedEvent::<T>::MODULE,
             deip_proposal::ApprovedEvent::<T>::EVENT
-        ) => {
-            decode_event_data(e).map(ProposalApproved)
+        ) => TypedEvent {
+            r#type: "proposal_approved".to_string(),
+            data: decode_event_data(raw).map(ProposalApproved)?,
+            block,
         },
         (
             deip_proposal::RevokedApprovalEvent::<T>::MODULE,
             deip_proposal::RevokedApprovalEvent::<T>::EVENT
-        ) => {
-            decode_event_data(e).map(ProposalRevokedApproval)
+        ) => TypedEvent {
+            r#type: "proposal_revokedApproval".to_string(),
+            data: decode_event_data(raw).map(ProposalRevokedApproval)?,
+            block,
         },
         (
             deip_proposal::ResolvedEvent::<T>::MODULE,
             deip_proposal::ResolvedEvent::<T>::EVENT
-        ) => {
-            decode_event_data(e).map(ProposalResolved)
+        ) => TypedEvent {
+            r#type: "proposal_resolved".to_string(),
+            data: decode_event_data(raw).map(ProposalResolved)?,
+            block,
         },
         (
             deip_proposal::ExpiredEvent::<T>::MODULE,
             deip_proposal::ExpiredEvent::<T>::EVENT
-        ) => {
-            decode_event_data(e).map(ProposalExpired)
+        ) => TypedEvent {
+            r#type: "proposal_expired".to_string(),
+            data: decode_event_data(raw).map(ProposalExpired)?,
+            block,
         },
         // =========== Deip:
         (
             deip::ProjectCreatedEvent::<T>::MODULE,
             deip::ProjectCreatedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectCreated)
-        },                              
+        ) => TypedEvent {
+            r#type: "project_created".to_string(),
+            data: decode_event_data(raw).map(ProjectCreated)?,
+            block,
+        },   
         (                               
             deip::ProjectRemovedEvent::<T>::MODULE,
             deip::ProjectRemovedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectRemoved)
+        ) => TypedEvent {
+            r#type: "project_removed".to_string(),
+            data: decode_event_data(raw).map(ProjectRemoved)?,
+            block,
         },
         (                               
             deip::ProjectUpdatedEvent::<T>::MODULE,
             deip::ProjectUpdatedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectUpdated)
+        ) => TypedEvent {
+            r#type: "project_updated".to_string(),
+            data: decode_event_data(raw).map(ProjectUpdated)?,
+            block,
         },
         (                               
             deip::ProjectContentCreatedEvent::<T>::MODULE,
             deip::ProjectContentCreatedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectContentCreated)
+        ) => TypedEvent {
+            r#type: "project_contentCreated".to_string(),
+            data: decode_event_data(raw).map(ProjectContentCreated)?,
+            block,
         },
         (                               
             deip::NdaCreatedEvent::<T>::MODULE,
             deip::NdaCreatedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(NdaCreated)
+        ) => TypedEvent {
+            r#type: "project_ndaCreated".to_string(),
+            data: decode_event_data(raw).map(NdaCreated)?,
+            block,
         },
         (                               
             deip::NdaAccessRequestCreatedEvent::<T>::MODULE,
             deip::NdaAccessRequestCreatedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(NdaAccessRequestCreated)
+        ) => TypedEvent {
+            r#type: "project_ndaAccessRequestCreated".to_string(),
+            data: decode_event_data(raw).map(NdaAccessRequestCreated)?,
+            block,
         },
         (                               
             deip::NdaAccessRequestFulfilledEvent::<T>::MODULE,
             deip::NdaAccessRequestFulfilledEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(NdaAccessRequestFulfilled)
+        ) => TypedEvent {
+            r#type: "project_ndaAccessRequestFulfilled".to_string(),
+            data: decode_event_data(raw).map(NdaAccessRequestFulfilled)?,
+            block,
         },
         (                               
             deip::NdaAccessRequestRejectedEvent::<T>::MODULE,
             deip::NdaAccessRequestRejectedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(NdaAccessRequestRejected)
+        ) => TypedEvent {
+            r#type: "project_ndaAccessRequestRejected".to_string(),
+            data: decode_event_data(raw).map(NdaAccessRequestRejected)?,
+            block,
         },
         (                               
             deip::DomainAddedEvent::<T>::MODULE,
             deip::DomainAddedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(DomainAdded)
+        ) => TypedEvent {
+            r#type: "project_domainAdded".to_string(),
+            data: decode_event_data(raw).map(DomainAdded)?,
+            block,
         },
         (                               
             deip::ReviewCreatedEvent::<T>::MODULE,
             deip::ReviewCreatedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ReviewCreated)
+        ) => TypedEvent {
+            r#type: "project_reviewCreated".to_string(),
+            data: decode_event_data(raw).map(ReviewCreated)?,
+            block,
         },
         (                               
             deip::ProjectTokenSaleCreatedEvent::<T>::MODULE,
             deip::ProjectTokenSaleCreatedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectTokenSaleCreated)
+        ) => TypedEvent {
+            r#type: "project_tokenSaleCreated".to_string(),
+            data: decode_event_data(raw).map(ProjectTokenSaleCreated)?,
+            block,
         },
         (                               
             deip::ProjectTokenSaleActivatedEvent::<T>::MODULE,
             deip::ProjectTokenSaleActivatedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectTokenSaleActivated)
+        ) => TypedEvent {
+            r#type: "project_tokenSaleActivated".to_string(),
+            data: decode_event_data(raw).map(ProjectTokenSaleActivated)?,
+            block,
         },
         (                               
             deip::ProjectTokenSaleFinishedEvent::<T>::MODULE,
             deip::ProjectTokenSaleFinishedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectTokenSaleFinished)
+        ) => TypedEvent {
+            r#type: "project_tokenSaleFinished".to_string(),
+            data: decode_event_data(raw).map(ProjectTokenSaleFinished)?,
+            block,
         },
         (                               
             deip::ProjectTokenSaleExpiredEvent::<T>::MODULE,
             deip::ProjectTokenSaleExpiredEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectTokenSaleExpired)
+        ) => TypedEvent {
+            r#type: "project_tokenSaleExpired".to_string(),
+            data: decode_event_data(raw).map(ProjectTokenSaleExpired)?,
+            block,
         },
         (                               
             deip::ProjectTokenSaleContributedEvent::<T>::MODULE,
             deip::ProjectTokenSaleContributedEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(ProjectTokenSaleContributed)
+        ) => TypedEvent {
+            r#type: "project_tokenSaleContributed".to_string(),
+            data: decode_event_data(raw).map(ProjectTokenSaleContributed)?,
+            block,
         },
         // =========== DeipOrg:
         (                               
             deip_org::OrgCreateEvent::<T>::MODULE,
             deip_org::OrgCreateEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(OrgCreate)
+        ) => TypedEvent {
+            r#type: "dao_create".to_string(),
+            data: decode_event_data(raw).map(OrgCreate)?,
+            block,
         },
         (                               
             deip_org::OrgTransferOwnershipEvent::<T>::MODULE,
             deip_org::OrgTransferOwnershipEvent::<T>::EVENT
-        ) => {                          
-            decode_event_data(e).map(OrgTransferOwnership)
+        ) => TypedEvent {
+            r#type: "dao_transferOwnership".to_string(),
+            data: decode_event_data(raw).map(OrgTransferOwnership)?,
+            block,
         },
-        _ => return None,
+        _ => return Ok(None),
     };
-    if let Err(err) = event {
-        log::error!("{}", err);
-        return None
-    }
-    log::debug!("{:?}", event.as_ref().unwrap());
-    event.ok()
+    Ok(Some(event))
 }
 
 fn decode_event_data<T: Decode>(e: &RawEvent) -> Result<T, codec::Error> {

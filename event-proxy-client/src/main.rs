@@ -20,11 +20,11 @@ async fn main() {
         if let Ok(ok) = m {
             let owned = ok.detach();
             println!(
-                "key: {:?} ; topic: {:?} ; offset {:?} ; payload: {:?}",
+                "key: {:?} ; topic: {:?} ; offset {:?}\n{}",
                 owned.key().map(String::from_utf8_lossy),
                 owned.topic(),
                 owned.offset(),
-                owned.payload().map(String::from_utf8_lossy)
+                owned.payload().map(String::from_utf8_lossy).unwrap_or_default()
             );
         }
     }

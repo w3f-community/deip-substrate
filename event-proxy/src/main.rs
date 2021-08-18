@@ -17,8 +17,6 @@ use futures::stream::{FuturesOrdered, StreamExt};
 use futures::Future;
 
 use events::*;
-use types::register_types;
-
 
 const URL: &str = "ws://localhost:9944/";
 
@@ -32,7 +30,6 @@ use app::{
     MessageBrokerActor, MessageBrokerActorIO, MessageBrokerActorInput, MessageBrokerActorIOPair, MessageBrokerActorOutput, MessageBrokerActorInputData,
     BlockchainActor, BlockchainActorIO, BlockchainActorInputData, BlockchainActorOutput, BlockchainActorInput, BlockchainActorIOPair, FinalizedBlocksSubscription, BlockchainActorOutputData,
 };
-use crate::app::ActorJack;
 
 #[tokio::main]
 async fn main() {
@@ -128,7 +125,7 @@ async fn main() {
                         Ok(maybe_hash) => {
                             let hash = maybe_hash.expect("EXISTENT BLOCK");
                             blockchain_actor_task_queue.push(init_actor_task::<_, _, BlockchainActorIO>(
-                                BlockchainActorInputData::get_block_events(hash),
+                                BlockchainActorInputData::get_block(hash),
                                 &mut released_blockchain_actor_queue
                             ).await);
                         },
@@ -145,7 +142,10 @@ async fn main() {
                         Ok(maybe_block) => {
                             let block = maybe_block.expect("EXISTENT BLOCK");
                             println!("BLOCK !!!!!!!!!!!!!!!!, {:?}", &block);
-                            unreachable!();
+                            blockchain_actor_task_queue.push(init_actor_task::<_, _, BlockchainActorIO>(
+                                BlockchainActorInputData::get_block_events(block.block),
+                                &mut released_blockchain_actor_queue
+                            ).await);
                         },
                         Err(e) => {
                             rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
@@ -165,17 +165,15 @@ async fn main() {
                     match maybe_events {
                         Ok(events) => {
                             println!("EVENTS: {:?}", &events);
-                            for x in events.iter() {
-                                if let Some(known) = known_events::<RuntimeT>(x) {
-                                    let payload = serde_json::to_string_pretty(&known).unwrap();
-                                    message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
-                                        MessageBrokerActorInput::Input(payload),
-                                        &mut released_message_broker_actor_queue
-                                    ).await);
-                                }
+                            for x in events.into_iter() {
+                                message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
+                                    MessageBrokerActorInput::Input(x),
+                                    &mut released_message_broker_actor_queue
+                                ).await);
                             }
                         },
                         Err(e) => {
+                            log::error!("{}", e);
                             rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
                                 RpcClientBuilderActorInput::Input(()),
                                 &mut released_rpc_client_builder_actor_queue

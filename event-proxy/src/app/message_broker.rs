@@ -5,6 +5,9 @@ use rdkafka::producer::{FutureRecord, FutureProducer, future_producer::OwnedDeli
 use rdkafka::message::{ToBytes};
 use rdkafka::util::Timeout;
 
+use crate::events::TypedEvent;
+use crate::RuntimeT;
+
 
 pub const BOOTSTRAP_SERVERS: &str = "127.0.0.1:9092";
 pub const TOPIC: &str = "blockchain";
@@ -22,9 +25,9 @@ impl MessageBrokerActor {
     }
 }
 
-pub type MessageBrokerActorInputData = String;
+pub type MessageBrokerActorInputData = Result<TypedEvent<RuntimeT>, codec::Error>;
 pub type MessageBrokerActorInput = ActorDirective<MessageBrokerActorInputData>;
-pub type MessageBrokerActorOutput = OwnedDeliveryResult;
+pub type MessageBrokerActorOutput = Result<Result<OwnedDeliveryResult, codec::Error>, serde_json::Error>;
 pub type MessageBrokerActorIO = ActorJack<MessageBrokerActorInput, MessageBrokerActorOutput>;
 pub type MessageBrokerActorIOPair = ActorJackPair<MessageBrokerActorIO, MessageBrokerActorInput, MessageBrokerActorOutput>;
 
@@ -39,11 +42,16 @@ impl Actor
 for MessageBrokerActor
 {
     async fn on_input(&mut self, data: MessageBrokerActorInputData) -> MessageBrokerActorOutput {
+        if data.is_err() {
+            return Ok(Err(data.err().unwrap()))
+        }
+        let payload = serde_json::to_string_pretty(&data.unwrap())?;
         let record = FutureRecord::to(TOPIC)
             .key(EVENTS_KEY)
-            .payload(&data);
-        self.producer
+            .payload(&payload);
+        let delivery_result = self.producer
             .send(record, Timeout::After(std::time::Duration::from_secs(5)))
-            .await
+            .await;
+        Ok(Ok(delivery_result))
     }
 }
