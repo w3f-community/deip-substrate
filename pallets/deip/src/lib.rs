@@ -141,26 +141,27 @@ pub type ReviewOf<T> = Review<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<AccountIdOf<T>, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<AccountIdOf<T>, DeipAssetBalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
 type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
 type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum InvestmentOpportunity<Moment, Balance, AssetId, AssetBalance> {
+pub enum InvestmentOpportunity<Moment, AssetId, AssetBalance> {
     ProjectTokenSale {
         /// a moment when the sale starts. Must be later than current moment.
         start_time: Moment,
         /// a moment when the sale ends. Must be later than `start_time`.
         end_time: Moment,
-        /// amount of units to raise. This must be greater or equal to `ExistentialDeposit`
-        /// (see [frame_support::traits::Currency] for details).
-        soft_cap: Balance,
+        /// id of the asset intended to raise.
+        asset_id: AssetId,
+        /// amount of units to raise.
+        soft_cap: AssetBalance,
         /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
-        hard_cap: Balance,
+        hard_cap: AssetBalance,
         /// specifies how many tokens of the project are intended to sale.
         security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
     },
@@ -432,6 +433,7 @@ decl_error! {
         TokenSaleShouldBeStarted,
         TokenSaleShouldBeActive,
         TokenSaleExpirationWrongState,
+        TokenSaleWrongAssetId,
 
         // Possible errors when DAO tries to contribute to a project token sale
         ContributionProjectTokenSaleNotFound,
@@ -559,7 +561,7 @@ decl_module! {
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
             project_id: ProjectId,
-            investment_type: InvestmentOpportunity<T::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+            investment_type: InvestmentOpportunity<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
 
@@ -567,10 +569,11 @@ decl_module! {
                 InvestmentOpportunity::ProjectTokenSale{
                     start_time,
                     end_time,
+                    asset_id,
                     soft_cap,
                     hard_cap,
                     security_tokens_on_sale,
-                } => Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
+                } => Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, asset_id, soft_cap, hard_cap, security_tokens_on_sale)
             }
         }
 
@@ -603,7 +606,7 @@ decl_module! {
         #[weight = 10_000]
         fn invest(origin,
             id: InvestmentId,
-            amount: BalanceOf<T>
+            amount: DeipAssetBalanceOf<T>
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::contribute_to_project_token_sale_impl(account, id, amount)

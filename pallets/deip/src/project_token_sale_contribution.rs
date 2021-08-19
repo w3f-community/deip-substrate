@@ -2,6 +2,7 @@ use crate::*;
 
 use sp_runtime::traits::Saturating;
 use sp_std::vec;
+use crate::traits::DeipAssetSystem;
 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -17,7 +18,7 @@ impl<T: Config> Module<T> {
     pub(super) fn contribute_to_project_token_sale_impl(
         account: T::AccountId,
         sale_id: InvestmentId,
-        amount: BalanceOf<T>,
+        amount: DeipAssetBalanceOf<T>,
     ) -> DispatchResult {
         let sale = ProjectTokenSaleMap::<T>::try_get(sale_id)
             .map_err(|_| Error::<T>::ContributionProjectTokenSaleNotFound)?;
@@ -40,7 +41,12 @@ impl<T: Config> Module<T> {
         };
 
         ensure!(
-            T::Currency::reserve(&account, amount_to_contribute).is_ok(),
+            T::AssetSystem::transactionally_reserve(
+                &account,
+                sale.project_id,
+                &[(sale.asset_id, amount_to_contribute)]
+            )
+            .is_ok(),
             Error::<T>::ContributionNotEnoughFunds
         );
 

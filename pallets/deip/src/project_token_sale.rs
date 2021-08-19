@@ -1,7 +1,6 @@
 use crate::traits::DeipAssetSystem;
 use crate::*;
 
-use frame_support::traits::{ExistenceRequirement, Imbalance, WithdrawReasons};
 use sp_runtime::{
     traits::{Saturating, Zero},
     SaturatedConversion,
@@ -32,7 +31,7 @@ impl Default for Status {
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct Info<Moment, Balance, AssetId, AssetBalance> {
+pub struct Info<Moment, AssetId, AssetBalance> {
     /// Reference for external world and uniques control
     pub external_id: Id,
     /// Reference to the Project
@@ -42,10 +41,11 @@ pub struct Info<Moment, Balance, AssetId, AssetBalance> {
     /// When it supposed to end
     pub end_time: Moment,
     pub status: Status,
+    pub asset_id: AssetId,
     /// How many contributions already reserved
-    pub total_amount: Balance,
-    pub soft_cap: Balance,
-    pub hard_cap: Balance,
+    pub total_amount: AssetBalance,
+    pub soft_cap: AssetBalance,
+    pub hard_cap: AssetBalance,
     /// How many tokens supposed to sale
     pub security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
 }
@@ -57,8 +57,9 @@ impl<T: Config> Module<T> {
         project_id: ProjectId,
         start_time: T::Moment,
         end_time: T::Moment,
-        soft_cap: BalanceOf<T>,
-        hard_cap: BalanceOf<T>,
+        asset_id: DeipAssetIdOf<T>,
+        soft_cap: DeipAssetBalanceOf<T>,
+        hard_cap: DeipAssetBalanceOf<T>,
         security_tokens_on_sale: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
     ) -> DispatchResult {
         ensure!(
@@ -77,7 +78,7 @@ impl<T: Config> Module<T> {
         );
 
         ensure!(
-            soft_cap >= T::Currency::minimum_balance(),
+            !soft_cap.is_zero(),
             Error::<T>::TokenSaleSoftCapMustBeGreaterOrEqualMinimum
         );
         ensure!(
@@ -89,8 +90,13 @@ impl<T: Config> Module<T> {
             !security_tokens_on_sale.is_empty(),
             Error::<T>::TokenSaleSecurityTokenNotSpecified
         );
-        for (asset_id, asset_amount) in &security_tokens_on_sale {
-            match T::AssetSystem::try_get_tokenized_project(&asset_id) {
+        for (security_token_id, asset_amount) in &security_tokens_on_sale {
+            ensure!(
+                *security_token_id != asset_id,
+                Error::<T>::TokenSaleWrongAssetId
+            );
+
+            match T::AssetSystem::try_get_tokenized_project(&security_token_id) {
                 None => return Err(Error::<T>::TokenSaleAssetIsNotSecurityToken.into()),
                 Some(id) => ensure!(
                     id == project_id,
@@ -159,7 +165,7 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    pub(super) fn collect_funds(sale_id: Id, amount: BalanceOf<T>) -> Result<(), ()> {
+    pub(super) fn collect_funds(sale_id: Id, amount: DeipAssetBalanceOf<T>) -> Result<(), ()> {
         ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |sale| -> Result<(), ()> {
             match sale.as_mut() {
                 Some(s) => s.total_amount = amount.saturating_add(s.total_amount),
@@ -322,7 +328,10 @@ impl<T: Config> Module<T> {
 
         if let Ok(ref c) = ProjectTokenSaleContributions::<T>::try_get(sale.external_id) {
             for (_, ref contribution) in c {
-                T::Currency::unreserve(&contribution.owner, contribution.amount);
+                T::AssetSystem::transfer(sale.project_id,
+                    &contribution.owner,
+                    sale.asset_id,
+                    contribution.amount).expect("user's asset should be reserved earlier");
             }
             ProjectTokenSaleContributions::<T>::remove(sale.external_id);
         }
@@ -334,10 +343,10 @@ impl<T: Config> Module<T> {
     }
 
     fn process_project_token_sale_contributions(sale: &ProjectTokenSaleOf<T>) {
-        let mut imbalance = T::Currency::deposit_creating(
+        T::AssetSystem::transfer(sale.project_id,
             &ProjectMap::<T>::get(sale.project_id).team_id,
-            sale.total_amount,
-        );
+            sale.asset_id,
+            sale.total_amount).expect("total_amount");
 
         let contributions = ProjectTokenSaleContributions::<T>::try_get(sale.external_id)
             .expect("Token sale is about to finish, but there are no contributions?");
@@ -346,17 +355,6 @@ impl<T: Config> Module<T> {
         let (_, ref first_contribution) = iter
             .next()
             .expect("Token sale is about to finish, but there are no contributors?");
-
-        let withdraw = |who, value| {
-            T::Currency::unreserve(who, value);
-            T::Currency::withdraw(
-                who,
-                value,
-                WithdrawReasons::TRANSFER,
-                ExistenceRequirement::KeepAlive,
-            )
-            .expect("Required amount just unreserved")
-        };
 
         for (_, ref contribution) in iter {
             for (asset_id, asset_amount) in &sale.security_tokens_on_sale {
@@ -379,23 +377,11 @@ impl<T: Config> Module<T> {
                 )
                 .expect("Required token_amount should be reserved");
             }
-
-            imbalance = imbalance
-                .offset(withdraw(&contribution.owner, contribution.amount))
-                .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"));
         }
 
         // process the remainder
         T::AssetSystem::transactionally_unreserve(sale.project_id, &first_contribution.owner)
             .expect("remaining assets should be reserved earlier");
-        imbalance
-            .offset(withdraw(
-                &first_contribution.owner,
-                first_contribution.amount,
-            ))
-            .unwrap_or_else(|_| panic!("total_amount shouldn't be lesser than a part"))
-            .drop_zero()
-            .unwrap_or_else(|_| panic!("all contributions should be processed"));
 
         ProjectTokenSaleContributions::<T>::remove(sale.external_id);
 
