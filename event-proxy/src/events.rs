@@ -13,11 +13,11 @@ use super::frame::{
     deip_org::{self, DeipOrg}
 };
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Copy, Clone)]
 pub struct BlockMetadata<T: System> {
-    number: T::BlockNumber,
-    hash: T::Hash,
-    parent_hash: T::Hash,
+    pub number: T::BlockNumber,
+    pub hash: T::Hash,
+    pub parent_hash: T::Hash,
 }
 
 #[derive(Debug)]
