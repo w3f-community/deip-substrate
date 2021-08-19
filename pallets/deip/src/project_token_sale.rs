@@ -147,6 +147,7 @@ impl<T: Config> Module<T> {
             project_id: project_id,
             start_time: start_time,
             end_time: end_time,
+            asset_id,
             soft_cap: soft_cap,
             hard_cap: hard_cap,
             security_tokens_on_sale: security_tokens_on_sale,
@@ -323,9 +324,6 @@ impl<T: Config> Module<T> {
             .expect("checked in create method")
             .team_id;
 
-        T::AssetSystem::transactionally_unreserve(sale.project_id, team_id)
-            .expect("assets should be reserved earlier");
-
         if let Ok(ref c) = ProjectTokenSaleContributions::<T>::try_get(sale.external_id) {
             for (_, ref contribution) in c {
                 T::AssetSystem::transfer(sale.project_id,
@@ -335,6 +333,9 @@ impl<T: Config> Module<T> {
             }
             ProjectTokenSaleContributions::<T>::remove(sale.external_id);
         }
+
+        T::AssetSystem::transactionally_unreserve(sale.project_id, team_id)
+            .expect("assets should be reserved earlier");
 
         Self::deposit_event(RawEvent::ProjectTokenSaleExpired(
             sale.project_id,
