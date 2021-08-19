@@ -177,15 +177,16 @@
     "start_time": "Moment",
     "end_time": "Moment",
     "status": "ProjectTokenSaleStatus",
-    "total_amount": "Balance",
-    "soft_cap": "Balance",
-    "hard_cap": "Balance",
+    "asset_id": "AssetId",
+    "total_amount": "AssetsBalanceOf",
+    "soft_cap": "AssetsBalanceOf",
+    "hard_cap": "AssetsBalanceOf",
     "security_tokens_on_sale": "Vec<ProjectTokenSaleAssetPair>"
   },
   "ProjectTokenSaleContribution": {
     "sale_id": "InvestmentId",
     "owner": "AccountId",
-    "amount": "Balance",
+    "amount": "AssetsBalanceOf",
     "time": "Moment"
   },
   "InvestmentOpportunity": {
@@ -193,13 +194,15 @@
       "ProjectTokenSale": {
         "start_time": "Moment",
         "end_time": "Moment",
-        "soft_cap": "Balance",
-        "hard_cap": "Balance",
+        "asset_id": "AssetId",
+        "soft_cap": "AssetsBalanceOf",
+        "hard_cap": "AssetsBalanceOf",
         "security_tokens_on_sale": "Vec<ProjectTokenSaleAssetPair>"
       }
     }
   },
   "AssetsBalanceOf": "u64",
+  "DeipAssetBalanceOf": "AssetsBalanceOf",
   "AssetBalance": {
     "balance": "AssetsBalanceOf",
     "is_frozen": "bool",
