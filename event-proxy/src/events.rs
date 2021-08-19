@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use substrate_subxt::{RawEvent, Event, system::System};
 use codec::Decode;
-use serde::{Serialize, ser::{Serializer, SerializeStruct, SerializeMap}};
+use serde::{Serialize, ser::{Serializer, SerializeMap}};
 
 use sp_runtime::generic::Block;
 use sp_runtime::traits::{Block as _Block, Header as _Header};
@@ -26,11 +26,7 @@ pub struct TypedEvent<T: Deip + DeipProposal + DeipOrg> {
     data: KnownEvents<T>,
     block: BlockMetadata<T>,
 }
-// impl<'a, T> TypedEvent<'a, T> {
-//     fn new(r#type: &'a str, data: &'a T) -> Self {
-//         TypedEvent { r#type, data }
-//     }
-// }
+
 impl<T: Deip + DeipProposal + DeipOrg> Serialize for TypedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer

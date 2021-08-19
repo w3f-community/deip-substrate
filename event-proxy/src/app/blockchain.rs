@@ -3,19 +3,19 @@ use super::actor_io::*;
 
 use substrate_subxt::{Client, ChainBlock};
 use substrate_subxt::system::System;
-use substrate_subxt::{RawEvent, Phase, RuntimeError, Raw};
-use substrate_subxt::{EventsDecoder, Rpc};
+use substrate_subxt::{RawEvent, Phase, Raw};
+use substrate_subxt::{EventsDecoder};
 
 use jsonrpsee_ws_client::Subscription;
 
 use sp_runtime::generic::Block;
-use sp_runtime::traits::{Block as _Block, Header};
+use sp_runtime::traits::{Block as _Block};
 
 use sp_core::storage::StorageKey;
 use sp_core::hashing::twox_128;
 
 use crate::RuntimeT;
-use crate::events::{known_events, KnownEvents, TypedEvent};
+use crate::events::{known_events, TypedEvent};
 
 pub struct BlockchainActor {
     client: Option<Client<RuntimeT>>,
@@ -66,7 +66,6 @@ pub enum BlockchainActorOutputData {
     GetBlockEvents(Result<Vec<Result<TypedEvent<RuntimeT>, codec::Error>>, substrate_subxt::Error>),
 }
 pub type BlockchainActorIO = ActorJack<BlockchainActorInput, BlockchainActorOutput>;
-pub type BlockchainActorIOPair = ActorJackPair<BlockchainActorIO, BlockchainActorInput, BlockchainActorOutput>;
 
 #[async_trait::async_trait]
 impl Actor
@@ -159,7 +158,7 @@ async fn get_block_events(
                 Err(error) => return Err(error),
             };
             for (phase, raw) in raw_events {
-                if let Phase::ApplyExtrinsic(i) = phase {
+                if let Phase::ApplyExtrinsic(_i) = phase {
                     let event = match raw {
                         Raw::Event(event) => event,
                         Raw::Error(err) => return Err(err.into()),

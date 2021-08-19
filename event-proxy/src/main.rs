@@ -8,27 +8,22 @@ mod app;
 
 use std::time::Duration;
 
-use substrate_subxt::{ClientBuilder, Client, system::System};
+use substrate_subxt::{system::System};
 use substrate_subxt::NodeTemplateRuntime;
-use substrate_subxt::{EventSubscription};
 
 use tokio::sync::mpsc;
 use futures::stream::{FuturesOrdered, StreamExt};
 use futures::Future;
-
-use events::*;
 
 const URL: &str = "ws://localhost:9944/";
 
 type RuntimeT = NodeTemplateRuntime;
 
 use app::{
-    Actor, ActorI, ActorO, ActorIO, ActorDirective,
-    ActorJackPair, ActorJackI, ActorJackO,
-    RpcClientBuilderActor, RpcClientBuilderActorIO, RpcClientBuilderActorIOPair, RpcClientBuilderActorInput, RpcClientBuilderActorOutput,
-    RpcClientStatusActor, RpcClientStatusActorIO, RpcClientStatusActorInputData, RpcClientStatusActorOutput,
-    MessageBrokerActor, MessageBrokerActorIO, MessageBrokerActorInput, MessageBrokerActorIOPair, MessageBrokerActorOutput, MessageBrokerActorInputData,
-    BlockchainActor, BlockchainActorIO, BlockchainActorInputData, BlockchainActorOutput, BlockchainActorInput, BlockchainActorIOPair, FinalizedBlocksSubscription, BlockchainActorOutputData,
+    Actor, ActorI, ActorO, ActorIO,
+    RpcClientBuilderActor, RpcClientBuilderActorIO, RpcClientBuilderActorInput,
+    MessageBrokerActor, MessageBrokerActorIO, MessageBrokerActorInput,
+    BlockchainActor, BlockchainActorIO, BlockchainActorInputData, BlockchainActorOutput, FinalizedBlocksSubscription, BlockchainActorOutputData,
 };
 
 #[tokio::main]
@@ -113,6 +108,7 @@ async fn main() {
                             subscription_task_queue.push(subscription_task(subscription));
                         },
                         Err(e) => {
+                            log::error!("{}", e);
                             rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
                                 RpcClientBuilderActorInput::Input(()),
                                 &mut released_rpc_client_builder_actor_queue
@@ -130,6 +126,7 @@ async fn main() {
                             ).await);
                         },
                         Err(e) => {
+                            log::error!("{}", e);
                             rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
                                 RpcClientBuilderActorInput::Input(()),
                                 &mut released_rpc_client_builder_actor_queue
@@ -141,13 +138,14 @@ async fn main() {
                     match maybe_block {
                         Ok(maybe_block) => {
                             let block = maybe_block.expect("EXISTENT BLOCK");
-                            println!("BLOCK !!!!!!!!!!!!!!!!, {:?}", &block);
+                            // println!("BLOCK !!!!!!!!!!!!!!!!, {:?}", &block);
                             blockchain_actor_task_queue.push(init_actor_task::<_, _, BlockchainActorIO>(
                                 BlockchainActorInputData::get_block_events(block.block),
                                 &mut released_blockchain_actor_queue
                             ).await);
                         },
                         Err(e) => {
+                            log::error!("{}", e);
                             rpc_client_builder_actor_task_queue.push(init_actor_task::<_, _, RpcClientBuilderActorIO>(
                                 RpcClientBuilderActorInput::Input(()),
                                 &mut released_rpc_client_builder_actor_queue

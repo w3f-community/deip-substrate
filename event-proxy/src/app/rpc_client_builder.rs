@@ -14,7 +14,6 @@ pub type RpcClientBuilderActorInputData = ();
 pub type RpcClientBuilderActorInput = ActorDirective<RpcClientBuilderActorInputData>;
 pub type RpcClientBuilderActorOutput = Result<Client<RuntimeT>, substrate_subxt::Error>;
 pub type RpcClientBuilderActorIO = ActorJack<RpcClientBuilderActorInput, RpcClientBuilderActorOutput>;
-pub type RpcClientBuilderActorIOPair = ActorJackPair<RpcClientBuilderActorIO, RpcClientBuilderActorInput, RpcClientBuilderActorOutput>;
 
 #[async_trait::async_trait]
 impl Actor

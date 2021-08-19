@@ -2,7 +2,6 @@ use crate::actor::*;
 use super::actor_io::*;
 
 use rdkafka::producer::{FutureRecord, FutureProducer, future_producer::OwnedDeliveryResult};
-use rdkafka::message::{ToBytes};
 use rdkafka::util::Timeout;
 
 use crate::events::TypedEvent;
@@ -29,7 +28,6 @@ pub type MessageBrokerActorInputData = Result<TypedEvent<RuntimeT>, codec::Error
 pub type MessageBrokerActorInput = ActorDirective<MessageBrokerActorInputData>;
 pub type MessageBrokerActorOutput = Result<Result<OwnedDeliveryResult, codec::Error>, serde_json::Error>;
 pub type MessageBrokerActorIO = ActorJack<MessageBrokerActorInput, MessageBrokerActorOutput>;
-pub type MessageBrokerActorIOPair = ActorJackPair<MessageBrokerActorIO, MessageBrokerActorInput, MessageBrokerActorOutput>;
 
 #[async_trait::async_trait]
 impl Actor

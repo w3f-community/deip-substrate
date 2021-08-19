@@ -33,6 +33,7 @@ pub trait Actor<D, I, O, IO>
 }
 
 pub enum ActorDirective<D> {
+    #[allow(dead_code)]
     ExitLoop,
     Input(D),
 }

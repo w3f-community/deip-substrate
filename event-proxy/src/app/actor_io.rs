@@ -61,4 +61,5 @@ impl<I: Send, O: Send> ActorIO<I, O> for ActorJack<I, O>
     }
 }
 
-pub type ActorJackPair<A, I, O> = <A as ActorIO<I, O>>::Pair;
+#[allow(dead_code)]
+pub type ActorJackPair<IO, I, O> = <IO as ActorIO<I, O>>::Pair;
