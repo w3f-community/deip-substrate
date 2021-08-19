@@ -1,8 +1,13 @@
 use sp_std::vec::Vec;
 
+#[cfg(feature = "std")]
+use serde::{Serialize, Deserialize};
+
 // for details please check parity_scale_codec/src/compact.rs
 
 #[derive(Default, Clone, Copy, sp_runtime::RuntimeDebug, PartialEq, Eq, codec::Encode, codec::Decode)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct H160(sp_core::H160);
 
 #[derive(Eq, PartialEq, Clone, Copy, Ord, PartialOrd)]
