@@ -2,7 +2,7 @@ use crate::*;
 use crate::{mock::*};
 use sp_core::{H256, offchain::{OffchainExt, TransactionPoolExt, testing::*}};
 use frame_support::{assert_ok, assert_noop,
-	traits::{Get, UnfilteredDispatchable, OnFinalize, OnInitialize, OffchainWorker}};
+	traits::{UnfilteredDispatchable, OnFinalize, OnInitialize, OffchainWorker}};
 use std::time::{SystemTime, UNIX_EPOCH};
 use sp_io::TestExternalities;
 use sp_std::sync::Arc;
@@ -937,6 +937,7 @@ fn project_token_sale_create_should_fail() {
 			*project_id,
 			start_time,
 			start_time + 1,
+			1u32,
 			100u32.into(),
 			120u32.into(),
 			vec![(0u32.into(), 100u32.into()), (14u32.into(), 200u32.into())]
@@ -948,6 +949,7 @@ fn project_token_sale_create_should_fail() {
 			*project_id,
 			start_time,
 			start_time + 1,
+			0u32,
 			100u32.into(),
 			120u32.into(),
 			vec![]
@@ -963,6 +965,14 @@ fn project_token_sale_hard_cap_reached() {
 	ext.execute_with(|| {
 		let (ref project_id, .., ref account_id) = create_ok_project(None);
 
+		let base_asset_id = 3u32;
+		let base_asset_total = 120_000u64;
+		create_issue_asset(ALICE_ACCOUNT_ID, base_asset_id, base_asset_total, None);
+
+		let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, base_asset_total / 2);
+		let result = call.dispatch_bypass_filter(Origin::signed(ALICE_ACCOUNT_ID));
+		assert_ok!(result);
+
 		let usd_id = 0u32;
 		let usd_total = 100_000u64;
 		create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
@@ -971,12 +981,12 @@ fn project_token_sale_hard_cap_reached() {
 		let eur_total = 80_000u64;
 		create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
 
-		let balance_before = <Test as crate::Config>::Currency::total_balance(account_id);
+		let balance_before = Assets::balance(base_asset_id, *account_id);
 
 		let start_time = pallet_timestamp::Module::<Test>::get();
 		let sale_id = H160::random();
-		let soft_cap: u128 = (<ExistentialDeposit as Get<u64>>::get() * 1000).into();
-		let hard_cap: u128 = (<ExistentialDeposit as Get<u64>>::get() * 1200).into();
+		let soft_cap = 100_000u64;
+		let hard_cap = base_asset_total;
 		let usd_to_sale = 80_000u64;
 		let eur_to_sale = 75_000u64;
 		assert_ok!(Deip::create_project_token_sale_impl(
@@ -985,6 +995,7 @@ fn project_token_sale_hard_cap_reached() {
 			*project_id,
 			start_time,
 			start_time + 100,
+			base_asset_id,
 			soft_cap,
 			hard_cap,
 			vec![(usd_id, usd_to_sale), (eur_id, eur_to_sale)]
@@ -1026,7 +1037,7 @@ fn project_token_sale_hard_cap_reached() {
 		assert_eq!(Assets::balance(eur_id, ALICE_ACCOUNT_ID), eur_to_sale / 2);
 		assert_eq!(Assets::balance(eur_id, *account_id), Assets::total_supply(eur_id) - eur_to_sale);
 
-		assert_eq!(<Test as crate::Config>::Currency::total_balance(account_id), hard_cap + balance_before);
+		assert_eq!(Assets::balance(base_asset_id, *account_id), hard_cap + balance_before);
 	})
 }
 
@@ -1037,6 +1048,18 @@ fn project_token_sale_expired() {
 	ext.execute_with(|| {
 		let (ref project_id, .., ref account_id) = create_ok_project(None);
 
+		let base_asset_id = 3u32;
+		let base_asset_total = 120_000u64;
+		create_issue_asset(*account_id, base_asset_id, base_asset_total, Some(*project_id));
+
+		let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, ALICE_ACCOUNT_ID, base_asset_total / 2);
+		let result = call.dispatch_bypass_filter(Origin::signed(*account_id));
+		assert_ok!(result);
+
+		let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, base_asset_total / 2);
+		let result = call.dispatch_bypass_filter(Origin::signed(*account_id));
+		assert_ok!(result);
+
 		let usd_id = 0u32;
 		let usd_total = 100_000u64;
 		create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
@@ -1045,15 +1068,15 @@ fn project_token_sale_expired() {
 		let eur_total = 80_000u64;
 		create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
 
-		let balance_before = <Test as crate::Config>::Currency::total_balance(account_id);
-		let bob_balance_before = <Test as crate::Config>::Currency::free_balance(&BOB_ACCOUNT_ID);
-		let alice_balance_before = <Test as crate::Config>::Currency::free_balance(&ALICE_ACCOUNT_ID);
+		let balance_before = Assets::balance(base_asset_id, *account_id);
+		let bob_balance_before = Assets::balance(base_asset_id, BOB_ACCOUNT_ID);
+		let alice_balance_before = Assets::balance(base_asset_id, ALICE_ACCOUNT_ID);
 
 		let start_time_in_blocks = 5;
 		let start_time = pallet_timestamp::Module::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
 		let sale_id = H160::random();
-		let soft_cap: u128 = (<ExistentialDeposit as Get<u64>>::get() * 1000).into();
-		let hard_cap: u128 = (<ExistentialDeposit as Get<u64>>::get() * 1200).into();
+		let soft_cap = 100_000u64;
+		let hard_cap = base_asset_total;
 		let usd_to_sale = 80_000u64;
 		let eur_to_sale = 75_000u64;
 		let duration_in_blocks = 5;
@@ -1063,6 +1086,7 @@ fn project_token_sale_expired() {
 			*project_id,
 			start_time,
 			start_time + duration_in_blocks * BLOCK_TIME,
+			base_asset_id,
 			soft_cap,
 			hard_cap,
 			vec![(usd_id, usd_to_sale), (eur_id, eur_to_sale)]
@@ -1124,9 +1148,9 @@ fn project_token_sale_expired() {
 			_ => unreachable!(),
 		};
 
-		assert_eq!(<Test as crate::Config>::Currency::free_balance(&BOB_ACCOUNT_ID), bob_balance_before);
-		assert_eq!(<Test as crate::Config>::Currency::free_balance(&ALICE_ACCOUNT_ID), alice_balance_before);
-		assert_eq!(<Test as crate::Config>::Currency::total_balance(account_id), balance_before);
+		assert_eq!(Assets::balance(base_asset_id, BOB_ACCOUNT_ID), bob_balance_before);
+		assert_eq!(Assets::balance(base_asset_id, ALICE_ACCOUNT_ID), alice_balance_before);
+		assert_eq!(Assets::balance(base_asset_id, *account_id), balance_before);
 
 		assert_eq!(Assets::balance(usd_id, BOB_ACCOUNT_ID), 0);
 		assert_eq!(Assets::balance(usd_id, ALICE_ACCOUNT_ID), 0);
