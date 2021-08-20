@@ -63,10 +63,11 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-mod project_token_sale;
-use project_token_sale::{Id as InvestmentId,
+mod investment_opportunity;
+use investment_opportunity::{Id as InvestmentId,
     Status as ProjectTokenSaleStatus,
-    Info as ProjectTokenSale};
+    Info as ProjectTokenSale,
+    InvestmentOpportunity as FundingModel};
 
 mod project_token_sale_contribution;
 use project_token_sale_contribution::{Contribution as ProjectTokenSaleContribution};
@@ -146,26 +147,6 @@ pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::B
 pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<AccountIdOf<T>, DeipAssetBalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
 type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
 type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
-
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum InvestmentOpportunity<Moment, AssetId, AssetBalance> {
-    ProjectTokenSale {
-        /// a moment when the sale starts. Must be later than current moment.
-        start_time: Moment,
-        /// a moment when the sale ends. Must be later than `start_time`.
-        end_time: Moment,
-        /// id of the asset intended to raise.
-        asset_id: AssetId,
-        /// amount of units to raise.
-        soft_cap: AssetBalance,
-        /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
-        hard_cap: AssetBalance,
-        /// specifies how many tokens of the project are intended to sale.
-        security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
-    },
-}
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -561,20 +542,10 @@ decl_module! {
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
             project_id: ProjectId,
-            investment_type: InvestmentOpportunity<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+            investment_type: FundingModel<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-
-            match investment_type {
-                InvestmentOpportunity::ProjectTokenSale{
-                    start_time,
-                    end_time,
-                    asset_id,
-                    soft_cap,
-                    hard_cap,
-                    security_tokens_on_sale,
-                } => Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, asset_id, soft_cap, hard_cap, security_tokens_on_sale)
-            }
+            Self::create_investment_opportunity_impl(account, external_id, project_id, investment_type)
         }
 
         #[weight = 10_000]

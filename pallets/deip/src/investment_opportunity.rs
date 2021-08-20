@@ -25,6 +25,26 @@ impl Default for Status {
     }
 }
 
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub enum InvestmentOpportunity<Moment, AssetId, AssetBalance> {
+    ProjectTokenSale {
+        /// a moment when the sale starts. Must be later than current moment.
+        start_time: Moment,
+        /// a moment when the sale ends. Must be later than `start_time`.
+        end_time: Moment,
+        /// id of the asset intended to raise.
+        asset_id: AssetId,
+        /// amount of units to raise.
+        soft_cap: AssetBalance,
+        /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
+        hard_cap: AssetBalance,
+        /// specifies how many tokens of the project are intended to sale.
+        security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
+    },
+}
+
 /// The object represents a sale of project's tokens with
 /// various parameters.
 /// It is connected to the specific project.
@@ -51,6 +71,34 @@ pub struct Info<Moment, AssetId, AssetBalance> {
 }
 
 impl<T: Config> Module<T> {
+    pub(super) fn create_investment_opportunity_impl(
+        account: AccountIdOf<T>,
+        external_id: Id,
+        project_id: ProjectId,
+        investment_type: InvestmentOpportunity<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+    ) -> DispatchResult {
+        match investment_type {
+            InvestmentOpportunity::ProjectTokenSale {
+                start_time,
+                end_time,
+                asset_id,
+                soft_cap,
+                hard_cap,
+                security_tokens_on_sale,
+            } => Self::create_project_token_sale_impl(
+                account,
+                external_id,
+                project_id,
+                start_time,
+                end_time,
+                asset_id,
+                soft_cap,
+                hard_cap,
+                security_tokens_on_sale,
+            ),
+        }
+    }
+
     pub(super) fn create_project_token_sale_impl(
         account: T::AccountId,
         external_id: Id,
@@ -326,10 +374,13 @@ impl<T: Config> Module<T> {
 
         if let Ok(ref c) = ProjectTokenSaleContributions::<T>::try_get(sale.external_id) {
             for (_, ref contribution) in c {
-                T::AssetSystem::transfer(sale.project_id,
+                T::AssetSystem::transfer(
+                    sale.project_id,
                     &contribution.owner,
                     sale.asset_id,
-                    contribution.amount).expect("user's asset should be reserved earlier");
+                    contribution.amount,
+                )
+                .expect("user's asset should be reserved earlier");
             }
             ProjectTokenSaleContributions::<T>::remove(sale.external_id);
         }
@@ -344,10 +395,13 @@ impl<T: Config> Module<T> {
     }
 
     fn process_project_token_sale_contributions(sale: &ProjectTokenSaleOf<T>) {
-        T::AssetSystem::transfer(sale.project_id,
+        T::AssetSystem::transfer(
+            sale.project_id,
             &ProjectMap::<T>::get(sale.project_id).team_id,
             sale.asset_id,
-            sale.total_amount).expect("total_amount");
+            sale.total_amount,
+        )
+        .expect("total_amount");
 
         let contributions = ProjectTokenSaleContributions::<T>::try_get(sale.external_id)
             .expect("Token sale is about to finish, but there are no contributions?");
