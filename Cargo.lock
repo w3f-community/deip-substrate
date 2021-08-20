@@ -3538,6 +3538,7 @@ dependencies = [
  "jsonrpc-core",
  "node-template-runtime",
  "pallet-deip",
+ "pallet-deip-assets",
  "pallet-deip-org-rpc",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",

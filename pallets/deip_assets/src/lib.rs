@@ -148,7 +148,8 @@ pub mod pallet {
 
             for (ref who, amount) in &self.balances {
                 let who_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
-                let call = pallet_assets::Call::<T>::mint(self.core_asset_id.0, who_source, amount.0);
+                let call =
+                    pallet_assets::Call::<T>::mint(self.core_asset_id.0, who_source, amount.0);
                 let result = call.dispatch_bypass_filter(
                     RawOrigin::Signed(self.core_asset_admin.clone()).into(),
                 );
@@ -437,5 +438,22 @@ pub mod pallet {
             let call = pallet_assets::Call::<T>::set_metadata(id, name, symbol, decimals);
             call.dispatch_bypass_filter(origin)
         }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: Config> GenesisConfig<T> {
+    /// Direct implementation of `GenesisBuild::build_storage`.
+    ///
+    /// Kept in order not to break dependency.
+    pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
+        <Self as frame_support::traits::GenesisBuild<T>>::build_storage(self)
+    }
+
+    /// Direct implementation of `GenesisBuild::assimilate_storage`.
+    ///
+    /// Kept in order not to break dependency.
+    pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
+        <Self as frame_support::traits::GenesisBuild<T>>::assimilate_storage(self, storage)
     }
 }
