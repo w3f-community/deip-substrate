@@ -32,6 +32,9 @@
 
 pub mod traits;
 
+pub mod serializable;
+pub use serializable::{AssetBalance as SerializableAssetBalance, AssetId as SerializableAssetId};
+
 #[doc(inline)]
 pub use pallet::*;
 
@@ -41,17 +44,23 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::{traits::UnfilteredDispatchable, transactional};
     use frame_system::{pallet_prelude::*, RawOrigin};
-    use sp_runtime::traits::{StaticLookup, Zero};
+    use sp_runtime::traits::{One, StaticLookup, Zero};
     use sp_std::{prelude::*, vec};
+
+    #[cfg(feature = "std")]
+    use frame_support::traits::GenesisBuild;
 
     use pallet_assets::WeightInfo;
 
     use super::traits::DeipProjectsInfo;
 
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-    type DeipProjectIdOf<T> = <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
-    type AssetsAssetIdOf<T> = <T as pallet_assets::Config>::AssetId;
-    type AssetsBalanceOf<T> = <T as pallet_assets::Config>::Balance;
+    type DeipProjectIdOf<T> =
+        <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
+    type DeipInvestmentIdOf<T> =
+        <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::InvestmentId;
+    pub(crate) type AssetsAssetIdOf<T> = <T as pallet_assets::Config>::AssetId;
+    pub(crate) type AssetsBalanceOf<T> = <T as pallet_assets::Config>::Balance;
     type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
 
     #[pallet::config]
@@ -86,6 +95,67 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type ProjectIdByAssetId<T: Config> =
         StorageMap<_, Identity, AssetsAssetIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
+
+    #[pallet::storage]
+    pub(super) type CoreAssetId<T> = StorageValue<_, AssetsAssetIdOf<T>, ValueQuery>;
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub core_asset_admin: AccountIdOf<T>,
+        pub core_asset_id: super::serializable::AssetId<T>,
+        pub balances: Vec<(AccountIdOf<T>, super::serializable::AssetBalance<T>)>,
+    }
+
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> Self {
+            Self {
+                core_asset_admin: Default::default(),
+                core_asset_id: Default::default(),
+                balances: Default::default(),
+            }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {
+            CoreAssetId::<T>::put(self.core_asset_id.0);
+
+            let admin_source = T::Lookup::unlookup(self.core_asset_admin.clone());
+            let call = pallet_assets::Call::<T>::create(
+                self.core_asset_id.0,
+                admin_source,
+                u32::MAX,
+                One::one(),
+            );
+            let result = call
+                .dispatch_bypass_filter(RawOrigin::Signed(self.core_asset_admin.clone()).into());
+            assert!(result.is_ok());
+
+            // ensure no duplicates exist.
+            let endowed_accounts = self
+                .balances
+                .iter()
+                .map(|(x, _)| x)
+                .cloned()
+                .collect::<std::collections::BTreeSet<_>>();
+
+            assert!(
+                endowed_accounts.len() == self.balances.len(),
+                "duplicate balances in genesis."
+            );
+
+            for (ref who, amount) in &self.balances {
+                let who_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
+                let call = pallet_assets::Call::<T>::mint(self.core_asset_id.0, who_source, amount.0);
+                let result = call.dispatch_bypass_filter(
+                    RawOrigin::Signed(self.core_asset_admin.clone()).into(),
+                );
+                assert!(result.is_ok());
+            }
+        }
+    }
 
     impl<T: Config> Pallet<T> {
         pub fn project_key(id: &DeipProjectIdOf<T>) -> T::AccountId {
