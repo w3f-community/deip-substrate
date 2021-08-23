@@ -89,6 +89,8 @@ pub mod pallet {
         ProjectSecurityTokenCannotBeBurned,
         ProjectSecurityTokenCannotBeFreezed,
         ProjectSecurityTokenAccountCannotBeFreezed,
+        ReservedAssetCannotBeFreezed,
+        ReservedAssetAccountCannotBeFreezed,
     }
 
     #[pallet::storage]
@@ -103,8 +105,8 @@ pub mod pallet {
     pub(super) type CoreAssetId<T> = StorageValue<_, AssetsAssetIdOf<T>, ValueQuery>;
 
     #[pallet::storage]
-    pub(super) type InvestmentsByAssetId<T: Config> =
-        StorageMap<_, Identity, AssetsAssetIdOf<T>, DeipInvestmentIdOf<T>, OptionQuery>;
+    pub(super) type InvestmentByAssetId<T: Config> =
+        StorageMap<_, Identity, AssetsAssetIdOf<T>, Vec<DeipInvestmentIdOf<T>>, OptionQuery>;
 
     #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
     pub(super) struct Investment<AccountId, AssetId> {
@@ -239,8 +241,21 @@ pub mod pallet {
                 }
 
                 assets_to_reserve.push(*asset);
-                InvestmentsByAssetId::<T>::insert(*asset, id.clone());
+
+                InvestmentByAssetId::<T>::mutate_exists(*asset, |investments| {
+                    match investments.as_mut() {
+                        None => *investments = Some(vec![id.clone()]),
+                        Some(c) => c.push(id.clone()),
+                    };
+                });
             }
+
+            InvestmentByAssetId::<T>::mutate_exists(asset_to_raise, |investments| {
+                match investments.as_mut() {
+                    None => *investments = Some(vec![id.clone()]),
+                    Some(c) => c.push(id.clone()),
+                };
+            });
 
             InvestmentMap::<T>::insert(
                 id.clone(),
@@ -271,10 +286,24 @@ pub mod pallet {
             let id_account = Self::investment_key(&id);
             let creator_source = <T::Lookup as StaticLookup>::unlookup(info.creator.clone());
 
-            let transfer_asset = |asset_id: &T::AssetId| -> Result<(), ()> {
+            for asset_id in info.assets.iter().chain(&[info.asset_id]) {
+                InvestmentByAssetId::<T>::mutate_exists(*asset_id, |maybe_investments| {
+                    let investments = maybe_investments
+                        .as_mut()
+                        .expect("checked in transactionally_reserve");
+                    let index = investments
+                        .iter()
+                        .position(|a| *a == id)
+                        .expect("checked in transactionally_reserve");
+                    investments.remove(index);
+                    if investments.is_empty() {
+                        *maybe_investments = None;
+                    }
+                });
+
                 let amount = pallet_assets::Module::<T>::balance(*asset_id, id_account.clone());
                 if amount.is_zero() {
-                    return Ok(());
+                    continue;
                 }
 
                 let call =
@@ -282,21 +311,8 @@ pub mod pallet {
                 let result =
                     call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
                 if result.is_err() {
-                    return Err(());
-                }
-
-                Ok(())
-            };
-
-            for asset_id in &info.assets {
-                InvestmentsByAssetId::<T>::remove(asset_id);
-                if transfer_asset(asset_id).is_err() {
                     return Err(UnreserveError::AssetTransferFailed(*asset_id));
                 }
-            }
-
-            if transfer_asset(&info.asset_id).is_err() {
-                return Err(UnreserveError::AssetTransferFailed(info.asset_id));
             }
 
             T::Currency::settle(
@@ -468,6 +484,11 @@ pub mod pallet {
                 Error::<T>::ProjectSecurityTokenAccountCannotBeFreezed
             );
 
+            ensure!(
+                !InvestmentByAssetId::<T>::contains_key(id),
+                Error::<T>::ReservedAssetAccountCannotBeFreezed
+            );
+
             let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
             let call = pallet_assets::Call::<T>::freeze(id, who_source);
             call.dispatch_bypass_filter(origin)
@@ -492,6 +513,11 @@ pub mod pallet {
             ensure!(
                 !ProjectIdByAssetId::<T>::contains_key(id),
                 Error::<T>::ProjectSecurityTokenCannotBeFreezed
+            );
+
+            ensure!(
+                !InvestmentByAssetId::<T>::contains_key(id),
+                Error::<T>::ReservedAssetCannotBeFreezed
             );
 
             let call = pallet_assets::Call::<T>::freeze_asset(id);
