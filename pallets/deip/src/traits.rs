@@ -23,9 +23,9 @@ pub trait DeipAssetSystem<AccountId> {
         security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
     ) -> Result<(), ReserveError<Self::AssetId>>;
 
-    /// Transfers all assets currently owned by `project_id` to `account` in
-    /// a transactional way.
-    fn transactionally_unreserve(project_id: ProjectId, account: &AccountId) -> Result<(), ()>;
+    /// Transfers all assets currently owned by `id` to the account, used in
+    /// transactionally_reserve, in a transactional way.
+    fn transactionally_unreserve(id: InvestmentId) -> Result<(), UnreserveError<Self::AssetId>>;
 
     /// Transfers `amount` of assets `id` owned by `project_id` to `who`.
     fn transfer(

@@ -47,7 +47,7 @@ pub mod pallet {
         transactional,
     };
     use frame_system::{pallet_prelude::*, RawOrigin};
-    use sp_runtime::traits::{One, StaticLookup, Zero};
+    use sp_runtime::traits::{One, StaticLookup};
     use sp_std::{prelude::*, vec};
 
     #[cfg(feature = "std")]
@@ -107,7 +107,7 @@ pub mod pallet {
         StorageMap<_, Identity, AssetsAssetIdOf<T>, DeipInvestmentIdOf<T>, OptionQuery>;
 
     #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
-    struct Investment<AccountId, AssetId> {
+    pub(super) struct Investment<AccountId, AssetId> {
         creator: AccountId,
         assets: Vec<AssetId>,
     }
@@ -205,60 +205,90 @@ pub mod pallet {
             account: &T::AccountId,
             id: DeipInvestmentIdOf<T>,
             security_tokens_on_sale: &[(T::AssetId, T::Balance)],
-        ) -> Result<(), deip_assets_error::ReserveError> {
+        ) -> Result<(), deip_assets_error::ReserveError<T::AssetId>> {
             use deip_assets_error::ReserveError;
 
+            ensure!(
+                !InvestmentMap::<T>::contains_key(id.clone()),
+                ReserveError::AlreadyReserved
+            );
+
             let id_account = Self::investment_key(&id);
-            let id_source = <T::Lookup as StaticLookup>::unlookup(id_account);
+            let id_source = <T::Lookup as StaticLookup>::unlookup(id_account.clone());
 
             let reserved = T::Currency::withdraw(
                 account,
                 T::Currency::minimum_balance(),
-                WithdrawReasons.RESERVE,
+                WithdrawReasons::RESERVE,
                 ExistenceRequirement::AllowDeath,
             )
             .map_err(|_| ReserveError::NotEnoughBalance)?;
 
             T::Currency::resolve_creating(&id_account, reserved);
 
+            let mut assets_to_reserve =
+                Vec::<T::AssetId>::with_capacity(security_tokens_on_sale.len());
+
             for (asset, amount) in security_tokens_on_sale {
                 let call = pallet_assets::Call::<T>::transfer(*asset, id_source.clone(), *amount);
                 let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
                 if result.is_err() {
-                    return Err(ReserveError::NotEnoughAsset);
+                    return Err(ReserveError::AssetTransferFailed(*asset));
                 }
+
+                assets_to_reserve.push(*asset);
+                InvestmentsByAssetId::<T>::insert(*asset, id.clone());
             }
+
+            InvestmentMap::<T>::insert(
+                id.clone(),
+                Investment {
+                    creator: account.clone(),
+                    assets: assets_to_reserve,
+                },
+            );
 
             Ok(())
         }
 
-        /// This could fail if the new project team is a zombie in pallet_assets-terms.
         #[transactional]
         pub fn transactionally_unreserve(
-            project_id: DeipProjectIdOf<T>,
-            account: &T::AccountId,
-        ) -> Result<(), ()> {
-            let project_account = Self::project_key(&project_id);
-            let account_source = <T::Lookup as StaticLookup>::unlookup(account.clone());
+            id: DeipInvestmentIdOf<T>,
+        ) -> Result<(), deip_assets_error::UnreserveError<T::AssetId>> {
+            use deip_assets_error::UnreserveError;
 
-            let security_tokens = match AssetIdByProjectId::<T>::try_get(project_id) {
-                Err(_) => return Err(()),
-                Ok(c) => c,
+            let info = match InvestmentMap::<T>::take(id.clone()) {
+                Some(i) => i,
+                None => return Err(UnreserveError::NoSuchInvestment),
             };
 
-            for id in &security_tokens {
-                let amount = pallet_assets::Module::<T>::balance(*id, project_account.clone());
-                if amount.is_zero() {
-                    continue;
+            let deposited =
+                T::Currency::deposit_creating(&info.creator, T::Currency::minimum_balance());
+
+            let id_account = Self::investment_key(&id);
+            let creator_source = <T::Lookup as StaticLookup>::unlookup(info.creator.clone());
+
+            for asset_id in &info.assets {
+                let amount = pallet_assets::Module::<T>::balance(*asset_id, id_account.clone());
+
+                let call =
+                    pallet_assets::Call::<T>::transfer(*asset_id, creator_source.clone(), amount);
+                let result =
+                    call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
+                if result.is_err() {
+                    return Err(UnreserveError::AssetTransferFailed(*asset_id));
                 }
 
-                let call = pallet_assets::Call::<T>::transfer(*id, account_source.clone(), amount);
-                let result =
-                    call.dispatch_bypass_filter(RawOrigin::Signed(project_account.clone()).into());
-                if result.is_err() {
-                    return Err(());
-                }
+                InvestmentsByAssetId::<T>::remove(asset_id);
             }
+
+            T::Currency::settle(
+                &id_account,
+                deposited,
+                WithdrawReasons::TRANSFER,
+                ExistenceRequirement::AllowDeath,
+            )
+            .unwrap_or_else(|_| panic!("should be reserved in transactionally_reserve"));
 
             Ok(())
         }
