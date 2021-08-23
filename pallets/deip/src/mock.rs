@@ -98,7 +98,7 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
         security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
         asset: Self::AssetId,
     ) -> Result<(), ReserveError<Self::AssetId>> {
-		DeipAssets::transactionally_reserve(account, id, security_tokens_on_sale)
+		DeipAssets::transactionally_reserve(account, id, security_tokens_on_sale, asset)
 	}
 
 	fn transactionally_unreserve(id: super::InvestmentId) -> Result<(), UnreserveError<Self::AssetId>> {
@@ -119,7 +119,7 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
         id: super::InvestmentId,
         amount: Self::Balance,
     ) -> Result<(), UnreserveError<Self::AssetId>> {
-		todo!();
+		DeipAssets::transfer_to_reserved(who, id, amount)
 	}
 }
 

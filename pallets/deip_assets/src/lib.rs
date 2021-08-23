@@ -110,6 +110,7 @@ pub mod pallet {
     pub(super) struct Investment<AccountId, AssetId> {
         creator: AccountId,
         assets: Vec<AssetId>,
+        asset_id: AssetId,
     }
 
     #[pallet::storage]
@@ -205,6 +206,7 @@ pub mod pallet {
             account: &T::AccountId,
             id: DeipInvestmentIdOf<T>,
             security_tokens_on_sale: &[(T::AssetId, T::Balance)],
+            asset_to_raise: T::AssetId,
         ) -> Result<(), deip_assets_error::ReserveError<T::AssetId>> {
             use deip_assets_error::ReserveError;
 
@@ -245,6 +247,7 @@ pub mod pallet {
                 Investment {
                     creator: account.clone(),
                     assets: assets_to_reserve,
+                    asset_id: asset_to_raise,
                 },
             );
 
@@ -268,11 +271,10 @@ pub mod pallet {
             let id_account = Self::investment_key(&id);
             let creator_source = <T::Lookup as StaticLookup>::unlookup(info.creator.clone());
 
-            for asset_id in &info.assets {
-                InvestmentsByAssetId::<T>::remove(asset_id);
+            let transfer_asset = |asset_id: &T::AssetId| -> Result<(), ()> {
                 let amount = pallet_assets::Module::<T>::balance(*asset_id, id_account.clone());
                 if amount.is_zero() {
-                    continue;
+                    return Ok(());
                 }
 
                 let call =
@@ -280,8 +282,21 @@ pub mod pallet {
                 let result =
                     call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
                 if result.is_err() {
+                    return Err(());
+                }
+
+                Ok(())
+            };
+
+            for asset_id in &info.assets {
+                InvestmentsByAssetId::<T>::remove(asset_id);
+                if transfer_asset(asset_id).is_err() {
                     return Err(UnreserveError::AssetTransferFailed(*asset_id));
                 }
+            }
+
+            if transfer_asset(&info.asset_id).is_err() {
+                return Err(UnreserveError::AssetTransferFailed(info.asset_id));
             }
 
             T::Currency::settle(
@@ -315,6 +330,30 @@ pub mod pallet {
             let result = call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
             if result.is_err() {
                 return Err(UnreserveError::AssetTransferFailed(asset));
+            }
+
+            Ok(())
+        }
+
+        pub fn transfer_to_reserved(
+            who: &T::AccountId,
+            id: DeipInvestmentIdOf<T>,
+            amount: T::Balance,
+        ) -> Result<(), deip_assets_error::UnreserveError<T::AssetId>> {
+            use deip_assets_error::UnreserveError;
+
+            let info = match InvestmentMap::<T>::try_get(id.clone()) {
+                Ok(i) => i,
+                Err(_) => return Err(UnreserveError::NoSuchInvestment),
+            };
+
+            let id_account = Self::investment_key(&id);
+            let id_source = <T::Lookup as StaticLookup>::unlookup(id_account);
+
+            let call = pallet_assets::Call::<T>::transfer(info.asset_id, id_source, amount);
+            let result = call.dispatch_bypass_filter(RawOrigin::Signed(who.clone()).into());
+            if result.is_err() {
+                return Err(UnreserveError::AssetTransferFailed(info.asset_id));
             }
 
             Ok(())
