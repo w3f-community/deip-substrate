@@ -2,6 +2,7 @@ use crate::*;
 
 use codec::HasCompact;
 use sp_runtime::traits::AtLeast32BitUnsigned;
+use deip_assets_error::*;
 
 pub trait DeipAssetSystem<AccountId> {
     /// The units in which asset balances are recorded.
@@ -12,13 +13,15 @@ pub trait DeipAssetSystem<AccountId> {
 
     /// Returns `Some(project_id)` if it is secured with token specified by `id`.
     fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId>;
+
     /// Tries to transfer assets specified by `security_tokens_on_sale` from
-    /// `account` to a specific balance specified by `project_id`.
+    /// `account` to a specific balance identified by `id`.
+    /// Some collateral fee may be locked from `account`.
     fn transactionally_reserve(
         account: &AccountId,
-        project_id: ProjectId,
+        id: InvestmentId,
         security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
-    ) -> Result<(), ()>;
+    ) -> Result<(), ReserveError<Self::AssetId>>;
 
     /// Transfers all assets currently owned by `project_id` to `account` in
     /// a transactional way.

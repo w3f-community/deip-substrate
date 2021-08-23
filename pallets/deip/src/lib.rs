@@ -285,7 +285,6 @@ decl_event! {
         AccountId = <T as frame_system::Config>::AccountId,
         Project = ProjectOf<T>,
         Review = ReviewOf<T>,
-        ProjectTokenSale = ProjectTokenSaleOf<T>,
     {
         // ==== Projects ====
 
@@ -318,8 +317,8 @@ decl_event! {
         /// Event emitted when a review has been created. [BelongsTo, Review]
         ReviewCreated(AccountId, Review),
 
-        /// Event emitted when a token sale for project has been created.
-        ProjectTokenSaleCreated(ProjectId, ProjectTokenSale),
+        /// Event emitted when a simple crowd funding has been created.
+        TokenSaleCreated(InvestmentId),
         /// Event emitted when a token sale for project has been activated.
         ProjectTokenSaleActivated(ProjectId, InvestmentId),
         /// Event emitted when a token sale for project has finished.
@@ -397,16 +396,14 @@ decl_error! {
         /// Access Forbiten
         NoPermission,
 
-        // Project token sale errors
+        // Token sale errors
         TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment,
         TokenSaleEndTimeMustBeLaterStartTime,
         TokenSaleSoftCapMustBeGreaterOrEqualMinimum,
         TokenSaleHardCapShouldBeGreaterOrEqualSoftCap,
-        TokenSaleScheduledAlready,
         TokenSaleAlreadyExists,
         TokenSaleBalanceIsNotEnough,
-        TokenSaleAssetIsNotSecurityToken,
-        TokenSaleProjectNotTokenizedWithSecurityToken,
+        TokenSaleFailedToReserveAsset,
         TokenSaleAssetAmountMustBePositive,
         TokenSaleSecurityTokenNotSpecified,
         TokenSaleNotFound,
@@ -541,11 +538,12 @@ decl_module! {
         #[weight = 10_000]
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
-            project_id: ProjectId,
-            investment_type: FundingModel<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+            creator: T::DeipAccountId,
+            shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
+            funding_model: FundingModel<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::create_investment_opportunity_impl(account, external_id, project_id, investment_type)
+            Self::create_investment_opportunity_impl(account, external_id, creator.into(), shares, funding_model)
         }
 
         #[weight = 10_000]

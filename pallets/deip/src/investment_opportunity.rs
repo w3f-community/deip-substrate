@@ -1,5 +1,6 @@
 use crate::traits::DeipAssetSystem;
 use crate::*;
+use deip_assets_error::*;
 
 use sp_runtime::{
     traits::{Saturating, Zero},
@@ -40,8 +41,8 @@ pub enum InvestmentOpportunity<Moment, AssetId, AssetBalance> {
         soft_cap: AssetBalance,
         /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
         hard_cap: AssetBalance,
-        /// specifies how many tokens of the project are intended to sale.
-        security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
+        // specifies how many tokens of the project are intended to sale.
+        // security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
     },
 }
 
@@ -54,8 +55,6 @@ pub enum InvestmentOpportunity<Moment, AssetId, AssetBalance> {
 pub struct Info<Moment, AssetId, AssetBalance> {
     /// Reference for external world and uniques control
     pub external_id: Id,
-    /// Reference to the Project
-    pub project_id: ProjectId,
     /// When the sale starts
     pub start_time: Moment,
     /// When it supposed to end
@@ -74,27 +73,28 @@ impl<T: Config> Module<T> {
     pub(super) fn create_investment_opportunity_impl(
         account: AccountIdOf<T>,
         external_id: Id,
-        project_id: ProjectId,
-        investment_type: InvestmentOpportunity<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+        creator: AccountIdOf<T>,
+        shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
+        funding_model: InvestmentOpportunity<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
     ) -> DispatchResult {
-        match investment_type {
+        ensure!(account == creator, Error::<T>::NoPermission);
+
+        match funding_model {
             InvestmentOpportunity::ProjectTokenSale {
                 start_time,
                 end_time,
                 asset_id,
                 soft_cap,
                 hard_cap,
-                security_tokens_on_sale,
             } => Self::create_project_token_sale_impl(
                 account,
                 external_id,
-                project_id,
                 start_time,
                 end_time,
                 asset_id,
                 soft_cap,
                 hard_cap,
-                security_tokens_on_sale,
+                shares,
             ),
         }
     }
@@ -102,7 +102,6 @@ impl<T: Config> Module<T> {
     pub(super) fn create_project_token_sale_impl(
         account: T::AccountId,
         external_id: Id,
-        project_id: ProjectId,
         start_time: T::Moment,
         end_time: T::Moment,
         asset_id: DeipAssetIdOf<T>,
@@ -144,55 +143,27 @@ impl<T: Config> Module<T> {
                 Error::<T>::TokenSaleWrongAssetId
             );
 
-            match T::AssetSystem::try_get_tokenized_project(&security_token_id) {
-                None => return Err(Error::<T>::TokenSaleAssetIsNotSecurityToken.into()),
-                Some(id) => ensure!(
-                    id == project_id,
-                    Error::<T>::TokenSaleProjectNotTokenizedWithSecurityToken
-                ),
-            };
-
             ensure!(
                 !asset_amount.is_zero(),
                 Error::<T>::TokenSaleAssetAmountMustBePositive
             );
         }
 
-        let projects = Projects::<T>::get();
-        match projects.binary_search_by_key(&project_id, |&(p, _)| p) {
-            Ok(index) => {
-                if projects[index].1 != account {
-                    return Err(Error::<T>::ProjectNotBelongToTeam.into());
-                }
-            }
-            Err(_) => return Err(Error::<T>::NoSuchProject.into()),
-        }
-
-        let mut token_sales = ProjectTokenSaleByProjectIdStatus::get();
-        if let Ok(_) = token_sales.binary_search_by_key(
-            &(project_id, ProjectTokenSaleStatus::Active),
-            |&(p, s, _)| (p, s),
-        ) {
-            return Err(Error::<T>::TokenSaleScheduledAlready.into());
-        }
-
-        let index = match token_sales.binary_search_by_key(
-            &(project_id, ProjectTokenSaleStatus::Inactive),
-            |&(p, s, _)| (p, s),
-        ) {
-            Ok(_) => return Err(Error::<T>::TokenSaleScheduledAlready.into()),
-            Err(i) => i,
-        };
-
-        if let Err(_) =
-            T::AssetSystem::transactionally_reserve(&account, project_id, &security_tokens_on_sale)
+        if let Err(e) =
+            T::AssetSystem::transactionally_reserve(&account, external_id, &security_tokens_on_sale)
         {
-            return Err(Error::<T>::TokenSaleBalanceIsNotEnough.into());
+            match e {
+                ReserveError::<DeipAssetIdOf<T>>::NotEnoughBalance => {
+                    return Err(Error::<T>::TokenSaleBalanceIsNotEnough.into())
+                }
+                ReserveError::<DeipAssetIdOf<T>>::AssetTransferFailed(_) => {
+                    return Err(Error::<T>::TokenSaleFailedToReserveAsset.into())
+                }
+            };
         }
 
-        let new_project_token_sale = ProjectTokenSale {
+        let new_project_token_sale = Info {
             external_id: external_id,
-            project_id: project_id,
             start_time: start_time,
             end_time: end_time,
             asset_id,
@@ -202,14 +173,9 @@ impl<T: Config> Module<T> {
             ..Default::default()
         };
 
-        token_sales.insert(index, (project_id, Status::Inactive, external_id));
-        ProjectTokenSaleByProjectIdStatus::put(token_sales);
         ProjectTokenSaleMap::<T>::insert(external_id, new_project_token_sale.clone());
 
-        Self::deposit_event(RawEvent::ProjectTokenSaleCreated(
-            project_id,
-            new_project_token_sale,
-        ));
+        Self::deposit_event(RawEvent::TokenSaleCreated(external_id));
 
         Ok(())
     }

@@ -42,7 +42,10 @@ pub use pallet::*;
 #[doc(hidden)]
 pub mod pallet {
     use frame_support::pallet_prelude::*;
-    use frame_support::{traits::UnfilteredDispatchable, transactional};
+    use frame_support::{
+        traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
+        transactional,
+    };
     use frame_system::{pallet_prelude::*, RawOrigin};
     use sp_runtime::traits::{One, StaticLookup, Zero};
     use sp_std::{prelude::*, vec};
@@ -98,6 +101,25 @@ pub mod pallet {
 
     #[pallet::storage]
     pub(super) type CoreAssetId<T> = StorageValue<_, AssetsAssetIdOf<T>, ValueQuery>;
+
+    #[pallet::storage]
+    pub(super) type InvestmentsByAssetId<T: Config> =
+        StorageMap<_, Identity, AssetsAssetIdOf<T>, DeipInvestmentIdOf<T>, OptionQuery>;
+
+    #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+    struct Investment<AccountId, AssetId> {
+        creator: AccountId,
+        assets: Vec<AssetId>,
+    }
+
+    #[pallet::storage]
+    pub(super) type InvestmentMap<T: Config> = StorageMap<
+        _,
+        Identity,
+        DeipInvestmentIdOf<T>,
+        Investment<AccountIdOf<T>, AssetsAssetIdOf<T>>,
+        OptionQuery,
+    >;
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
@@ -165,6 +187,12 @@ pub mod pallet {
             T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
         }
 
+        pub fn investment_key(id: &DeipInvestmentIdOf<T>) -> T::AccountId {
+            let entropy =
+                (b"deip/investments/", id.as_ref()).using_encoded(sp_io::hashing::blake2_256);
+            T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
+        }
+
         pub fn try_get_tokenized_project(id: &T::AssetId) -> Option<DeipProjectIdOf<T>> {
             match ProjectIdByAssetId::<T>::try_get(*id) {
                 Ok(project_id) => Some(project_id),
@@ -175,17 +203,29 @@ pub mod pallet {
         #[transactional]
         pub fn transactionally_reserve(
             account: &T::AccountId,
-            project_id: DeipProjectIdOf<T>,
+            id: DeipInvestmentIdOf<T>,
             security_tokens_on_sale: &[(T::AssetId, T::Balance)],
-        ) -> Result<(), ()> {
-            let project_account = Self::project_key(&project_id);
-            let project_source = <T::Lookup as StaticLookup>::unlookup(project_account);
+        ) -> Result<(), deip_assets_error::ReserveError> {
+            use deip_assets_error::ReserveError;
 
-            for (id, amount) in security_tokens_on_sale {
-                let call = pallet_assets::Call::<T>::transfer(*id, project_source.clone(), *amount);
+            let id_account = Self::investment_key(&id);
+            let id_source = <T::Lookup as StaticLookup>::unlookup(id_account);
+
+            let reserved = T::Currency::withdraw(
+                account,
+                T::Currency::minimum_balance(),
+                WithdrawReasons.RESERVE,
+                ExistenceRequirement::AllowDeath,
+            )
+            .map_err(|_| ReserveError::NotEnoughBalance)?;
+
+            T::Currency::resolve_creating(&id_account, reserved);
+
+            for (asset, amount) in security_tokens_on_sale {
+                let call = pallet_assets::Call::<T>::transfer(*asset, id_source.clone(), *amount);
                 let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
                 if result.is_err() {
-                    return Err(());
+                    return Err(ReserveError::NotEnoughAsset);
                 }
             }
 

@@ -1140,6 +1140,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "deip-assets-error"
+version = "0.1.0"
+
+[[package]]
 name = "deip-rpc"
 version = "1.0.0"
 dependencies = [
@@ -3812,6 +3816,7 @@ dependencies = [
 name = "pallet-deip"
 version = "3.0.0"
 dependencies = [
+ "deip-assets-error",
  "frame-support",
  "frame-system",
  "pallet-assets",
@@ -3831,6 +3836,7 @@ dependencies = [
 name = "pallet-deip-assets"
 version = "3.0.0"
 dependencies = [
+ "deip-assets-error",
  "frame-support",
  "frame-system",
  "pallet-assets",

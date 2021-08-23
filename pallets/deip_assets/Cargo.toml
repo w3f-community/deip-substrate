@@ -26,6 +26,7 @@ sp-runtime = { version = '3.0.0', default-features = false }
 serde = { version = "1.0.123", optional = true, features = ["derive"]}
 pallet-assets =  { version = "3.0.0", default-features = false }
 sp-io = { default-features = false, version = '3.0.0' }
+deip-assets-error = { path = "../../common/deip_assets_error", default-features = false }
 
 [dev-dependencies]
 sp-runtime = { default-features = false, version = '3.0.0' }
