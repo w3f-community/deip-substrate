@@ -196,13 +196,6 @@ pub mod pallet {
             T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
         }
 
-        pub fn try_get_tokenized_project(id: &T::AssetId) -> Option<DeipProjectIdOf<T>> {
-            match ProjectIdByAssetId::<T>::try_get(*id) {
-                Ok(project_id) => Some(project_id),
-                Err(_) => None,
-            }
-        }
-
         #[transactional]
         pub fn transactionally_reserve(
             account: &T::AccountId,

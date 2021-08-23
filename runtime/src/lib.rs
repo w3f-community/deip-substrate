@@ -285,21 +285,17 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 	type Balance = u64;
 	type AssetId = AssetId;
 
-	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
-		DeipAssets::try_get_tokenized_project(id)
-	}
-
 	fn transactionally_reserve(
 		account: &AccountId,
 		id: InvestmentId,
 		shares: &[(Self::AssetId, Self::Balance)],
 		asset: Self::AssetId,
 	) -> Result<(), deip_assets_error::ReserveError<Self::AssetId>> {
-		unimplemented!();
+		DeipAssets::transactionally_reserve(account, id, shares, asset)
 	}
 
 	fn transactionally_unreserve(id: InvestmentId) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-		unimplemented!();
+		DeipAssets::transactionally_unreserve(id)
 	}
 
 	fn transfer_from_reserved(
@@ -308,7 +304,7 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 		asset: Self::AssetId,
 		amount: Self::Balance,
 	) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-		unimplemented!();
+		DeipAssets::transfer_from_reserved(id, who, asset, amount)
 	}
 
 	fn transfer_to_reserved(
@@ -316,7 +312,7 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 		id: InvestmentId,
 		amount: Self::Balance,
 	) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-		unimplemented!();
+		DeipAssets::transfer_to_reserved(who, id, amount)
 	}
 }
 

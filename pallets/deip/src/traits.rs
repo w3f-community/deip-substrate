@@ -11,9 +11,6 @@ pub trait DeipAssetSystem<AccountId> {
     /// The arithmetic type of asset identifier.
     type AssetId: Member + Parameter + Default + Copy + HasCompact;
 
-    /// Returns `Some(project_id)` if it is secured with token specified by `id`.
-    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId>;
-
     /// Tries to transfer assets specified by `shares` from
     /// `account` to a specific balance identified by `id`.
     /// Some collateral fee may be locked from `account`.
