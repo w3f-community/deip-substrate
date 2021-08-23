@@ -27,11 +27,11 @@ pub trait DeipAssetSystem<AccountId> {
     /// transactionally_reserve, in a transactional way.
     fn transactionally_unreserve(id: InvestmentId) -> Result<(), UnreserveError<Self::AssetId>>;
 
-    /// Transfers `amount` of assets `id` owned by `project_id` to `who`.
+    /// Transfers `amount` of assets `id` owned by account specified with `id` to `who`.
     fn transfer(
-        project_id: ProjectId,
+        id: InvestmentId,
         who: &AccountId,
-        id: Self::AssetId,
+        asset: Self::AssetId,
         amount: Self::Balance,
-    ) -> Result<(), ()>;
+    ) -> Result<(), UnreserveError<Self::AssetId>>;
 }

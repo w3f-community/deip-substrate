@@ -47,7 +47,7 @@ pub mod pallet {
         transactional,
     };
     use frame_system::{pallet_prelude::*, RawOrigin};
-    use sp_runtime::traits::{One, StaticLookup};
+    use sp_runtime::traits::{One, StaticLookup, Zero};
     use sp_std::{prelude::*, vec};
 
     #[cfg(feature = "std")]
@@ -269,7 +269,11 @@ pub mod pallet {
             let creator_source = <T::Lookup as StaticLookup>::unlookup(info.creator.clone());
 
             for asset_id in &info.assets {
+                InvestmentsByAssetId::<T>::remove(asset_id);
                 let amount = pallet_assets::Module::<T>::balance(*asset_id, id_account.clone());
+                if amount.is_zero() {
+                    continue;
+                }
 
                 let call =
                     pallet_assets::Call::<T>::transfer(*asset_id, creator_source.clone(), amount);
@@ -278,8 +282,6 @@ pub mod pallet {
                 if result.is_err() {
                     return Err(UnreserveError::AssetTransferFailed(*asset_id));
                 }
-
-                InvestmentsByAssetId::<T>::remove(asset_id);
             }
 
             T::Currency::settle(
@@ -293,20 +295,26 @@ pub mod pallet {
             Ok(())
         }
 
-        pub fn transfer_from_project(
-            project_id: DeipProjectIdOf<T>,
+        pub fn transfer_from_reserved(
+            id: DeipInvestmentIdOf<T>,
             who: &T::AccountId,
-            id: T::AssetId,
+            asset: T::AssetId,
             amount: T::Balance,
-        ) -> Result<(), ()> {
-            let project_account = Self::project_key(&project_id);
-            let account_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
+        ) -> Result<(), deip_assets_error::UnreserveError<T::AssetId>> {
+            use deip_assets_error::UnreserveError;
 
-            let call = pallet_assets::Call::<T>::transfer(id, account_source, amount);
-            let result =
-                call.dispatch_bypass_filter(RawOrigin::Signed(project_account.clone()).into());
+            ensure!(
+                InvestmentMap::<T>::contains_key(id.clone()),
+                UnreserveError::NoSuchInvestment
+            );
+
+            let id_account = Self::investment_key(&id);
+            let who_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
+
+            let call = pallet_assets::Call::<T>::transfer(asset, who_source, amount);
+            let result = call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
             if result.is_err() {
-                return Err(());
+                return Err(UnreserveError::AssetTransferFailed(asset));
             }
 
             Ok(())
