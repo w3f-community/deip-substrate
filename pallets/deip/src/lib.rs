@@ -320,11 +320,11 @@ decl_event! {
         /// Event emitted when a simple crowd funding has been created.
         TokenSaleCreated(InvestmentId),
         /// Event emitted when a token sale for project has been activated.
-        ProjectTokenSaleActivated(ProjectId, InvestmentId),
+        TokenSaleActivated(InvestmentId),
         /// Event emitted when a token sale for project has finished.
-        ProjectTokenSaleFinished(ProjectId, InvestmentId),
+        TokenSaleFinished(InvestmentId),
         /// Event emitted when a token sale for project has expired.
-        ProjectTokenSaleExpired(ProjectId, InvestmentId),
+        TokenSaleExpired(InvestmentId),
         /// Event emitted when DAO contributed to the project token sale
         ProjectTokenSaleContributed(InvestmentId, AccountId),
     }

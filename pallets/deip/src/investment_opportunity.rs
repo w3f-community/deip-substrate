@@ -149,15 +149,21 @@ impl<T: Config> Module<T> {
             );
         }
 
-        if let Err(e) =
-            T::AssetSystem::transactionally_reserve(&account, external_id, &security_tokens_on_sale)
-        {
+        if let Err(e) = T::AssetSystem::transactionally_reserve(
+            &account,
+            external_id,
+            &security_tokens_on_sale,
+            asset_id,
+        ) {
             match e {
                 ReserveError::<DeipAssetIdOf<T>>::NotEnoughBalance => {
                     return Err(Error::<T>::TokenSaleBalanceIsNotEnough.into())
                 }
                 ReserveError::<DeipAssetIdOf<T>>::AssetTransferFailed(_) => {
                     return Err(Error::<T>::TokenSaleFailedToReserveAsset.into())
+                }
+                ReserveError::<DeipAssetIdOf<T>>::AlreadyReserved => {
+                    return Err(Error::<T>::TokenSaleAlreadyExists.into())
                 }
             };
         }
@@ -217,12 +223,8 @@ impl<T: Config> Module<T> {
                 _ => return Err(Error::<T>::TokenSaleShouldBeInactive.into()),
             };
 
-            Self::update_status_index(sale, Status::Active);
             sale.status = Status::Active;
-            Self::deposit_event(RawEvent::ProjectTokenSaleActivated(
-                sale.project_id,
-                sale_id,
-            ));
+            Self::deposit_event(RawEvent::TokenSaleActivated(sale_id));
 
             Ok(())
         })
@@ -244,7 +246,6 @@ impl<T: Config> Module<T> {
                 _ => return Err(Error::<T>::TokenSaleShouldBeActive.into()),
             };
 
-            Self::update_status_index(sale, Status::Expired);
             sale.status = Status::Expired;
 
             Self::refund_project_token_sale(sale);
@@ -266,7 +267,6 @@ impl<T: Config> Module<T> {
                 _ => return Err(Error::<T>::TokenSaleShouldBeActive.into()),
             };
 
-            Self::update_status_index(sale, Status::Finished);
             sale.status = Status::Finished;
 
             Self::process_project_token_sale_contributions(sale);
@@ -302,83 +302,45 @@ impl<T: Config> Module<T> {
     }
 
     fn update_status(sale: &ProjectTokenSaleOf<T>, new_status: Status) {
-        Self::update_status_index(sale, new_status);
-
         ProjectTokenSaleMap::<T>::mutate_exists(sale.external_id, |maybe_sale| -> () {
             let sale = maybe_sale.as_mut().expect("we keep collections in sync");
             sale.status = new_status;
         });
     }
 
-    fn update_status_index(sale: &ProjectTokenSaleOf<T>, new_status: Status) {
-        let mut token_sales = ProjectTokenSaleByProjectIdStatus::get();
-        match new_status {
-            Status::Inactive => (),
-            Status::Finished | Status::Expired | Status::Active => {
-                let old_index = token_sales
-                    .binary_search_by_key(&(sale.project_id, sale.status), |&(p, t, _)| (p, t))
-                    .expect("we keep collections in sync");
-                token_sales.remove(old_index);
-
-                let index = match token_sales
-                    .binary_search_by_key(&(sale.project_id, new_status), |&(p, t, _)| (p, t))
-                {
-                    Ok(i) => i,
-                    Err(i) => i,
-                };
-
-                token_sales.insert(index, (sale.project_id, new_status, sale.external_id));
-                ProjectTokenSaleByProjectIdStatus::put(token_sales);
-            }
-        }
-    }
-
     fn refund_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
-        let team_id = &ProjectMap::<T>::try_get(sale.project_id)
-            .expect("checked in create method")
-            .team_id;
-
         if let Ok(ref c) = ProjectTokenSaleContributions::<T>::try_get(sale.external_id) {
             for (_, ref contribution) in c {
-                T::AssetSystem::transfer(
-                    sale.project_id,
+                T::AssetSystem::transfer_from_reserved(
+                    sale.external_id,
                     &contribution.owner,
                     sale.asset_id,
                     contribution.amount,
                 )
-                .expect("user's asset should be reserved earlier");
+                .unwrap_or_else(|_| panic!("user's asset should be reserved earlier"));
             }
             ProjectTokenSaleContributions::<T>::remove(sale.external_id);
         }
 
-        T::AssetSystem::transactionally_unreserve(sale.project_id, team_id)
-            .expect("assets should be reserved earlier");
+        T::AssetSystem::transactionally_unreserve(sale.external_id)
+            .unwrap_or_else(|_| panic!("assets should be reserved earlier"));
 
-        Self::deposit_event(RawEvent::ProjectTokenSaleExpired(
-            sale.project_id,
-            sale.external_id,
-        ));
+        Self::deposit_event(RawEvent::TokenSaleExpired(sale.external_id));
     }
 
     fn process_project_token_sale_contributions(sale: &ProjectTokenSaleOf<T>) {
-        T::AssetSystem::transfer(
-            sale.project_id,
-            &ProjectMap::<T>::get(sale.project_id).team_id,
-            sale.asset_id,
-            sale.total_amount,
-        )
-        .expect("total_amount");
-
         let contributions = ProjectTokenSaleContributions::<T>::try_get(sale.external_id)
             .expect("Token sale is about to finish, but there are no contributions?");
-        let mut iter = contributions.iter();
 
-        let (_, ref first_contribution) = iter
-            .next()
-            .expect("Token sale is about to finish, but there are no contributors?");
+        for (asset_id, asset_amount) in &sale.security_tokens_on_sale {
+            let mut amount = asset_amount.clone();
 
-        for (_, ref contribution) in iter {
-            for (asset_id, asset_amount) in &sale.security_tokens_on_sale {
+            let mut iter = contributions.iter();
+            let (_, ref first_contribution) = iter
+                .next()
+                .expect("Token sale is about to finish, but there are no contributors?");
+
+            for (_, ref contribution) in iter {
                 // similiar to frame_support::traits::Imbalance::ration
                 let token_amount = contribution
                     .amount
@@ -390,25 +352,34 @@ impl<T: Config> Module<T> {
                     continue;
                 }
 
-                T::AssetSystem::transfer(
-                    sale.project_id,
+                amount -= token_amount;
+
+                T::AssetSystem::transfer_from_reserved(
+                    sale.external_id,
                     &contribution.owner,
                     *asset_id,
                     token_amount,
                 )
-                .expect("Required token_amount should be reserved");
+                .unwrap_or_else(|_| panic!("Required token_amount should be reserved"));
+            }
+
+            if !amount.is_zero() {
+                T::AssetSystem::transfer_from_reserved(
+                    sale.external_id,
+                    &first_contribution.owner,
+                    *asset_id,
+                    amount,
+                )
+                .unwrap_or_else(|_| panic!("Required token_amount should be reserved"));
             }
         }
 
         // process the remainder
-        T::AssetSystem::transactionally_unreserve(sale.project_id, &first_contribution.owner)
-            .expect("remaining assets should be reserved earlier");
+        T::AssetSystem::transactionally_unreserve(sale.external_id)
+            .unwrap_or_else(|_| panic!("remaining assets should be reserved earlier"));
 
         ProjectTokenSaleContributions::<T>::remove(sale.external_id);
 
-        Self::deposit_event(RawEvent::ProjectTokenSaleFinished(
-            sale.project_id,
-            sale.external_id,
-        ));
+        Self::deposit_event(RawEvent::TokenSaleFinished(sale.external_id));
     }
 }

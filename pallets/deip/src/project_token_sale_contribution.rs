@@ -1,8 +1,8 @@
 use crate::*;
 
+use crate::traits::DeipAssetSystem;
 use sp_runtime::traits::Saturating;
 use sp_std::vec;
-use crate::traits::DeipAssetSystem;
 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -41,12 +41,8 @@ impl<T: Config> Module<T> {
         };
 
         ensure!(
-            T::AssetSystem::transactionally_reserve(
-                &account,
-                sale.project_id,
-                &[(sale.asset_id, amount_to_contribute)]
-            )
-            .is_ok(),
+            T::AssetSystem::transfer_to_reserved(&account, sale.external_id, amount_to_contribute)
+                .is_ok(),
             Error::<T>::ContributionNotEnoughFunds
         );
 
