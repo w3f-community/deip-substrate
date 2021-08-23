@@ -64,10 +64,11 @@ mod mock;
 mod tests;
 
 mod investment_opportunity;
-use investment_opportunity::{Id as InvestmentId,
+use investment_opportunity::{
     Status as ProjectTokenSaleStatus,
     Info as ProjectTokenSale,
     InvestmentOpportunity as FundingModel};
+pub use investment_opportunity::{Id as InvestmentId};
 
 mod project_token_sale_contribution;
 use project_token_sale_contribution::{Contribution as ProjectTokenSaleContribution};

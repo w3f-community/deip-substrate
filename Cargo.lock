@@ -3576,6 +3576,7 @@ dependencies = [
 name = "node-template-runtime"
 version = "3.0.0"
 dependencies = [
+ "deip-assets-error",
  "deip-runtime-api",
  "frame-benchmarking",
  "frame-executive",

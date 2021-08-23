@@ -929,24 +929,20 @@ fn cant_reject_finalized_nda_content_access_request() {
 #[test]
 fn project_token_sale_create_should_fail() {
 	new_test_ext2().execute_with(|| {
-		let (ref project_id, ..) = create_ok_project(None);
-
 		let start_time = pallet_timestamp::Module::<Test>::get();
 		assert_noop!(Deip::create_project_token_sale_impl(DEFAULT_ACCOUNT_ID,
 			H160::random(),
-			*project_id,
 			start_time,
 			start_time + 1,
-			1u32,
+			0u32,
 			100u32.into(),
 			120u32.into(),
 			vec![(0u32.into(), 100u32.into()), (14u32.into(), 200u32.into())]
 		),
-		Error::<Test>::TokenSaleAssetIsNotSecurityToken);
+		Error::<Test>::TokenSaleWrongAssetId);
 
 		assert_noop!(Deip::create_project_token_sale_impl(DEFAULT_ACCOUNT_ID,
 			H160::random(),
-			*project_id,
 			start_time,
 			start_time + 1,
 			0u32,
@@ -992,7 +988,6 @@ fn project_token_sale_hard_cap_reached() {
 		assert_ok!(Deip::create_project_token_sale_impl(
 			DEFAULT_ACCOUNT_ID,
 			sale_id,
-			*project_id,
 			start_time,
 			start_time + 100,
 			base_asset_id,
@@ -1083,7 +1078,6 @@ fn project_token_sale_expired() {
 		assert_ok!(Deip::create_project_token_sale_impl(
 			DEFAULT_ACCOUNT_ID,
 			sale_id,
-			*project_id,
 			start_time,
 			start_time + duration_in_blocks * BLOCK_TIME,
 			base_asset_id,
