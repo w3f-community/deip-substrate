@@ -1155,3 +1155,142 @@ fn project_token_sale_expired() {
 		assert_eq!(Assets::balance(eur_id, *account_id), eur_total);
 	})
 }
+
+#[test]
+fn two_simultaneous_token_sale_expired() {
+	let mut ext = new_test_ext2();
+	let state = offchainify(&mut ext, 2);
+	ext.execute_with(|| {
+		let base_asset_id = 3u32;
+		let base_asset_total = 120_000u64;
+		create_issue_asset(DEFAULT_ACCOUNT_ID, base_asset_id, base_asset_total, None);
+
+		let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, ALICE_ACCOUNT_ID, base_asset_total / 2);
+		let result = call.dispatch_bypass_filter(Origin::signed(DEFAULT_ACCOUNT_ID));
+		assert_ok!(result);
+
+		let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, base_asset_total / 2);
+		let result = call.dispatch_bypass_filter(Origin::signed(DEFAULT_ACCOUNT_ID));
+		assert_ok!(result);
+
+		let usd_id = 0u32;
+		let usd_total = 100_000u64;
+		create_issue_asset(ALICE_ACCOUNT_ID, usd_id, usd_total, None);
+
+		let eur_id = 1u32;
+		let eur_total = 80_000u64;
+		create_issue_asset(BOB_ACCOUNT_ID, eur_id, eur_total, None);
+
+		let bob_usd_balance_before = Assets::balance(usd_id, BOB_ACCOUNT_ID);
+		let bob_eur_balance_before = Assets::balance(eur_id, BOB_ACCOUNT_ID);
+
+		let alice_usd_balance_before = Assets::balance(usd_id, ALICE_ACCOUNT_ID);
+		let alice_base_balance_before = Assets::balance(base_asset_id, ALICE_ACCOUNT_ID);
+
+		let start_time_in_blocks = 5;
+		let start_time = pallet_timestamp::Module::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
+		let eur_sale_id = H160::random();
+		let usd_sale_id = H160::random();
+		let soft_cap = 50_000u64;
+		let hard_cap = 60_000_u64;
+		let usd_to_sale = 70_000u64;
+		let eur_to_sale = 75_000u64;
+		let duration_in_blocks = 5;
+		assert_ok!(Deip::create_project_token_sale_impl(
+			BOB_ACCOUNT_ID,
+			eur_sale_id,
+			start_time,
+			start_time + duration_in_blocks * BLOCK_TIME,
+			usd_id,
+			soft_cap,
+			hard_cap,
+			vec![(eur_id, eur_to_sale)]
+		));
+
+		assert_ok!(Deip::create_project_token_sale_impl(
+			ALICE_ACCOUNT_ID,
+			usd_sale_id,
+			start_time,
+			start_time + duration_in_blocks * BLOCK_TIME,
+			base_asset_id,
+			soft_cap,
+			hard_cap,
+			vec![(usd_id, usd_to_sale)]
+		));
+
+		let start_block = System::block_number() + start_time_in_blocks + 1;
+		while System::block_number() < start_block {
+			let block_number = System::block_number();
+			<System as OnFinalize<BlockNumber>>::on_finalize(block_number);
+			Deip::offchain_worker(System::block_number());
+			System::set_block_number(block_number + 1);
+			<System as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+			Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
+		}
+
+		assert_eq!(state.read().transactions.len(), 2);
+
+		let inner = decode_validate_deip_call(&state.read().transactions[0]);
+		match inner {
+			crate::Call::activate_project_token_sale(id) => Deip::activate_project_token_sale_impl(id).unwrap(),
+			_ => unreachable!(),
+		};
+
+		let inner = decode_validate_deip_call(&state.read().transactions[1]);
+		match inner {
+			crate::Call::activate_project_token_sale(id) => Deip::activate_project_token_sale_impl(id).unwrap(),
+			_ => unreachable!(),
+		};
+
+		state.write().transactions.clear();
+
+		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+			BOB_ACCOUNT_ID,
+			usd_sale_id,
+			soft_cap / 4,
+		));
+
+		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+			ALICE_ACCOUNT_ID,
+			eur_sale_id,
+			soft_cap / 2,
+		));
+
+		// since the sale expired the tokens should be transfered back to
+		// the seller doesn't matter if assets/accounts frozen or not
+		let call = pallet_deip_assets::Call::<Test>::freeze(eur_id, BOB_ACCOUNT_ID);
+		let _result = call.dispatch_bypass_filter(Origin::signed(BOB_ACCOUNT_ID));
+
+		let call = pallet_deip_assets::Call::<Test>::freeze_asset(usd_id);
+		let _result = call.dispatch_bypass_filter(Origin::signed(ALICE_ACCOUNT_ID));
+
+		let end_block = start_block + duration_in_blocks + 1;
+		while System::block_number() < end_block {
+			let block_number = System::block_number();
+			<System as OnFinalize<BlockNumber>>::on_finalize(block_number);
+			Deip::offchain_worker(System::block_number());
+			System::set_block_number(block_number + 1);
+			<System as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+			Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
+		}
+
+		let inner = decode_validate_deip_call(&state.read().transactions[0]);
+		match inner {
+			crate::Call::expire_project_token_sale(id) => Deip::expire_project_token_sale_impl(id).unwrap(),
+			_ => unreachable!(),
+		};
+
+		let inner = decode_validate_deip_call(&state.read().transactions[1]);
+		match inner {
+			crate::Call::expire_project_token_sale(id) => Deip::expire_project_token_sale_impl(id).unwrap(),
+			_ => unreachable!(),
+		};
+
+		assert_eq!(Assets::balance(base_asset_id, ALICE_ACCOUNT_ID), alice_base_balance_before);
+
+		assert_eq!(Assets::balance(usd_id, BOB_ACCOUNT_ID), bob_usd_balance_before);
+		assert_eq!(Assets::balance(usd_id, ALICE_ACCOUNT_ID), alice_usd_balance_before);
+
+		assert_eq!(Assets::balance(eur_id, BOB_ACCOUNT_ID), bob_eur_balance_before);
+	})
+}
