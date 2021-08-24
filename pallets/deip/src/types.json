@@ -70,8 +70,8 @@
   "NdaAccessRequestOf": "NdaAccessRequest",
   "ProjectOf": "Project",
   "ProjectContentOf": "ProjectContent",
-  "ProjectTokenSaleOf": "ProjectTokenSale",
-  "ProjectTokenSaleContributionOf": "ProjectTokenSaleContribution",
+  "SimpleCrowdfundingOf": "SimpleCrowdfunding",
+  "InvestmentOf": "Investment",
   "Nda": {
     "contract_creator": "AccountId",
     "external_id": "NdaId",
@@ -159,7 +159,7 @@
     "class": "DispatchClass",
     "pays_fee": "Pays"
   },
-  "ProjectTokenSaleStatus": {
+  "SimpleCrowdfundingStatus": {
     "_enum": [
       "Active",
       "Finished",
@@ -167,37 +167,36 @@
       "Inactive"
     ]
   },
-  "ProjectTokenSaleAssetPair": {
+  "TokenSaleAssetPair": {
     "id": "AssetId",
     "amount": "AssetsBalanceOf"
   },
-  "ProjectTokenSale": {
+  "SimpleCrowdfunding": {
     "external_id": "InvestmentId",
     "project_id": "ProjectId",
     "start_time": "Moment",
     "end_time": "Moment",
-    "status": "ProjectTokenSaleStatus",
+    "status": "SimpleCrowdfundingStatus",
     "asset_id": "AssetId",
     "total_amount": "AssetsBalanceOf",
     "soft_cap": "AssetsBalanceOf",
     "hard_cap": "AssetsBalanceOf",
-    "security_tokens_on_sale": "Vec<ProjectTokenSaleAssetPair>"
+    "shares": "Vec<TokenSaleAssetPair>"
   },
-  "ProjectTokenSaleContribution": {
+  "Investment": {
     "sale_id": "InvestmentId",
     "owner": "AccountId",
     "amount": "AssetsBalanceOf",
     "time": "Moment"
   },
-  "InvestmentOpportunity": {
+  "FundingModel": {
     "_enum": {
-      "ProjectTokenSale": {
+      "SimpleCrowdfunding": {
         "start_time": "Moment",
         "end_time": "Moment",
         "asset_id": "AssetId",
         "soft_cap": "AssetsBalanceOf",
-        "hard_cap": "AssetsBalanceOf",
-        "security_tokens_on_sale": "Vec<ProjectTokenSaleAssetPair>"
+        "hard_cap": "AssetsBalanceOf"
       }
     }
   },
@@ -232,6 +231,7 @@
     "0": "H160"
   },
   "AssetsAssetIdOf": "AssetId",
+  "DeipAssetIdOf": "AssetId",
   "Compact<AssetId>": {
     "0": "AssetId"
   }

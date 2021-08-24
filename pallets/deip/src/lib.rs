@@ -146,8 +146,8 @@ pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, Accou
 pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<<T as pallet_timestamp::Config>::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
-type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
-type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
+pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
+pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
