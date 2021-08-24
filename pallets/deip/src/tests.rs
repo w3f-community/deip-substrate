@@ -927,10 +927,10 @@ fn cant_reject_finalized_nda_content_access_request() {
 }
 
 #[test]
-fn project_token_sale_create_should_fail() {
+fn simple_crowdfunding_create_should_fail() {
 	new_test_ext2().execute_with(|| {
 		let start_time = pallet_timestamp::Module::<Test>::get();
-		assert_noop!(Deip::create_project_token_sale_impl(DEFAULT_ACCOUNT_ID,
+		assert_noop!(Deip::create_simple_crowdfunding(DEFAULT_ACCOUNT_ID,
 			H160::random(),
 			start_time,
 			start_time + 1,
@@ -939,9 +939,9 @@ fn project_token_sale_create_should_fail() {
 			120u32.into(),
 			vec![(0u32.into(), 100u32.into()), (14u32.into(), 200u32.into())]
 		),
-		Error::<Test>::TokenSaleWrongAssetId);
+		Error::<Test>::InvestmentOpportunityWrongAssetId);
 
-		assert_noop!(Deip::create_project_token_sale_impl(DEFAULT_ACCOUNT_ID,
+		assert_noop!(Deip::create_simple_crowdfunding(DEFAULT_ACCOUNT_ID,
 			H160::random(),
 			start_time,
 			start_time + 1,
@@ -950,12 +950,12 @@ fn project_token_sale_create_should_fail() {
 			120u32.into(),
 			vec![]
 		),
-		Error::<Test>::TokenSaleSecurityTokenNotSpecified);
+		Error::<Test>::InvestmentOpportunitySecurityTokenNotSpecified);
 	})
 }
 
 #[test]
-fn project_token_sale_hard_cap_reached() {
+fn simple_crowdfunding_hard_cap_reached() {
 	let mut ext = new_test_ext2();
 	let state = offchainify(&mut ext, 2);
 	ext.execute_with(|| {
@@ -985,7 +985,7 @@ fn project_token_sale_hard_cap_reached() {
 		let hard_cap = base_asset_total;
 		let usd_to_sale = 80_000u64;
 		let eur_to_sale = 75_000u64;
-		assert_ok!(Deip::create_project_token_sale_impl(
+		assert_ok!(Deip::create_simple_crowdfunding(
 			DEFAULT_ACCOUNT_ID,
 			sale_id,
 			start_time,
@@ -1001,11 +1001,11 @@ fn project_token_sale_hard_cap_reached() {
 
 		let inner = decode_validate_deip_call(&state.read().transactions[0]);
 		match inner {
-			crate::Call::activate_project_token_sale(id) => Deip::activate_project_token_sale_impl(id).unwrap(),
+			crate::Call::activate_crowdfunding(id) => Deip::activate_crowdfunding_impl(id).unwrap(),
 			_ => unreachable!(),
 		};
 
-		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+		assert_ok!(Deip::invest_to_crowdfunding_impl(
 			BOB_ACCOUNT_ID,
 			sale_id,
 			hard_cap / 2,
@@ -1018,7 +1018,7 @@ fn project_token_sale_hard_cap_reached() {
 		let call = pallet_deip_assets::Call::<Test>::freeze_asset(eur_id);
 		let _result = call.dispatch_bypass_filter(Origin::signed(*account_id));
 
-		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+		assert_ok!(Deip::invest_to_crowdfunding_impl(
 			ALICE_ACCOUNT_ID,
 			sale_id,
 			hard_cap / 2,
@@ -1037,7 +1037,7 @@ fn project_token_sale_hard_cap_reached() {
 }
 
 #[test]
-fn project_token_sale_expired() {
+fn simple_crowdfunding_expired() {
 	let mut ext = new_test_ext2();
 	let state = offchainify(&mut ext, 2);
 	ext.execute_with(|| {
@@ -1075,7 +1075,7 @@ fn project_token_sale_expired() {
 		let usd_to_sale = 80_000u64;
 		let eur_to_sale = 75_000u64;
 		let duration_in_blocks = 5;
-		assert_ok!(Deip::create_project_token_sale_impl(
+		assert_ok!(Deip::create_simple_crowdfunding(
 			DEFAULT_ACCOUNT_ID,
 			sale_id,
 			start_time,
@@ -1100,19 +1100,19 @@ fn project_token_sale_expired() {
 
 		let inner = decode_validate_deip_call(&state.read().transactions[0]);
 		match inner {
-			crate::Call::activate_project_token_sale(id) => Deip::activate_project_token_sale_impl(id).unwrap(),
+			crate::Call::activate_crowdfunding(id) => Deip::activate_crowdfunding_impl(id).unwrap(),
 			_ => unreachable!(),
 		};
 
 		state.write().transactions.clear();
 
-		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+		assert_ok!(Deip::invest_to_crowdfunding_impl(
 			BOB_ACCOUNT_ID,
 			sale_id,
 			soft_cap / 4,
 		));
 
-		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+		assert_ok!(Deip::invest_to_crowdfunding_impl(
 			ALICE_ACCOUNT_ID,
 			sale_id,
 			soft_cap / 2,
@@ -1138,7 +1138,7 @@ fn project_token_sale_expired() {
 
 		let inner = decode_validate_deip_call(&state.read().transactions[0]);
 		match inner {
-			crate::Call::expire_project_token_sale(id) => Deip::expire_project_token_sale_impl(id).unwrap(),
+			crate::Call::expire_crowdfunding(id) => Deip::expire_crowdfunding_impl(id).unwrap(),
 			_ => unreachable!(),
 		};
 
@@ -1157,7 +1157,7 @@ fn project_token_sale_expired() {
 }
 
 #[test]
-fn two_simultaneous_token_sale_expired() {
+fn two_simultaneous_crowdfundings_expired() {
 	let mut ext = new_test_ext2();
 	let state = offchainify(&mut ext, 2);
 	ext.execute_with(|| {
@@ -1196,7 +1196,7 @@ fn two_simultaneous_token_sale_expired() {
 		let usd_to_sale = 70_000u64;
 		let eur_to_sale = 75_000u64;
 		let duration_in_blocks = 5;
-		assert_ok!(Deip::create_project_token_sale_impl(
+		assert_ok!(Deip::create_simple_crowdfunding(
 			BOB_ACCOUNT_ID,
 			eur_sale_id,
 			start_time,
@@ -1207,7 +1207,7 @@ fn two_simultaneous_token_sale_expired() {
 			vec![(eur_id, eur_to_sale)]
 		));
 
-		assert_ok!(Deip::create_project_token_sale_impl(
+		assert_ok!(Deip::create_simple_crowdfunding(
 			ALICE_ACCOUNT_ID,
 			usd_sale_id,
 			start_time,
@@ -1232,25 +1232,25 @@ fn two_simultaneous_token_sale_expired() {
 
 		let inner = decode_validate_deip_call(&state.read().transactions[0]);
 		match inner {
-			crate::Call::activate_project_token_sale(id) => Deip::activate_project_token_sale_impl(id).unwrap(),
+			crate::Call::activate_crowdfunding(id) => Deip::activate_crowdfunding_impl(id).unwrap(),
 			_ => unreachable!(),
 		};
 
 		let inner = decode_validate_deip_call(&state.read().transactions[1]);
 		match inner {
-			crate::Call::activate_project_token_sale(id) => Deip::activate_project_token_sale_impl(id).unwrap(),
+			crate::Call::activate_crowdfunding(id) => Deip::activate_crowdfunding_impl(id).unwrap(),
 			_ => unreachable!(),
 		};
 
 		state.write().transactions.clear();
 
-		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+		assert_ok!(Deip::invest_to_crowdfunding_impl(
 			BOB_ACCOUNT_ID,
 			usd_sale_id,
 			soft_cap / 4,
 		));
 
-		assert_ok!(Deip::contribute_to_project_token_sale_impl(
+		assert_ok!(Deip::invest_to_crowdfunding_impl(
 			ALICE_ACCOUNT_ID,
 			eur_sale_id,
 			soft_cap / 2,
@@ -1276,13 +1276,13 @@ fn two_simultaneous_token_sale_expired() {
 
 		let inner = decode_validate_deip_call(&state.read().transactions[0]);
 		match inner {
-			crate::Call::expire_project_token_sale(id) => Deip::expire_project_token_sale_impl(id).unwrap(),
+			crate::Call::expire_crowdfunding(id) => Deip::expire_crowdfunding_impl(id).unwrap(),
 			_ => unreachable!(),
 		};
 
 		let inner = decode_validate_deip_call(&state.read().transactions[1]);
 		match inner {
-			crate::Call::expire_project_token_sale(id) => Deip::expire_project_token_sale_impl(id).unwrap(),
+			crate::Call::expire_crowdfunding(id) => Deip::expire_crowdfunding_impl(id).unwrap(),
 			_ => unreachable!(),
 		};
 

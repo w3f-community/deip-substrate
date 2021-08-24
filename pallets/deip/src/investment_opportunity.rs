@@ -7,7 +7,7 @@ use sp_runtime::{
     SaturatedConversion,
 };
 
-/// Unique ProjectTokenSale ID reference
+/// Unique InvestmentOpportunity ID reference
 pub type Id = H160;
 
 #[derive(Encode, Decode, Clone, Copy, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
@@ -30,10 +30,10 @@ impl Default for Status {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum InvestmentOpportunity<Moment, AssetId, AssetBalance> {
-    ProjectTokenSale {
-        /// a moment when the sale starts. Must be later than current moment.
+    SimpleCrowdfunding {
+        /// a moment when the crowdfunding starts. Must be later than current moment.
         start_time: Moment,
-        /// a moment when the sale ends. Must be later than `start_time`.
+        /// a moment when the crowdfunding ends. Must be later than `start_time`.
         end_time: Moment,
         /// id of the asset intended to raise.
         asset_id: AssetId,
@@ -41,14 +41,10 @@ pub enum InvestmentOpportunity<Moment, AssetId, AssetBalance> {
         soft_cap: AssetBalance,
         /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
         hard_cap: AssetBalance,
-        // specifies how many tokens of the project are intended to sale.
-        // security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
     },
 }
 
-/// The object represents a sale of project's tokens with
-/// various parameters.
-/// It is connected to the specific project.
+/// The object represents a sale of tokens with various parameters.
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
@@ -65,8 +61,8 @@ pub struct Info<Moment, AssetId, AssetBalance> {
     pub total_amount: AssetBalance,
     pub soft_cap: AssetBalance,
     pub hard_cap: AssetBalance,
-    /// How many tokens supposed to sale
-    pub security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
+    /// How many and what tokens supposed to sale
+    pub shares: Vec<(AssetId, AssetBalance)>,
 }
 
 impl<T: Config> Module<T> {
@@ -80,13 +76,13 @@ impl<T: Config> Module<T> {
         ensure!(account == creator, Error::<T>::NoPermission);
 
         match funding_model {
-            InvestmentOpportunity::ProjectTokenSale {
+            InvestmentOpportunity::SimpleCrowdfunding {
                 start_time,
                 end_time,
                 asset_id,
                 soft_cap,
                 hard_cap,
-            } => Self::create_project_token_sale_impl(
+            } => Self::create_simple_crowdfunding(
                 account,
                 external_id,
                 start_time,
@@ -99,7 +95,7 @@ impl<T: Config> Module<T> {
         }
     }
 
-    pub(super) fn create_project_token_sale_impl(
+    pub(super) fn create_simple_crowdfunding(
         account: T::AccountId,
         external_id: Id,
         start_time: T::Moment,
@@ -107,87 +103,87 @@ impl<T: Config> Module<T> {
         asset_id: DeipAssetIdOf<T>,
         soft_cap: DeipAssetBalanceOf<T>,
         hard_cap: DeipAssetBalanceOf<T>,
-        security_tokens_on_sale: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
+        shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
     ) -> DispatchResult {
         ensure!(
-            !ProjectTokenSaleMap::<T>::contains_key(external_id),
-            Error::<T>::TokenSaleAlreadyExists
+            !SimpleCrowdfundingMap::<T>::contains_key(external_id),
+            Error::<T>::InvestmentOpportunityAlreadyExists
         );
 
         let timestamp = pallet_timestamp::Module::<T>::get();
         ensure!(
             start_time >= timestamp,
-            Error::<T>::TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment
+            Error::<T>::InvestmentOpportunityStartTimeMustBeLaterOrEqualCurrentMoment
         );
         ensure!(
             end_time > start_time,
-            Error::<T>::TokenSaleEndTimeMustBeLaterStartTime
+            Error::<T>::InvestmentOpportunityEndTimeMustBeLaterStartTime
         );
 
         ensure!(
             !soft_cap.is_zero(),
-            Error::<T>::TokenSaleSoftCapMustBeGreaterOrEqualMinimum
+            Error::<T>::InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum
         );
         ensure!(
             hard_cap >= soft_cap,
-            Error::<T>::TokenSaleHardCapShouldBeGreaterOrEqualSoftCap
+            Error::<T>::InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap
         );
 
         ensure!(
-            !security_tokens_on_sale.is_empty(),
-            Error::<T>::TokenSaleSecurityTokenNotSpecified
+            !shares.is_empty(),
+            Error::<T>::InvestmentOpportunitySecurityTokenNotSpecified
         );
-        for (security_token_id, asset_amount) in &security_tokens_on_sale {
+        for (security_token_id, token_amount) in &shares {
             ensure!(
                 *security_token_id != asset_id,
-                Error::<T>::TokenSaleWrongAssetId
+                Error::<T>::InvestmentOpportunityWrongAssetId
             );
 
             ensure!(
-                !asset_amount.is_zero(),
-                Error::<T>::TokenSaleAssetAmountMustBePositive
+                !token_amount.is_zero(),
+                Error::<T>::InvestmentOpportunityAssetAmountMustBePositive
             );
         }
 
         if let Err(e) = T::AssetSystem::transactionally_reserve(
             &account,
             external_id,
-            &security_tokens_on_sale,
+            &shares,
             asset_id,
         ) {
             match e {
                 ReserveError::<DeipAssetIdOf<T>>::NotEnoughBalance => {
-                    return Err(Error::<T>::TokenSaleBalanceIsNotEnough.into())
+                    return Err(Error::<T>::InvestmentOpportunityBalanceIsNotEnough.into())
                 }
                 ReserveError::<DeipAssetIdOf<T>>::AssetTransferFailed(_) => {
-                    return Err(Error::<T>::TokenSaleFailedToReserveAsset.into())
+                    return Err(Error::<T>::InvestmentOpportunityFailedToReserveAsset.into())
                 }
                 ReserveError::<DeipAssetIdOf<T>>::AlreadyReserved => {
-                    return Err(Error::<T>::TokenSaleAlreadyExists.into())
+                    return Err(Error::<T>::InvestmentOpportunityAlreadyExists.into())
                 }
             };
         }
 
-        let new_project_token_sale = Info {
-            external_id: external_id,
-            start_time: start_time,
-            end_time: end_time,
+        let new_token_sale = Info {
+            external_id,
+            start_time,
+            end_time,
             asset_id,
-            soft_cap: soft_cap,
-            hard_cap: hard_cap,
-            security_tokens_on_sale: security_tokens_on_sale,
+            soft_cap,
+            hard_cap,
+            shares,
             ..Default::default()
         };
 
-        ProjectTokenSaleMap::<T>::insert(external_id, new_project_token_sale.clone());
+        SimpleCrowdfundingMap::<T>::insert(external_id, new_token_sale.clone());
 
-        Self::deposit_event(RawEvent::TokenSaleCreated(external_id));
+        Self::deposit_event(RawEvent::SimpleCrowdfundingCreated(external_id));
 
         Ok(())
     }
 
     pub(super) fn collect_funds(sale_id: Id, amount: DeipAssetBalanceOf<T>) -> Result<(), ()> {
-        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |sale| -> Result<(), ()> {
+        SimpleCrowdfundingMap::<T>::mutate_exists(sale_id, |sale| -> Result<(), ()> {
             match sale.as_mut() {
                 Some(s) => s.total_amount = amount.saturating_add(s.total_amount),
                 None => return Err(()),
@@ -196,21 +192,21 @@ impl<T: Config> Module<T> {
         })
     }
 
-    pub(super) fn finish_project_token_sale_by_id(sale_id: Id) -> Result<(), ()> {
-        match ProjectTokenSaleMap::<T>::try_get(sale_id) {
+    pub(super) fn finish_crowdfunding_by_id(sale_id: Id) -> Result<(), ()> {
+        match SimpleCrowdfundingMap::<T>::try_get(sale_id) {
             Err(_) => Err(()),
             Ok(sale) => {
                 Self::update_status(&sale, Status::Finished);
-                Self::process_project_token_sale_contributions(&sale);
+                Self::process_investments(&sale);
                 Ok(())
             }
         }
     }
 
-    pub(super) fn activate_project_token_sale_impl(sale_id: Id) -> DispatchResult {
-        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
+    pub(super) fn activate_crowdfunding_impl(sale_id: Id) -> DispatchResult {
+        SimpleCrowdfundingMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
             let sale = match maybe_sale.as_mut() {
-                None => return Err(Error::<T>::TokenSaleNotFound.into()),
+                None => return Err(Error::<T>::InvestmentOpportunityNotFound.into()),
                 Some(s) => s,
             };
 
@@ -218,22 +214,22 @@ impl<T: Config> Module<T> {
                 Status::Active => return Ok(()),
                 Status::Inactive => ensure!(
                     pallet_timestamp::Module::<T>::get() >= sale.start_time,
-                    Error::<T>::TokenSaleShouldBeStarted
+                    Error::<T>::InvestmentOpportunityShouldBeStarted
                 ),
-                _ => return Err(Error::<T>::TokenSaleShouldBeInactive.into()),
+                _ => return Err(Error::<T>::InvestmentOpportunityShouldBeInactive.into()),
             };
 
             sale.status = Status::Active;
-            Self::deposit_event(RawEvent::TokenSaleActivated(sale_id));
+            Self::deposit_event(RawEvent::SimpleCrowdfundingActivated(sale_id));
 
             Ok(())
         })
     }
 
-    pub(super) fn expire_project_token_sale_impl(sale_id: Id) -> DispatchResult {
-        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
+    pub(super) fn expire_crowdfunding_impl(sale_id: Id) -> DispatchResult {
+        SimpleCrowdfundingMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
             let sale = match maybe_sale.as_mut() {
-                None => return Err(Error::<T>::TokenSaleNotFound.into()),
+                None => return Err(Error::<T>::InvestmentOpportunityNotFound.into()),
                 Some(s) => s,
             };
 
@@ -241,75 +237,75 @@ impl<T: Config> Module<T> {
                 Status::Expired => return Ok(()),
                 Status::Active => ensure!(
                     pallet_timestamp::Module::<T>::get() >= sale.end_time,
-                    Error::<T>::TokenSaleExpirationWrongState
+                    Error::<T>::InvestmentOpportunityExpirationWrongState
                 ),
-                _ => return Err(Error::<T>::TokenSaleShouldBeActive.into()),
+                _ => return Err(Error::<T>::InvestmentOpportunityShouldBeActive.into()),
             };
 
             sale.status = Status::Expired;
 
-            Self::refund_project_token_sale(sale);
+            Self::refund(sale);
 
             Ok(())
         })
     }
 
-    pub(super) fn finish_project_token_sale_impl(sale_id: Id) -> DispatchResult {
-        ProjectTokenSaleMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
+    pub(super) fn finish_crowdfunding_impl(sale_id: Id) -> DispatchResult {
+        SimpleCrowdfundingMap::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
             let sale = match maybe_sale.as_mut() {
-                None => return Err(Error::<T>::TokenSaleNotFound.into()),
+                None => return Err(Error::<T>::InvestmentOpportunityNotFound.into()),
                 Some(s) => s,
             };
 
             match sale.status {
                 Status::Finished => return Ok(()),
                 Status::Active => (),
-                _ => return Err(Error::<T>::TokenSaleShouldBeActive.into()),
+                _ => return Err(Error::<T>::InvestmentOpportunityShouldBeActive.into()),
             };
 
             sale.status = Status::Finished;
 
-            Self::process_project_token_sale_contributions(sale);
+            Self::process_investments(sale);
 
             Ok(())
         })
     }
 
-    pub(super) fn process_project_token_sales_offchain() {
+    pub(super) fn process_investment_opportunities_offchain() {
         let now = pallet_timestamp::Module::<T>::get();
-        for (id, sale) in ProjectTokenSaleMap::<T>::iter() {
+        for (id, sale) in SimpleCrowdfundingMap::<T>::iter() {
             if sale.end_time <= now && matches!(sale.status, Status::Active) {
                 if sale.total_amount < sale.soft_cap {
-                    let call = Call::expire_project_token_sale(id);
+                    let call = Call::expire_crowdfunding(id);
                     let submit =
                         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
-                    debug!("submit expire_project_token_sale: {}", submit.is_ok());
+                    debug!("submit expire_crowdfunding: {}", submit.is_ok());
                 } else if sale.total_amount >= sale.soft_cap {
-                    let call = Call::finish_project_token_sale(id);
+                    let call = Call::finish_crowdfunding(id);
                     let submit =
                         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
-                    debug!("submit finish_project_token_sale: {}", submit.is_ok());
+                    debug!("submit finish_crowdfunding: {}", submit.is_ok());
                 }
             } else if sale.end_time > now {
                 if now >= sale.start_time && matches!(sale.status, Status::Inactive) {
-                    let call = Call::activate_project_token_sale(id);
+                    let call = Call::activate_crowdfunding(id);
                     let submit =
                         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
-                    debug!("submit activate_project_token_sale: {}", submit.is_ok());
+                    debug!("submit activate_crowdfunding: {}", submit.is_ok());
                 }
             }
         }
     }
 
-    fn update_status(sale: &ProjectTokenSaleOf<T>, new_status: Status) {
-        ProjectTokenSaleMap::<T>::mutate_exists(sale.external_id, |maybe_sale| -> () {
+    fn update_status(sale: &SimpleCrowdfundingOf<T>, new_status: Status) {
+        SimpleCrowdfundingMap::<T>::mutate_exists(sale.external_id, |maybe_sale| -> () {
             let sale = maybe_sale.as_mut().expect("we keep collections in sync");
             sale.status = new_status;
         });
     }
 
-    fn refund_project_token_sale(sale: &ProjectTokenSaleOf<T>) {
-        if let Ok(ref c) = ProjectTokenSaleContributions::<T>::try_get(sale.external_id) {
+    fn refund(sale: &SimpleCrowdfundingOf<T>) {
+        if let Ok(ref c) = InvestmentMap::<T>::try_get(sale.external_id) {
             for (_, ref contribution) in c {
                 T::AssetSystem::transfer_from_reserved(
                     sale.external_id,
@@ -319,26 +315,26 @@ impl<T: Config> Module<T> {
                 )
                 .unwrap_or_else(|_| panic!("user's asset should be reserved earlier"));
             }
-            ProjectTokenSaleContributions::<T>::remove(sale.external_id);
+            InvestmentMap::<T>::remove(sale.external_id);
         }
 
         T::AssetSystem::transactionally_unreserve(sale.external_id)
             .unwrap_or_else(|_| panic!("assets should be reserved earlier"));
 
-        Self::deposit_event(RawEvent::TokenSaleExpired(sale.external_id));
+        Self::deposit_event(RawEvent::SimpleCrowdfundingExpired(sale.external_id));
     }
 
-    fn process_project_token_sale_contributions(sale: &ProjectTokenSaleOf<T>) {
-        let contributions = ProjectTokenSaleContributions::<T>::try_get(sale.external_id)
-            .expect("Token sale is about to finish, but there are no contributions?");
+    fn process_investments(sale: &SimpleCrowdfundingOf<T>) {
+        let contributions = InvestmentMap::<T>::try_get(sale.external_id)
+            .expect("about to finish, but there are no contributions?");
 
-        for (asset_id, asset_amount) in &sale.security_tokens_on_sale {
+        for (asset_id, asset_amount) in &sale.shares {
             let mut amount = asset_amount.clone();
 
             let mut iter = contributions.iter();
             let (_, ref first_contribution) = iter
                 .next()
-                .expect("Token sale is about to finish, but there are no contributors?");
+                .expect("about to finish, but there are no contributors?");
 
             for (_, ref contribution) in iter {
                 // similiar to frame_support::traits::Imbalance::ration
@@ -374,12 +370,11 @@ impl<T: Config> Module<T> {
             }
         }
 
-        // process the remainder
         T::AssetSystem::transactionally_unreserve(sale.external_id)
             .unwrap_or_else(|_| panic!("remaining assets should be reserved earlier"));
 
-        ProjectTokenSaleContributions::<T>::remove(sale.external_id);
+        InvestmentMap::<T>::remove(sale.external_id);
 
-        Self::deposit_event(RawEvent::TokenSaleFinished(sale.external_id));
+        Self::deposit_event(RawEvent::SimpleCrowdfundingFinished(sale.external_id));
     }
 }
