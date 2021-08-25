@@ -3,13 +3,15 @@ use std::{str::FromStr};
 use node_template_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
 	SudoConfig, SystemConfig, WASM_BINARY, Signature, DeipConfig, DeipProposalConfig,
-    DeipOrgConfig
+	DeipOrgConfig,
+	DeipAssetsConfig,
 };
 use pallet_deip::{ DomainId, Domain };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{Verify, IdentifyAccount};
 use sc_service::ChainType;
+use pallet_deip_assets::SerializableAssetBalance;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -184,7 +186,12 @@ fn testnet_genesis(
 		}),
 		pallet_sudo: Some(SudoConfig {
 			// Assign network admin rights.
-			key: root_key,
+			key: root_key.clone(),
+		}),
+		pallet_deip_assets: Some(DeipAssetsConfig {
+			core_asset_admin: root_key,
+			balances: endowed_accounts.iter().cloned().map(|k|(k, SerializableAssetBalance((1u64 << 60).into()))).collect(),
+			..Default::default()
 		}),
 	}
 }

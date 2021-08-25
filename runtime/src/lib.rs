@@ -285,29 +285,34 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
 	type Balance = u64;
 	type AssetId = AssetId;
 
-	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
-		DeipAssets::try_get_tokenized_project(id)
-	}
-	
 	fn transactionally_reserve(
-        account: &AccountId,
-        project_id: ProjectId,
-        security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
-    ) -> Result<(), ()> {
-		DeipAssets::transactionally_reserve(account, project_id, security_tokens_on_sale)
+		account: &AccountId,
+		id: InvestmentId,
+		shares: &[(Self::AssetId, Self::Balance)],
+		asset: Self::AssetId,
+	) -> Result<(), deip_assets_error::ReserveError<Self::AssetId>> {
+		DeipAssets::transactionally_reserve(account, id, shares, asset)
 	}
 
-	fn transactionally_unreserve(project_id: ProjectId, account: &AccountId) -> Result<(), ()> {
-		DeipAssets::transactionally_unreserve(project_id, account)
+	fn transactionally_unreserve(id: InvestmentId) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
+		DeipAssets::transactionally_unreserve(id)
 	}
 
-	fn transfer(
-		project_id: ProjectId,
+	fn transfer_from_reserved(
+		id: InvestmentId,
 		who: &AccountId,
-		id: Self::AssetId,
+		asset: Self::AssetId,
 		amount: Self::Balance,
-	) -> Result<(), ()> {
-		DeipAssets::transfer_from_project(project_id, who, id, amount)
+	) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
+		DeipAssets::transfer_from_reserved(id, who, asset, amount)
+	}
+
+	fn transfer_to_reserved(
+		who: &AccountId,
+		id: InvestmentId,
+		amount: Self::Balance,
+	) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
+		DeipAssets::transfer_to_reserved(who, id, amount)
 	}
 }
 
@@ -392,6 +397,7 @@ impl pallet_assets::Config for Runtime {
 
 impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Runtime {
 	type ProjectId = pallet_deip::ProjectId;
+	type InvestmentId = pallet_deip::InvestmentId;
 
 	fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
 		Deip::try_get_project_team(id)
@@ -426,7 +432,7 @@ construct_runtime!(
 		DeipOrg: pallet_deip_org::{Module, Call, Storage, Event<T>, Config},
 		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
 		Assets: pallet_assets::{Module, Storage, Event<T>},
-		DeipAssets: pallet_deip_assets::{Module, Storage, Call},
+		DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>},
 	}
 );
 

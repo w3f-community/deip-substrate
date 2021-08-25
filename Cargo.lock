@@ -1140,6 +1140,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "deip-assets-error"
+version = "0.1.0"
+
+[[package]]
 name = "deip-rpc"
 version = "1.0.0"
 dependencies = [
@@ -3538,6 +3542,7 @@ dependencies = [
  "jsonrpc-core",
  "node-template-runtime",
  "pallet-deip",
+ "pallet-deip-assets",
  "pallet-deip-org-rpc",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
@@ -3571,6 +3576,7 @@ dependencies = [
 name = "node-template-runtime"
 version = "3.0.0"
 dependencies = [
+ "deip-assets-error",
  "deip-runtime-api",
  "frame-benchmarking",
  "frame-executive",
@@ -3811,6 +3817,7 @@ dependencies = [
 name = "pallet-deip"
 version = "3.0.0"
 dependencies = [
+ "deip-assets-error",
  "frame-support",
  "frame-system",
  "pallet-assets",
@@ -3830,6 +3837,7 @@ dependencies = [
 name = "pallet-deip-assets"
 version = "3.0.0"
 dependencies = [
+ "deip-assets-error",
  "frame-support",
  "frame-system",
  "pallet-assets",

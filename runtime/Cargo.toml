@@ -31,6 +31,7 @@ deip-runtime-api = {default-features = false, path = "../pallets/deip/runtime-ap
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
 pallet-deip-org = { path = "../pallets/deip_org", default-features = false }
 pallet-deip-assets = { path = "../pallets/deip_assets", default-features = false }
+deip-assets-error = { path = "../common/deip_assets_error", default-features = false }
 
 # Substrate dependencies
 frame-benchmarking = { default-features = false, optional = true, version = '3.0.0' }

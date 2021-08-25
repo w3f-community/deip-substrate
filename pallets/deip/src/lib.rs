@@ -63,13 +63,15 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-mod project_token_sale;
-use project_token_sale::{Id as InvestmentId,
-    Status as ProjectTokenSaleStatus,
-    Info as ProjectTokenSale};
+mod investment_opportunity;
+use investment_opportunity::{
+    Status as SimpleCrowdfundingStatus,
+    Info as SimpleCrowdfunding,
+    InvestmentOpportunity as FundingModel};
+pub use investment_opportunity::{Id as InvestmentId};
 
-mod project_token_sale_contribution;
-use project_token_sale_contribution::{Contribution as ProjectTokenSaleContribution};
+mod contribution;
+use contribution::{Contribution as Investment};
 
 pub mod traits;
 
@@ -141,30 +143,11 @@ pub type ReviewOf<T> = Review<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, <T as pallet_timestamp::Config>::Moment>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type ProjectTokenSaleOf<T> = ProjectTokenSale<<T as pallet_timestamp::Config>::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<<T as pallet_timestamp::Config>::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-pub type ProjectTokenSaleContributionOf<T> = ProjectTokenSaleContribution<AccountIdOf<T>, BalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
-type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
-type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
-
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum InvestmentOpportunity<Moment, Balance, AssetId, AssetBalance> {
-    ProjectTokenSale {
-        /// a moment when the sale starts. Must be later than current moment.
-        start_time: Moment,
-        /// a moment when the sale ends. Must be later than `start_time`.
-        end_time: Moment,
-        /// amount of units to raise. This must be greater or equal to `ExistentialDeposit`
-        /// (see [frame_support::traits::Currency] for details).
-        soft_cap: Balance,
-        /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
-        hard_cap: Balance,
-        /// specifies how many tokens of the project are intended to sale.
-        security_tokens_on_sale: Vec<(AssetId, AssetBalance)>,
-    },
-}
+pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
+pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
 
 /// Review 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -303,7 +286,6 @@ decl_event! {
         AccountId = <T as frame_system::Config>::AccountId,
         Project = ProjectOf<T>,
         Review = ReviewOf<T>,
-        ProjectTokenSale = ProjectTokenSaleOf<T>,
     {
         // ==== Projects ====
 
@@ -336,16 +318,16 @@ decl_event! {
         /// Event emitted when a review has been created. [BelongsTo, Review]
         ReviewCreated(AccountId, Review),
 
-        /// Event emitted when a token sale for project has been created.
-        ProjectTokenSaleCreated(ProjectId, ProjectTokenSale),
-        /// Event emitted when a token sale for project has been activated.
-        ProjectTokenSaleActivated(ProjectId, InvestmentId),
-        /// Event emitted when a token sale for project has finished.
-        ProjectTokenSaleFinished(ProjectId, InvestmentId),
-        /// Event emitted when a token sale for project has expired.
-        ProjectTokenSaleExpired(ProjectId, InvestmentId),
-        /// Event emitted when DAO contributed to the project token sale
-        ProjectTokenSaleContributed(InvestmentId, AccountId),
+        /// Event emitted when a simple crowd funding has been created.
+        SimpleCrowdfundingCreated(InvestmentId),
+        /// Event emitted when a simple crowd funding has been activated.
+        SimpleCrowdfundingActivated(InvestmentId),
+        /// Event emitted when a simple crowd funding has finished.
+        SimpleCrowdfundingFinished(InvestmentId),
+        /// Event emitted when a simple crowd funding has expired.
+        SimpleCrowdfundingExpired(InvestmentId),
+        /// Event emitted when DAO invested to an opportunity
+        Invested(InvestmentId, AccountId),
     }
 }
 
@@ -415,28 +397,27 @@ decl_error! {
         /// Access Forbiten
         NoPermission,
 
-        // Project token sale errors
-        TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment,
-        TokenSaleEndTimeMustBeLaterStartTime,
-        TokenSaleSoftCapMustBeGreaterOrEqualMinimum,
-        TokenSaleHardCapShouldBeGreaterOrEqualSoftCap,
-        TokenSaleScheduledAlready,
-        TokenSaleAlreadyExists,
-        TokenSaleBalanceIsNotEnough,
-        TokenSaleAssetIsNotSecurityToken,
-        TokenSaleProjectNotTokenizedWithSecurityToken,
-        TokenSaleAssetAmountMustBePositive,
-        TokenSaleSecurityTokenNotSpecified,
-        TokenSaleNotFound,
-        TokenSaleShouldBeInactive,
-        TokenSaleShouldBeStarted,
-        TokenSaleShouldBeActive,
-        TokenSaleExpirationWrongState,
+        // Investment opportunity errors
+        InvestmentOpportunityStartTimeMustBeLaterOrEqualCurrentMoment,
+        InvestmentOpportunityEndTimeMustBeLaterStartTime,
+        InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum,
+        InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap,
+        InvestmentOpportunityAlreadyExists,
+        InvestmentOpportunityBalanceIsNotEnough,
+        InvestmentOpportunityFailedToReserveAsset,
+        InvestmentOpportunityAssetAmountMustBePositive,
+        InvestmentOpportunitySecurityTokenNotSpecified,
+        InvestmentOpportunityNotFound,
+        InvestmentOpportunityShouldBeInactive,
+        InvestmentOpportunityShouldBeStarted,
+        InvestmentOpportunityShouldBeActive,
+        InvestmentOpportunityExpirationWrongState,
+        InvestmentOpportunityWrongAssetId,
 
-        // Possible errors when DAO tries to contribute to a project token sale
-        ContributionProjectTokenSaleNotFound,
-        ContributionProjectTokenSaleNotActive,
-        ContributionNotEnoughFunds,
+        // Possible errors when DAO tries to invest to an opportunity
+        InvestingNotFound,
+        InvestingNotActive,
+        InvestingNotEnoughFunds,
     }
 }
 
@@ -447,11 +428,10 @@ decl_storage! {
         /// Project list, guarantees uniquest and provides Project listing
         Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
 
-        ProjectTokenSaleMap get(fn project_token_sale): map hasher(identity) InvestmentId => ProjectTokenSaleOf<T>;
-        ProjectTokenSaleByProjectIdStatus get(fn token_sales): Vec<(ProjectId, ProjectTokenSaleStatus, InvestmentId)>;
+        SimpleCrowdfundingMap: map hasher(identity) InvestmentId => SimpleCrowdfundingOf<T>;
 
-        /// Contains contributions to project token sales from DAOs
-        ProjectTokenSaleContributions: map hasher(identity) InvestmentId => Vec<(T::AccountId, ProjectTokenSaleContributionOf<T>)>;
+        /// Contains various contributions from DAOs
+        InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, InvestmentOf<T>)>;
 
         /// Map to Project Content Info
         ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
@@ -554,42 +534,34 @@ decl_module! {
         /// - `external_id`: id of the sale. Must be unique.
         /// - `project_id`: id of the project which tokens are intended to sale.
         /// - `investment_type`: specifies type of created investment opportunity. For possible
-        /// variants and details see [`InvestmentOpportunity`].
+        /// variants and details see [`FundingModel`].
         #[weight = 10_000]
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
-            project_id: ProjectId,
-            investment_type: InvestmentOpportunity<T::Moment, BalanceOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+            creator: T::DeipAccountId,
+            shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
+            funding_model: FundingModel<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-
-            match investment_type {
-                InvestmentOpportunity::ProjectTokenSale{
-                    start_time,
-                    end_time,
-                    soft_cap,
-                    hard_cap,
-                    security_tokens_on_sale,
-                } => Self::create_project_token_sale_impl(account, external_id, project_id, start_time, end_time, soft_cap, hard_cap, security_tokens_on_sale)
-            }
+            Self::create_investment_opportunity_impl(account, external_id, creator.into(), shares, funding_model)
         }
 
         #[weight = 10_000]
-        fn activate_project_token_sale(origin, sale_id: InvestmentId) -> DispatchResult {
+        fn activate_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
             ensure_none(origin)?;
-            Self::activate_project_token_sale_impl(sale_id)
+            Self::activate_crowdfunding_impl(sale_id)
         }
 
         #[weight = 10_000]
-        fn expire_project_token_sale(origin, sale_id: InvestmentId) -> DispatchResult {
+        fn expire_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
             ensure_none(origin)?;
-            Self::expire_project_token_sale_impl(sale_id)
+            Self::expire_crowdfunding_impl(sale_id)
         }
 
         #[weight = 10_000]
-        fn finish_project_token_sale(origin, sale_id: InvestmentId) -> DispatchResult {
+        fn finish_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
             ensure_none(origin)?;
-            Self::finish_project_token_sale_impl(sale_id)
+            Self::finish_crowdfunding_impl(sale_id)
         }
 
         /// Allows DAO to invest to an opportunity.
@@ -599,14 +571,13 @@ decl_module! {
         /// - `id`: identifier of the investment opportunity
         /// - `amount`: amount of units to invest. The account should have enough funds on
         ///     the balance. This amount is reserved until the investment finished or expired
-        /// (see [frame_support::traits::ReservableCurrency] for details).
         #[weight = 10_000]
         fn invest(origin,
             id: InvestmentId,
-            amount: BalanceOf<T>
+            amount: DeipAssetBalanceOf<T>
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::contribute_to_project_token_sale_impl(account, id, amount)
+            Self::invest_to_crowdfunding_impl(account, id, amount)
         }
 
         /// Allow a user to update project.
@@ -973,7 +944,7 @@ decl_module! {
                 return;
             }
 
-            Self::process_project_token_sales_offchain();
+            Self::process_investment_opportunities_offchain();
         }
     }
 }
@@ -998,40 +969,40 @@ impl<T: Config> ValidateUnsigned for Module<T> {
         }
 
         match call {
-            Call::activate_project_token_sale(ref id) => {
-                let sale = ProjectTokenSaleMap::<T>::try_get(id).map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, ProjectTokenSaleStatus::Inactive) {
+            Call::activate_crowdfunding(ref id) => {
+                let sale = SimpleCrowdfundingMap::<T>::try_get(id).map_err(|_| InvalidTransaction::Stale)?;
+                if !matches!(sale.status, SimpleCrowdfundingStatus::Inactive) {
                     return InvalidTransaction::Stale.into();
                 }
 
                 ValidTransaction::with_tag_prefix("DeipOffchainWorker")
                     .propagate(false)
                     .longevity(5)
-                    .and_provides((b"activate_project_token_sale", *id))
+                    .and_provides((b"activate_crowdfunding", *id))
                     .build()
             },
-            Call::expire_project_token_sale(ref id) => {
-                let sale = ProjectTokenSaleMap::<T>::try_get(id).map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, ProjectTokenSaleStatus::Active) {
+            Call::expire_crowdfunding(ref id) => {
+                let sale = SimpleCrowdfundingMap::<T>::try_get(id).map_err(|_| InvalidTransaction::Stale)?;
+                if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
                     return InvalidTransaction::Stale.into();
                 }
 
                 ValidTransaction::with_tag_prefix("DeipOffchainWorker")
                     .propagate(false)
                     .longevity(5)
-                    .and_provides((b"expire_project_token_sale", *id))
+                    .and_provides((b"expire_crowdfunding", *id))
                     .build()
             },
-            Call::finish_project_token_sale(ref id) => {
-                let sale = ProjectTokenSaleMap::<T>::try_get(id).map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, ProjectTokenSaleStatus::Active) {
+            Call::finish_crowdfunding(ref id) => {
+                let sale = SimpleCrowdfundingMap::<T>::try_get(id).map_err(|_| InvalidTransaction::Stale)?;
+                if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
                     return InvalidTransaction::Stale.into();
                 }
 
                 ValidTransaction::with_tag_prefix("DeipOffchainWorker")
                     .propagate(false)
                     .longevity(5)
-                    .and_provides((b"finish_project_token_sale", *id))
+                    .and_provides((b"finish_crowdfunding", *id))
                     .build()
             },
             _ => InvalidTransaction::Call.into(),

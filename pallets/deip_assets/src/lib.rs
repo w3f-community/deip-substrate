@@ -32,6 +32,9 @@
 
 pub mod traits;
 
+pub mod serializable;
+pub use serializable::{AssetBalance as SerializableAssetBalance, AssetId as SerializableAssetId};
+
 #[doc(inline)]
 pub use pallet::*;
 
@@ -39,19 +42,28 @@ pub use pallet::*;
 #[doc(hidden)]
 pub mod pallet {
     use frame_support::pallet_prelude::*;
-    use frame_support::{traits::UnfilteredDispatchable, transactional};
+    use frame_support::{
+        traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
+        transactional,
+    };
     use frame_system::{pallet_prelude::*, RawOrigin};
-    use sp_runtime::traits::{StaticLookup, Zero};
+    use sp_runtime::traits::{One, StaticLookup, Zero};
     use sp_std::{prelude::*, vec};
+
+    #[cfg(feature = "std")]
+    use frame_support::traits::GenesisBuild;
 
     use pallet_assets::WeightInfo;
 
     use super::traits::DeipProjectsInfo;
 
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-    type DeipProjectIdOf<T> = <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
-    type AssetsAssetIdOf<T> = <T as pallet_assets::Config>::AssetId;
-    type AssetsBalanceOf<T> = <T as pallet_assets::Config>::Balance;
+    type DeipProjectIdOf<T> =
+        <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
+    type DeipInvestmentIdOf<T> =
+        <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::InvestmentId;
+    pub(crate) type AssetsAssetIdOf<T> = <T as pallet_assets::Config>::AssetId;
+    pub(crate) type AssetsBalanceOf<T> = <T as pallet_assets::Config>::Balance;
     type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
 
     #[pallet::config]
@@ -77,6 +89,8 @@ pub mod pallet {
         ProjectSecurityTokenCannotBeBurned,
         ProjectSecurityTokenCannotBeFreezed,
         ProjectSecurityTokenAccountCannotBeFreezed,
+        ReservedAssetCannotBeFreezed,
+        ReservedAssetAccountCannotBeFreezed,
     }
 
     #[pallet::storage]
@@ -87,6 +101,88 @@ pub mod pallet {
     pub(super) type ProjectIdByAssetId<T: Config> =
         StorageMap<_, Identity, AssetsAssetIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
 
+    #[pallet::storage]
+    pub(super) type CoreAssetId<T> = StorageValue<_, AssetsAssetIdOf<T>, ValueQuery>;
+
+    #[pallet::storage]
+    pub(super) type InvestmentByAssetId<T: Config> =
+        StorageMap<_, Identity, AssetsAssetIdOf<T>, Vec<DeipInvestmentIdOf<T>>, OptionQuery>;
+
+    #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+    pub(super) struct Investment<AccountId, AssetId> {
+        creator: AccountId,
+        assets: Vec<AssetId>,
+        asset_id: AssetId,
+    }
+
+    #[pallet::storage]
+    pub(super) type InvestmentMap<T: Config> = StorageMap<
+        _,
+        Identity,
+        DeipInvestmentIdOf<T>,
+        Investment<AccountIdOf<T>, AssetsAssetIdOf<T>>,
+        OptionQuery,
+    >;
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub core_asset_admin: AccountIdOf<T>,
+        pub core_asset_id: super::serializable::AssetId<T>,
+        pub balances: Vec<(AccountIdOf<T>, super::serializable::AssetBalance<T>)>,
+    }
+
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> Self {
+            Self {
+                core_asset_admin: Default::default(),
+                core_asset_id: Default::default(),
+                balances: Default::default(),
+            }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {
+            CoreAssetId::<T>::put(self.core_asset_id.0);
+
+            let admin_source = T::Lookup::unlookup(self.core_asset_admin.clone());
+            let call = pallet_assets::Call::<T>::create(
+                self.core_asset_id.0,
+                admin_source,
+                u32::MAX,
+                One::one(),
+            );
+            let result = call
+                .dispatch_bypass_filter(RawOrigin::Signed(self.core_asset_admin.clone()).into());
+            assert!(result.is_ok());
+
+            // ensure no duplicates exist.
+            let endowed_accounts = self
+                .balances
+                .iter()
+                .map(|(x, _)| x)
+                .cloned()
+                .collect::<std::collections::BTreeSet<_>>();
+
+            assert!(
+                endowed_accounts.len() == self.balances.len(),
+                "duplicate balances in genesis."
+            );
+
+            for (ref who, amount) in &self.balances {
+                let who_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
+                let call =
+                    pallet_assets::Call::<T>::mint(self.core_asset_id.0, who_source, amount.0);
+                let result = call.dispatch_bypass_filter(
+                    RawOrigin::Signed(self.core_asset_admin.clone()).into(),
+                );
+                assert!(result.is_ok());
+            }
+        }
+    }
+
     impl<T: Config> Pallet<T> {
         pub fn project_key(id: &DeipProjectIdOf<T>) -> T::AccountId {
             let entropy =
@@ -94,78 +190,179 @@ pub mod pallet {
             T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
         }
 
-        pub fn try_get_tokenized_project(id: &T::AssetId) -> Option<DeipProjectIdOf<T>> {
-            match ProjectIdByAssetId::<T>::try_get(*id) {
-                Ok(project_id) => Some(project_id),
-                Err(_) => None,
-            }
+        pub fn investment_key(id: &DeipInvestmentIdOf<T>) -> T::AccountId {
+            let entropy =
+                (b"deip/investments/", id.as_ref()).using_encoded(sp_io::hashing::blake2_256);
+            T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
         }
 
         #[transactional]
         pub fn transactionally_reserve(
             account: &T::AccountId,
-            project_id: DeipProjectIdOf<T>,
+            id: DeipInvestmentIdOf<T>,
             security_tokens_on_sale: &[(T::AssetId, T::Balance)],
-        ) -> Result<(), ()> {
-            let project_account = Self::project_key(&project_id);
-            let project_source = <T::Lookup as StaticLookup>::unlookup(project_account);
+            asset_to_raise: T::AssetId,
+        ) -> Result<(), deip_assets_error::ReserveError<T::AssetId>> {
+            use deip_assets_error::ReserveError;
 
-            for (id, amount) in security_tokens_on_sale {
-                let call = pallet_assets::Call::<T>::transfer(*id, project_source.clone(), *amount);
+            ensure!(
+                !InvestmentMap::<T>::contains_key(id.clone()),
+                ReserveError::AlreadyReserved
+            );
+
+            let id_account = Self::investment_key(&id);
+            let id_source = <T::Lookup as StaticLookup>::unlookup(id_account.clone());
+
+            let reserved = T::Currency::withdraw(
+                account,
+                T::Currency::minimum_balance(),
+                WithdrawReasons::RESERVE,
+                ExistenceRequirement::AllowDeath,
+            )
+            .map_err(|_| ReserveError::NotEnoughBalance)?;
+
+            T::Currency::resolve_creating(&id_account, reserved);
+
+            let mut assets_to_reserve =
+                Vec::<T::AssetId>::with_capacity(security_tokens_on_sale.len());
+
+            for (asset, amount) in security_tokens_on_sale {
+                let call = pallet_assets::Call::<T>::transfer(*asset, id_source.clone(), *amount);
                 let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
                 if result.is_err() {
-                    return Err(());
+                    return Err(ReserveError::AssetTransferFailed(*asset));
                 }
+
+                assets_to_reserve.push(*asset);
+
+                InvestmentByAssetId::<T>::mutate_exists(*asset, |investments| {
+                    match investments.as_mut() {
+                        None => *investments = Some(vec![id.clone()]),
+                        Some(c) => c.push(id.clone()),
+                    };
+                });
             }
+
+            InvestmentByAssetId::<T>::mutate_exists(asset_to_raise, |investments| {
+                match investments.as_mut() {
+                    None => *investments = Some(vec![id.clone()]),
+                    Some(c) => c.push(id.clone()),
+                };
+            });
+
+            InvestmentMap::<T>::insert(
+                id.clone(),
+                Investment {
+                    creator: account.clone(),
+                    assets: assets_to_reserve,
+                    asset_id: asset_to_raise,
+                },
+            );
 
             Ok(())
         }
 
-        /// This could fail if the new project team is a zombie in pallet_assets-terms.
         #[transactional]
         pub fn transactionally_unreserve(
-            project_id: DeipProjectIdOf<T>,
-            account: &T::AccountId,
-        ) -> Result<(), ()> {
-            let project_account = Self::project_key(&project_id);
-            let account_source = <T::Lookup as StaticLookup>::unlookup(account.clone());
+            id: DeipInvestmentIdOf<T>,
+        ) -> Result<(), deip_assets_error::UnreserveError<T::AssetId>> {
+            use deip_assets_error::UnreserveError;
 
-            let security_tokens = match AssetIdByProjectId::<T>::try_get(project_id) {
-                Err(_) => return Err(()),
-                Ok(c) => c,
+            let info = match InvestmentMap::<T>::take(id.clone()) {
+                Some(i) => i,
+                None => return Err(UnreserveError::NoSuchInvestment),
             };
 
-            for id in &security_tokens {
-                let amount = pallet_assets::Module::<T>::balance(*id, project_account.clone());
+            let deposited =
+                T::Currency::deposit_creating(&info.creator, T::Currency::minimum_balance());
+
+            let id_account = Self::investment_key(&id);
+            let creator_source = <T::Lookup as StaticLookup>::unlookup(info.creator.clone());
+
+            for asset_id in info.assets.iter().chain(&[info.asset_id]) {
+                InvestmentByAssetId::<T>::mutate_exists(*asset_id, |maybe_investments| {
+                    let investments = maybe_investments
+                        .as_mut()
+                        .expect("checked in transactionally_reserve");
+                    let index = investments
+                        .iter()
+                        .position(|a| *a == id)
+                        .expect("checked in transactionally_reserve");
+                    investments.remove(index);
+                    if investments.is_empty() {
+                        *maybe_investments = None;
+                    }
+                });
+
+                let amount = pallet_assets::Module::<T>::balance(*asset_id, id_account.clone());
                 if amount.is_zero() {
                     continue;
                 }
 
-                let call = pallet_assets::Call::<T>::transfer(*id, account_source.clone(), amount);
+                let call =
+                    pallet_assets::Call::<T>::transfer(*asset_id, creator_source.clone(), amount);
                 let result =
-                    call.dispatch_bypass_filter(RawOrigin::Signed(project_account.clone()).into());
+                    call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
                 if result.is_err() {
-                    return Err(());
+                    return Err(UnreserveError::AssetTransferFailed(*asset_id));
                 }
+            }
+
+            T::Currency::settle(
+                &id_account,
+                deposited,
+                WithdrawReasons::TRANSFER,
+                ExistenceRequirement::AllowDeath,
+            )
+            .unwrap_or_else(|_| panic!("should be reserved in transactionally_reserve"));
+
+            Ok(())
+        }
+
+        pub fn transfer_from_reserved(
+            id: DeipInvestmentIdOf<T>,
+            who: &T::AccountId,
+            asset: T::AssetId,
+            amount: T::Balance,
+        ) -> Result<(), deip_assets_error::UnreserveError<T::AssetId>> {
+            use deip_assets_error::UnreserveError;
+
+            ensure!(
+                InvestmentMap::<T>::contains_key(id.clone()),
+                UnreserveError::NoSuchInvestment
+            );
+
+            let id_account = Self::investment_key(&id);
+            let who_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
+
+            let call = pallet_assets::Call::<T>::transfer(asset, who_source, amount);
+            let result = call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
+            if result.is_err() {
+                return Err(UnreserveError::AssetTransferFailed(asset));
             }
 
             Ok(())
         }
 
-        pub fn transfer_from_project(
-            project_id: DeipProjectIdOf<T>,
+        pub fn transfer_to_reserved(
             who: &T::AccountId,
-            id: T::AssetId,
+            id: DeipInvestmentIdOf<T>,
             amount: T::Balance,
-        ) -> Result<(), ()> {
-            let project_account = Self::project_key(&project_id);
-            let account_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
+        ) -> Result<(), deip_assets_error::UnreserveError<T::AssetId>> {
+            use deip_assets_error::UnreserveError;
 
-            let call = pallet_assets::Call::<T>::transfer(id, account_source, amount);
-            let result =
-                call.dispatch_bypass_filter(RawOrigin::Signed(project_account.clone()).into());
+            let info = match InvestmentMap::<T>::try_get(id.clone()) {
+                Ok(i) => i,
+                Err(_) => return Err(UnreserveError::NoSuchInvestment),
+            };
+
+            let id_account = Self::investment_key(&id);
+            let id_source = <T::Lookup as StaticLookup>::unlookup(id_account);
+
+            let call = pallet_assets::Call::<T>::transfer(info.asset_id, id_source, amount);
+            let result = call.dispatch_bypass_filter(RawOrigin::Signed(who.clone()).into());
             if result.is_err() {
-                return Err(());
+                return Err(UnreserveError::AssetTransferFailed(info.asset_id));
             }
 
             Ok(())
@@ -280,6 +477,11 @@ pub mod pallet {
                 Error::<T>::ProjectSecurityTokenAccountCannotBeFreezed
             );
 
+            ensure!(
+                !InvestmentByAssetId::<T>::contains_key(id),
+                Error::<T>::ReservedAssetAccountCannotBeFreezed
+            );
+
             let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
             let call = pallet_assets::Call::<T>::freeze(id, who_source);
             call.dispatch_bypass_filter(origin)
@@ -304,6 +506,11 @@ pub mod pallet {
             ensure!(
                 !ProjectIdByAssetId::<T>::contains_key(id),
                 Error::<T>::ProjectSecurityTokenCannotBeFreezed
+            );
+
+            ensure!(
+                !InvestmentByAssetId::<T>::contains_key(id),
+                Error::<T>::ReservedAssetCannotBeFreezed
             );
 
             let call = pallet_assets::Call::<T>::freeze_asset(id);
@@ -367,5 +574,22 @@ pub mod pallet {
             let call = pallet_assets::Call::<T>::set_metadata(id, name, symbol, decimals);
             call.dispatch_bypass_filter(origin)
         }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: Config> GenesisConfig<T> {
+    /// Direct implementation of `GenesisBuild::build_storage`.
+    ///
+    /// Kept in order not to break dependency.
+    pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
+        <Self as frame_support::traits::GenesisBuild<T>>::build_storage(self)
+    }
+
+    /// Direct implementation of `GenesisBuild::assimilate_storage`.
+    ///
+    /// Kept in order not to break dependency.
+    pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
+        <Self as frame_support::traits::GenesisBuild<T>>::assimilate_storage(self, storage)
     }
 }

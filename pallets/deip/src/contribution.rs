@@ -1,5 +1,6 @@
 use crate::*;
 
+use crate::traits::DeipAssetSystem;
 use sp_runtime::traits::Saturating;
 use sp_std::vec;
 
@@ -14,17 +15,17 @@ pub struct Contribution<AccountId, Balance, Moment> {
 }
 
 impl<T: Config> Module<T> {
-    pub(super) fn contribute_to_project_token_sale_impl(
+    pub(super) fn invest_to_crowdfunding_impl(
         account: T::AccountId,
         sale_id: InvestmentId,
-        amount: BalanceOf<T>,
+        amount: DeipAssetBalanceOf<T>,
     ) -> DispatchResult {
-        let sale = ProjectTokenSaleMap::<T>::try_get(sale_id)
-            .map_err(|_| Error::<T>::ContributionProjectTokenSaleNotFound)?;
+        let sale = SimpleCrowdfundingMap::<T>::try_get(sale_id)
+            .map_err(|_| Error::<T>::InvestingNotFound)?;
 
         ensure!(
-            matches!(sale.status, ProjectTokenSaleStatus::Active),
-            Error::<T>::ContributionProjectTokenSaleNotActive
+            matches!(sale.status, SimpleCrowdfundingStatus::Active),
+            Error::<T>::InvestingNotActive
         );
 
         let is_hard_cap_reached = if sale.total_amount.saturating_add(amount) >= sale.hard_cap {
@@ -40,11 +41,12 @@ impl<T: Config> Module<T> {
         };
 
         ensure!(
-            T::Currency::reserve(&account, amount_to_contribute).is_ok(),
-            Error::<T>::ContributionNotEnoughFunds
+            T::AssetSystem::transfer_to_reserved(&account, sale.external_id, amount_to_contribute)
+                .is_ok(),
+            Error::<T>::InvestingNotEnoughFunds
         );
 
-        ProjectTokenSaleContributions::<T>::mutate_exists(sale_id, |contributions| {
+        InvestmentMap::<T>::mutate_exists(sale_id, |contributions| {
             let mut_contributions = match contributions.as_mut() {
                 None => {
                     *contributions = Some(vec![(
@@ -83,15 +85,15 @@ impl<T: Config> Module<T> {
             };
         });
 
-        Self::collect_funds(sale_id, amount_to_contribute).expect("ProjectTokenSale already found");
+        Self::collect_funds(sale_id, amount_to_contribute).expect("collect; already found");
 
-        Self::deposit_event(RawEvent::ProjectTokenSaleContributed(
+        Self::deposit_event(RawEvent::Invested(
             sale_id,
             account.clone(),
         ));
 
         if is_hard_cap_reached {
-            Self::finish_project_token_sale_by_id(sale_id).expect("ProjectTokenSale already found");
+            Self::finish_crowdfunding_by_id(sale_id).expect("finish; already found");
         }
 
         Ok(())

@@ -7,6 +7,8 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 };
 
+use deip_assets_error::{ReserveError, UnreserveError};
+
 pub const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
 pub const ALICE_ACCOUNT_ID: <Test as system::Config>::AccountId = 124;
 pub const BOB_ACCOUNT_ID: <Test as system::Config>::AccountId = 125;
@@ -86,29 +88,34 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
 	type Balance = u64;
 	type AssetId = u32;
 
-	fn try_get_tokenized_project(id: &Self::AssetId) -> Option<super::ProjectId> {
-		DeipAssets::try_get_tokenized_project(id)
+	fn transactionally_reserve(
+		account: &u64,
+		id: super::InvestmentId,
+		security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
+		asset: Self::AssetId,
+	) -> Result<(), ReserveError<Self::AssetId>> {
+		DeipAssets::transactionally_reserve(account, id, security_tokens_on_sale, asset)
 	}
 
-    fn transactionally_reserve(
-        account: &u64,
-        project_id: super::ProjectId,
-        security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
-    ) -> Result<(), ()> {
-		DeipAssets::transactionally_reserve(account, project_id, security_tokens_on_sale)
+	fn transactionally_unreserve(id: super::InvestmentId) -> Result<(), UnreserveError<Self::AssetId>> {
+		DeipAssets::transactionally_unreserve(id)
 	}
 
-	fn transactionally_unreserve(project_id: super::ProjectId, account: &u64) -> Result<(), ()> {
-		DeipAssets::transactionally_unreserve(project_id, account)
-	}
-
-	fn transfer(
-		project_id: super::ProjectId,
+	fn transfer_from_reserved(
+		id: super::InvestmentId,
 		who: &u64,
-		id: Self::AssetId,
+		asset: Self::AssetId,
 		amount: Self::Balance,
-	) -> Result<(), ()> {
-		DeipAssets::transfer_from_project(project_id, who, id, amount)
+	) -> Result<(), UnreserveError<Self::AssetId>> {
+		DeipAssets::transfer_from_reserved(id, who, asset, amount)
+	}
+
+	fn transfer_to_reserved(
+		who: &AccountId,
+		id: super::InvestmentId,
+		amount: Self::Balance,
+	) -> Result<(), UnreserveError<Self::AssetId>> {
+		DeipAssets::transfer_to_reserved(who, id, amount)
 	}
 }
 
@@ -155,6 +162,7 @@ impl pallet_assets::Config for Test {
 
 impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
 	type ProjectId = pallet_deip::ProjectId;
+	type InvestmentId = pallet_deip::InvestmentId;
 
 	fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
 		Deip::try_get_project_team(id)
