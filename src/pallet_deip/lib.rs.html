@@ -1068,35 +1068,6 @@
 <span id="1066">1066</span>
 <span id="1067">1067</span>
 <span id="1068">1068</span>
-<span id="1069">1069</span>
-<span id="1070">1070</span>
-<span id="1071">1071</span>
-<span id="1072">1072</span>
-<span id="1073">1073</span>
-<span id="1074">1074</span>
-<span id="1075">1075</span>
-<span id="1076">1076</span>
-<span id="1077">1077</span>
-<span id="1078">1078</span>
-<span id="1079">1079</span>
-<span id="1080">1080</span>
-<span id="1081">1081</span>
-<span id="1082">1082</span>
-<span id="1083">1083</span>
-<span id="1084">1084</span>
-<span id="1085">1085</span>
-<span id="1086">1086</span>
-<span id="1087">1087</span>
-<span id="1088">1088</span>
-<span id="1089">1089</span>
-<span id="1090">1090</span>
-<span id="1091">1091</span>
-<span id="1092">1092</span>
-<span id="1093">1093</span>
-<span id="1094">1094</span>
-<span id="1095">1095</span>
-<span id="1096">1096</span>
-<span id="1097">1097</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -1163,13 +1134,15 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">tests</span>;
 
-<span class="kw">mod</span> <span class="ident">project_token_sale</span>;
-<span class="kw">use</span> <span class="ident">project_token_sale</span>::{<span class="ident">Id</span> <span class="kw">as</span> <span class="ident">InvestmentId</span>,
-    <span class="ident">Status</span> <span class="kw">as</span> <span class="ident">ProjectTokenSaleStatus</span>,
-    <span class="ident">Info</span> <span class="kw">as</span> <span class="ident">ProjectTokenSale</span>};
+<span class="kw">mod</span> <span class="ident">investment_opportunity</span>;
+<span class="kw">use</span> <span class="ident">investment_opportunity</span>::{
+    <span class="ident">Status</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfundingStatus</span>,
+    <span class="ident">Info</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfunding</span>,
+    <span class="ident">InvestmentOpportunity</span> <span class="kw">as</span> <span class="ident">FundingModel</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">investment_opportunity</span>::{<span class="ident">Id</span> <span class="kw">as</span> <span class="ident">InvestmentId</span>};
 
-<span class="kw">mod</span> <span class="ident">project_token_sale_contribution</span>;
-<span class="kw">use</span> <span class="ident">project_token_sale_contribution</span>::{<span class="ident">Contribution</span> <span class="kw">as</span> <span class="ident">ProjectTokenSaleContribution</span>};
+<span class="kw">mod</span> <span class="ident">contribution</span>;
+<span class="kw">use</span> <span class="ident">contribution</span>::{<span class="ident">Contribution</span> <span class="kw">as</span> <span class="ident">Investment</span>};
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">traits</span>;
 
@@ -1241,30 +1214,11 @@
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Nda</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">pallet_timestamp::Config</span><span class="op">&gt;</span><span class="ident">::Moment</span><span class="op">&gt;</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">NdaAccessRequestOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">NdaAccessRequest</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">ProjectContent</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectTokenSaleOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">ProjectTokenSale</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">pallet_timestamp::Config</span><span class="op">&gt;</span><span class="ident">::Moment</span>, <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">SimpleCrowdfundingOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">SimpleCrowdfunding</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">pallet_timestamp::Config</span><span class="op">&gt;</span><span class="ident">::Moment</span>, <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::Currency</span> <span class="kw">as</span> <span class="ident">Currency</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Balance</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectTokenSaleContributionOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleContribution</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">pallet_timestamp::Config</span><span class="op">&gt;</span><span class="ident">::Moment</span><span class="op">&gt;</span>;
-<span class="kw">type</span> <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::AssetSystem</span> <span class="kw">as</span> <span class="ident">traits::DeipAssetSystem</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::AssetId</span>;
-<span class="kw">type</span> <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::AssetSystem</span> <span class="kw">as</span> <span class="ident">traits::DeipAssetSystem</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Balance</span>;
-
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>))]</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">serde</span>(<span class="ident">rename_all</span> <span class="op">=</span> <span class="string">&quot;camelCase&quot;</span>))]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">InvestmentOpportunity</span><span class="op">&lt;</span><span class="ident">Moment</span>, <span class="ident">Balance</span>, <span class="ident">AssetId</span>, <span class="ident">AssetBalance</span><span class="op">&gt;</span> {
-    <span class="ident">ProjectTokenSale</span> {
-        <span class="doccomment">/// a moment when the sale starts. Must be later than current moment.</span>
-        <span class="ident">start_time</span>: <span class="ident">Moment</span>,
-        <span class="doccomment">/// a moment when the sale ends. Must be later than `start_time`.</span>
-        <span class="ident">end_time</span>: <span class="ident">Moment</span>,
-        <span class="doccomment">/// amount of units to raise. This must be greater or equal to `ExistentialDeposit`</span>
-        <span class="doccomment">/// (see [frame_support::traits::Currency] for details).</span>
-        <span class="ident">soft_cap</span>: <span class="ident">Balance</span>,
-        <span class="doccomment">/// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.</span>
-        <span class="ident">hard_cap</span>: <span class="ident">Balance</span>,
-        <span class="doccomment">/// specifies how many tokens of the project are intended to sale.</span>
-        <span class="ident">security_tokens_on_sale</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">AssetId</span>, <span class="ident">AssetBalance</span>)<span class="op">&gt;</span>,
-    },
-}
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InvestmentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Investment</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">pallet_timestamp::Config</span><span class="op">&gt;</span><span class="ident">::Moment</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::AssetSystem</span> <span class="kw">as</span> <span class="ident">traits::DeipAssetSystem</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::AssetId</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::AssetSystem</span> <span class="kw">as</span> <span class="ident">traits::DeipAssetSystem</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Balance</span>;
 
 <span class="doccomment">/// Review </span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">Default</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
@@ -1403,7 +1357,6 @@
         <span class="ident">AccountId</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">frame_system::Config</span><span class="op">&gt;</span><span class="ident">::AccountId</span>,
         <span class="ident">Project</span> <span class="op">=</span> <span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">Review</span> <span class="op">=</span> <span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">ProjectTokenSale</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     {
         <span class="comment">// ==== Projects ====</span>
 
@@ -1436,16 +1389,16 @@
         <span class="doccomment">/// Event emitted when a review has been created. [BelongsTo, Review]</span>
         <span class="ident">ReviewCreated</span>(<span class="ident">AccountId</span>, <span class="ident">Review</span>),
 
-        <span class="doccomment">/// Event emitted when a token sale for project has been created.</span>
-        <span class="ident">ProjectTokenSaleCreated</span>(<span class="ident">ProjectId</span>, <span class="ident">ProjectTokenSale</span>),
-        <span class="doccomment">/// Event emitted when a token sale for project has been activated.</span>
-        <span class="ident">ProjectTokenSaleActivated</span>(<span class="ident">ProjectId</span>, <span class="ident">InvestmentId</span>),
-        <span class="doccomment">/// Event emitted when a token sale for project has finished.</span>
-        <span class="ident">ProjectTokenSaleFinished</span>(<span class="ident">ProjectId</span>, <span class="ident">InvestmentId</span>),
-        <span class="doccomment">/// Event emitted when a token sale for project has expired.</span>
-        <span class="ident">ProjectTokenSaleExpired</span>(<span class="ident">ProjectId</span>, <span class="ident">InvestmentId</span>),
-        <span class="doccomment">/// Event emitted when DAO contributed to the project token sale</span>
-        <span class="ident">ProjectTokenSaleContributed</span>(<span class="ident">InvestmentId</span>, <span class="ident">AccountId</span>),
+        <span class="doccomment">/// Event emitted when a simple crowd funding has been created.</span>
+        <span class="ident">SimpleCrowdfundingCreated</span>(<span class="ident">InvestmentId</span>),
+        <span class="doccomment">/// Event emitted when a simple crowd funding has been activated.</span>
+        <span class="ident">SimpleCrowdfundingActivated</span>(<span class="ident">InvestmentId</span>),
+        <span class="doccomment">/// Event emitted when a simple crowd funding has finished.</span>
+        <span class="ident">SimpleCrowdfundingFinished</span>(<span class="ident">InvestmentId</span>),
+        <span class="doccomment">/// Event emitted when a simple crowd funding has expired.</span>
+        <span class="ident">SimpleCrowdfundingExpired</span>(<span class="ident">InvestmentId</span>),
+        <span class="doccomment">/// Event emitted when DAO invested to an opportunity</span>
+        <span class="ident">Invested</span>(<span class="ident">InvestmentId</span>, <span class="ident">AccountId</span>),
     }
 }
 
@@ -1515,28 +1468,27 @@
         <span class="doccomment">/// Access Forbiten</span>
         <span class="ident">NoPermission</span>,
 
-        <span class="comment">// Project token sale errors</span>
-        <span class="ident">TokenSaleStartTimeMustBeLaterOrEqualCurrentMoment</span>,
-        <span class="ident">TokenSaleEndTimeMustBeLaterStartTime</span>,
-        <span class="ident">TokenSaleSoftCapMustBeGreaterOrEqualMinimum</span>,
-        <span class="ident">TokenSaleHardCapShouldBeGreaterOrEqualSoftCap</span>,
-        <span class="ident">TokenSaleScheduledAlready</span>,
-        <span class="ident">TokenSaleAlreadyExists</span>,
-        <span class="ident">TokenSaleBalanceIsNotEnough</span>,
-        <span class="ident">TokenSaleAssetIsNotSecurityToken</span>,
-        <span class="ident">TokenSaleProjectNotTokenizedWithSecurityToken</span>,
-        <span class="ident">TokenSaleAssetAmountMustBePositive</span>,
-        <span class="ident">TokenSaleSecurityTokenNotSpecified</span>,
-        <span class="ident">TokenSaleNotFound</span>,
-        <span class="ident">TokenSaleShouldBeInactive</span>,
-        <span class="ident">TokenSaleShouldBeStarted</span>,
-        <span class="ident">TokenSaleShouldBeActive</span>,
-        <span class="ident">TokenSaleExpirationWrongState</span>,
+        <span class="comment">// Investment opportunity errors</span>
+        <span class="ident">InvestmentOpportunityStartTimeMustBeLaterOrEqualCurrentMoment</span>,
+        <span class="ident">InvestmentOpportunityEndTimeMustBeLaterStartTime</span>,
+        <span class="ident">InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum</span>,
+        <span class="ident">InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap</span>,
+        <span class="ident">InvestmentOpportunityAlreadyExists</span>,
+        <span class="ident">InvestmentOpportunityBalanceIsNotEnough</span>,
+        <span class="ident">InvestmentOpportunityFailedToReserveAsset</span>,
+        <span class="ident">InvestmentOpportunityAssetAmountMustBePositive</span>,
+        <span class="ident">InvestmentOpportunitySecurityTokenNotSpecified</span>,
+        <span class="ident">InvestmentOpportunityNotFound</span>,
+        <span class="ident">InvestmentOpportunityShouldBeInactive</span>,
+        <span class="ident">InvestmentOpportunityShouldBeStarted</span>,
+        <span class="ident">InvestmentOpportunityShouldBeActive</span>,
+        <span class="ident">InvestmentOpportunityExpirationWrongState</span>,
+        <span class="ident">InvestmentOpportunityWrongAssetId</span>,
 
-        <span class="comment">// Possible errors when DAO tries to contribute to a project token sale</span>
-        <span class="ident">ContributionProjectTokenSaleNotFound</span>,
-        <span class="ident">ContributionProjectTokenSaleNotActive</span>,
-        <span class="ident">ContributionNotEnoughFunds</span>,
+        <span class="comment">// Possible errors when DAO tries to invest to an opportunity</span>
+        <span class="ident">InvestingNotFound</span>,
+        <span class="ident">InvestingNotActive</span>,
+        <span class="ident">InvestingNotEnoughFunds</span>,
     }
 }
 
@@ -1547,11 +1499,10 @@
         <span class="doccomment">/// Project list, guarantees uniquest and provides Project listing</span>
         <span class="ident">Projects</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">projects</span>): <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ProjectId</span>, <span class="ident">T::AccountId</span>)<span class="op">&gt;</span>;
 
-        <span class="ident">ProjectTokenSaleMap</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">project_token_sale</span>): <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">InvestmentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectTokenSaleOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
-        <span class="ident">ProjectTokenSaleByProjectIdStatus</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">token_sales</span>): <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ProjectId</span>, <span class="ident">ProjectTokenSaleStatus</span>, <span class="ident">InvestmentId</span>)<span class="op">&gt;</span>;
+        <span class="ident">SimpleCrowdfundingMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">InvestmentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">SimpleCrowdfundingOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
 
-        <span class="doccomment">/// Contains contributions to project token sales from DAOs</span>
-        <span class="ident">ProjectTokenSaleContributions</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">InvestmentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">T::AccountId</span>, <span class="ident">ProjectTokenSaleContributionOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>;
+        <span class="doccomment">/// Contains various contributions from DAOs</span>
+        <span class="ident">InvestmentMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">InvestmentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">T::AccountId</span>, <span class="ident">InvestmentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>;
 
         <span class="doccomment">/// Map to Project Content Info</span>
         <span class="ident">ProjectContentMap</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">project_content_entity</span>): <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectId</span>, <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectContentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
@@ -1654,42 +1605,34 @@
         <span class="doccomment">/// - `external_id`: id of the sale. Must be unique.</span>
         <span class="doccomment">/// - `project_id`: id of the project which tokens are intended to sale.</span>
         <span class="doccomment">/// - `investment_type`: specifies type of created investment opportunity. For possible</span>
-        <span class="doccomment">/// variants and details see [`InvestmentOpportunity`].</span>
+        <span class="doccomment">/// variants and details see [`FundingModel`].</span>
         <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
         <span class="kw">fn</span> <span class="ident">create_investment_opportunity</span>(<span class="ident">origin</span>,
             <span class="ident">external_id</span>: <span class="ident">InvestmentId</span>,
-            <span class="ident">project_id</span>: <span class="ident">ProjectId</span>,
-            <span class="ident">investment_type</span>: <span class="ident">InvestmentOpportunity</span><span class="op">&lt;</span><span class="ident">T::Moment</span>, <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+            <span class="ident">creator</span>: <span class="ident">T::DeipAccountId</span>,
+            <span class="ident">shares</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
+            <span class="ident">funding_model</span>: <span class="ident">FundingModel</span><span class="op">&lt;</span><span class="ident">T::Moment</span>, <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-
-            <span class="kw">match</span> <span class="ident">investment_type</span> {
-                <span class="ident">InvestmentOpportunity::ProjectTokenSale</span>{
-                    <span class="ident">start_time</span>,
-                    <span class="ident">end_time</span>,
-                    <span class="ident">soft_cap</span>,
-                    <span class="ident">hard_cap</span>,
-                    <span class="ident">security_tokens_on_sale</span>,
-                } <span class="op">=</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::create_project_token_sale_impl</span>(<span class="ident">account</span>, <span class="ident">external_id</span>, <span class="ident">project_id</span>, <span class="ident">start_time</span>, <span class="ident">end_time</span>, <span class="ident">soft_cap</span>, <span class="ident">hard_cap</span>, <span class="ident">security_tokens_on_sale</span>)
-            }
+            <span class="self">Self</span><span class="ident">::create_investment_opportunity_impl</span>(<span class="ident">account</span>, <span class="ident">external_id</span>, <span class="ident">creator</span>.<span class="ident">into</span>(), <span class="ident">shares</span>, <span class="ident">funding_model</span>)
         }
 
         <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
-        <span class="kw">fn</span> <span class="ident">activate_project_token_sale</span>(<span class="ident">origin</span>, <span class="ident">sale_id</span>: <span class="ident">InvestmentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
+        <span class="kw">fn</span> <span class="ident">activate_crowdfunding</span>(<span class="ident">origin</span>, <span class="ident">sale_id</span>: <span class="ident">InvestmentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="ident">ensure_none</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-            <span class="self">Self</span><span class="ident">::activate_project_token_sale_impl</span>(<span class="ident">sale_id</span>)
+            <span class="self">Self</span><span class="ident">::activate_crowdfunding_impl</span>(<span class="ident">sale_id</span>)
         }
 
         <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
-        <span class="kw">fn</span> <span class="ident">expire_project_token_sale</span>(<span class="ident">origin</span>, <span class="ident">sale_id</span>: <span class="ident">InvestmentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
+        <span class="kw">fn</span> <span class="ident">expire_crowdfunding</span>(<span class="ident">origin</span>, <span class="ident">sale_id</span>: <span class="ident">InvestmentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="ident">ensure_none</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-            <span class="self">Self</span><span class="ident">::expire_project_token_sale_impl</span>(<span class="ident">sale_id</span>)
+            <span class="self">Self</span><span class="ident">::expire_crowdfunding_impl</span>(<span class="ident">sale_id</span>)
         }
 
         <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
-        <span class="kw">fn</span> <span class="ident">finish_project_token_sale</span>(<span class="ident">origin</span>, <span class="ident">sale_id</span>: <span class="ident">InvestmentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
+        <span class="kw">fn</span> <span class="ident">finish_crowdfunding</span>(<span class="ident">origin</span>, <span class="ident">sale_id</span>: <span class="ident">InvestmentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="ident">ensure_none</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-            <span class="self">Self</span><span class="ident">::finish_project_token_sale_impl</span>(<span class="ident">sale_id</span>)
+            <span class="self">Self</span><span class="ident">::finish_crowdfunding_impl</span>(<span class="ident">sale_id</span>)
         }
 
         <span class="doccomment">/// Allows DAO to invest to an opportunity.</span>
@@ -1699,14 +1642,13 @@
         <span class="doccomment">/// - `id`: identifier of the investment opportunity</span>
         <span class="doccomment">/// - `amount`: amount of units to invest. The account should have enough funds on</span>
         <span class="doccomment">///     the balance. This amount is reserved until the investment finished or expired</span>
-        <span class="doccomment">/// (see [frame_support::traits::ReservableCurrency] for details).</span>
         <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
         <span class="kw">fn</span> <span class="ident">invest</span>(<span class="ident">origin</span>,
             <span class="ident">id</span>: <span class="ident">InvestmentId</span>,
-            <span class="ident">amount</span>: <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+            <span class="ident">amount</span>: <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
         ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-            <span class="self">Self</span><span class="ident">::contribute_to_project_token_sale_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">amount</span>)
+            <span class="self">Self</span><span class="ident">::invest_to_crowdfunding_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">amount</span>)
         }
 
         <span class="doccomment">/// Allow a user to update project.</span>
@@ -2073,7 +2015,7 @@
                 <span class="kw">return</span>;
             }
 
-            <span class="self">Self</span><span class="ident">::process_project_token_sales_offchain</span>();
+            <span class="self">Self</span><span class="ident">::process_investment_opportunities_offchain</span>();
         }
     }
 }
@@ -2098,40 +2040,40 @@
         }
 
         <span class="kw">match</span> <span class="ident">call</span> {
-            <span class="ident">Call::activate_project_token_sale</span>(<span class="kw-2">ref</span> <span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="ident">sale</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">InvalidTransaction::Stale</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">sale</span>.<span class="ident">status</span>, <span class="ident">ProjectTokenSaleStatus::Inactive</span>) {
+            <span class="ident">Call::activate_crowdfunding</span>(<span class="kw-2">ref</span> <span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">sale</span> <span class="op">=</span> <span class="ident">SimpleCrowdfundingMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">InvalidTransaction::Stale</span>)<span class="question-mark">?</span>;
+                <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">sale</span>.<span class="ident">status</span>, <span class="ident">SimpleCrowdfundingStatus::Inactive</span>) {
                     <span class="kw">return</span> <span class="ident">InvalidTransaction::Stale</span>.<span class="ident">into</span>();
                 }
 
                 <span class="ident">ValidTransaction::with_tag_prefix</span>(<span class="string">&quot;DeipOffchainWorker&quot;</span>)
                     .<span class="ident">propagate</span>(<span class="bool-val">false</span>)
                     .<span class="ident">longevity</span>(<span class="number">5</span>)
-                    .<span class="ident">and_provides</span>((<span class="string">b&quot;activate_project_token_sale&quot;</span>, <span class="kw-2">*</span><span class="ident">id</span>))
+                    .<span class="ident">and_provides</span>((<span class="string">b&quot;activate_crowdfunding&quot;</span>, <span class="kw-2">*</span><span class="ident">id</span>))
                     .<span class="ident">build</span>()
             },
-            <span class="ident">Call::expire_project_token_sale</span>(<span class="kw-2">ref</span> <span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="ident">sale</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">InvalidTransaction::Stale</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">sale</span>.<span class="ident">status</span>, <span class="ident">ProjectTokenSaleStatus::Active</span>) {
+            <span class="ident">Call::expire_crowdfunding</span>(<span class="kw-2">ref</span> <span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">sale</span> <span class="op">=</span> <span class="ident">SimpleCrowdfundingMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">InvalidTransaction::Stale</span>)<span class="question-mark">?</span>;
+                <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">sale</span>.<span class="ident">status</span>, <span class="ident">SimpleCrowdfundingStatus::Active</span>) {
                     <span class="kw">return</span> <span class="ident">InvalidTransaction::Stale</span>.<span class="ident">into</span>();
                 }
 
                 <span class="ident">ValidTransaction::with_tag_prefix</span>(<span class="string">&quot;DeipOffchainWorker&quot;</span>)
                     .<span class="ident">propagate</span>(<span class="bool-val">false</span>)
                     .<span class="ident">longevity</span>(<span class="number">5</span>)
-                    .<span class="ident">and_provides</span>((<span class="string">b&quot;expire_project_token_sale&quot;</span>, <span class="kw-2">*</span><span class="ident">id</span>))
+                    .<span class="ident">and_provides</span>((<span class="string">b&quot;expire_crowdfunding&quot;</span>, <span class="kw-2">*</span><span class="ident">id</span>))
                     .<span class="ident">build</span>()
             },
-            <span class="ident">Call::finish_project_token_sale</span>(<span class="kw-2">ref</span> <span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="ident">sale</span> <span class="op">=</span> <span class="ident">ProjectTokenSaleMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">InvalidTransaction::Stale</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">sale</span>.<span class="ident">status</span>, <span class="ident">ProjectTokenSaleStatus::Active</span>) {
+            <span class="ident">Call::finish_crowdfunding</span>(<span class="kw-2">ref</span> <span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">sale</span> <span class="op">=</span> <span class="ident">SimpleCrowdfundingMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">InvalidTransaction::Stale</span>)<span class="question-mark">?</span>;
+                <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">sale</span>.<span class="ident">status</span>, <span class="ident">SimpleCrowdfundingStatus::Active</span>) {
                     <span class="kw">return</span> <span class="ident">InvalidTransaction::Stale</span>.<span class="ident">into</span>();
                 }
 
                 <span class="ident">ValidTransaction::with_tag_prefix</span>(<span class="string">&quot;DeipOffchainWorker&quot;</span>)
                     .<span class="ident">propagate</span>(<span class="bool-val">false</span>)
                     .<span class="ident">longevity</span>(<span class="number">5</span>)
-                    .<span class="ident">and_provides</span>((<span class="string">b&quot;finish_project_token_sale&quot;</span>, <span class="kw-2">*</span><span class="ident">id</span>))
+                    .<span class="ident">and_provides</span>((<span class="string">b&quot;finish_crowdfunding&quot;</span>, <span class="kw-2">*</span><span class="ident">id</span>))
                     .<span class="ident">build</span>()
             },
             <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">InvalidTransaction::Call</span>.<span class="ident">into</span>(),
