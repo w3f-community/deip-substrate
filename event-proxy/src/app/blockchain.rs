@@ -19,7 +19,7 @@ use sp_core::hashing::twox_128;
 use tokio::sync::mpsc;
 
 use crate::RuntimeT;
-use crate::events::{known_events, TypedEvent, BlockMetadata};
+use crate::events::{known_domain_events, SpecializedEvent, BlockMetadata, InfrastructureEvent};
 
 
 pub struct BlockchainActor {
@@ -33,18 +33,30 @@ impl BlockchainActor {
 
 pub type BlockT<T> = Block<<T as System>::Header, <T as System>::Extrinsic>;
 pub type LastKnownBlock = BlockMetadata<RuntimeT>;
-pub type BlocksReplay = (tokio::task::JoinHandle<()>, mpsc::Receiver<<RuntimeT as System>::Header>, SubscriptionBuffer);
-pub type BlockEvents = Result<Option<Vec<Result<TypedEvent<RuntimeT>, codec::Error>>>, substrate_subxt::Error>;
+pub type BlocksReplay = (
+    tokio::task::JoinHandle<()>,
+    mpsc::Receiver<<RuntimeT as System>::Header>,
+    SubscriptionBuffer,
+    EventsBuffer
+);
+pub type MaybeBlockEvent = Result<SpecializedEvent<RuntimeT>, codec::Error>;
+pub type BlockEvents = Result<Option<Vec<MaybeBlockEvent>>, substrate_subxt::Error>;
+
 pub type SubscriptionBuffer = crate::Buffer<<RuntimeT as System>::Header>;
+pub type SubscriptionBufferIn = crate::BufferIn<<RuntimeT as System>::Header>;
+
+pub type EventsBuffer = crate::Buffer<MaybeBlockEvent>;
+
+pub type FinalizedBlocksSubscription = Subscription<<RuntimeT as System>::Header>;
+pub type FinalizedBlocksSubscriptionItem = Result<Option<<RuntimeT as System>::Header>, jsonrpsee_ws_client::Error>;
 
 pub enum BlockchainActorInputData {
     SubscribeFinalizedBlocks(LastKnownBlock),
     GetBlockHash(<RuntimeT as System>::BlockNumber),
     GetBlock(<RuntimeT as System>::Hash),
     SetClient(Client<RuntimeT>),
-    GetBlockEvents(BlockT<RuntimeT>),
-    GetBlockEvents2(<RuntimeT as System>::Hash, SubscriptionBuffer),
-    ReplayBlocks(LastKnownBlock, <RuntimeT as System>::Hash, SubscriptionBuffer),
+    GetBlockEvents(<RuntimeT as System>::Hash, SubscriptionBuffer, EventsBuffer),
+    ReplayBlocks(LastKnownBlock, <RuntimeT as System>::Hash, SubscriptionBuffer, EventsBuffer),
     GetReplayedBlockEvents(<RuntimeT as System>::Hash, BlocksReplay),
 }
 pub type BlockchainActorInput = ActorDirective<BlockchainActorInputData>;
@@ -61,31 +73,40 @@ impl BlockchainActorInput {
     pub fn set_client(client: Client<RuntimeT>) -> Self {
         Self::Input(BlockchainActorInputData::SetClient(client))
     }
-    pub fn get_block_events(block: BlockT<RuntimeT>) -> Self {
-        Self::Input(BlockchainActorInputData::GetBlockEvents(block))
-    }
-    pub fn get_block_events2(hash: <RuntimeT as System>::Hash, buf: SubscriptionBuffer) -> Self {
-        Self::Input(BlockchainActorInputData::GetBlockEvents2(hash, buf))
-    }
-    pub fn replay_blocks(last_known_block: LastKnownBlock, head_block: <RuntimeT as System>::Hash, buf: SubscriptionBuffer) -> Self {
-        Self::Input(BlockchainActorInputData::ReplayBlocks(last_known_block, head_block, buf))
-    }
+    pub fn get_block_events(
+        hash: <RuntimeT as System>::Hash,
+        subscription_buffer: SubscriptionBuffer,
+        events_buffer: EventsBuffer
+    ) -> Self { Self::Input(
+        BlockchainActorInputData::GetBlockEvents(hash, subscription_buffer, events_buffer)
+    ) }
+    pub fn replay_blocks(
+        last_known_block: LastKnownBlock,
+        head_block: <RuntimeT as System>::Hash,
+        subscription_buffer: SubscriptionBuffer,
+        events_buffer: EventsBuffer
+    ) -> Self { Self::Input(BlockchainActorInputData::ReplayBlocks(
+            last_known_block, head_block, subscription_buffer, events_buffer)
+    )}
     pub fn get_replayed_block_events(hash: <RuntimeT as System>::Hash, replay: BlocksReplay) -> Self {
         Self::Input(BlockchainActorInputData::GetReplayedBlockEvents(hash, replay))
     }
 }
-pub type FinalizedBlocksSubscription = Subscription<<RuntimeT as System>::Header>;
+
 pub enum BlockchainActorOutput {
     NoClient(BlockchainActorInputData),
     Ok(BlockchainActorOutputData)
 }
 pub enum BlockchainActorOutputData {
-    SubscribeFinalizedBlocks(Result<FinalizedBlocksSubscription, substrate_subxt::Error>, LastKnownBlock, SubscriptionBuffer),
+    SubscribeFinalizedBlocks(Result<FinalizedBlocksSubscription, substrate_subxt::Error>, LastKnownBlock, SubscriptionBuffer, EventsBuffer),
     GetBlockHash(Result<Option<<RuntimeT as System>::Hash>, substrate_subxt::Error>),
     GetBlock(Result<Option<ChainBlock<RuntimeT>>, substrate_subxt::Error>),
     SetClient,
-    GetBlockEvents(Result<Vec<Result<TypedEvent<RuntimeT>, codec::Error>>, substrate_subxt::Error>),
-    GetBlockEvents2(BlockEvents, SubscriptionBuffer),
+    GetBlockEvents {
+        maybe_events: BlockEvents,
+        subscription_buffer: SubscriptionBuffer,
+        events_buffer: EventsBuffer,
+    },
     GetReplayedBlockEvents(BlockEvents, BlocksReplay),
     ReplayBlocks(BlocksReplay),
 }
@@ -114,7 +135,7 @@ for BlockchainActor
         let output = match data {
             BlockchainActorInputData::SubscribeFinalizedBlocks(last_known_block) => {
                 BlockchainActorOutputData::SubscribeFinalizedBlocks(
-                    client.subscribe_finalized_blocks().await, last_known_block, SubscriptionBuffer::new())
+                    client.subscribe_finalized_blocks().await, last_known_block, SubscriptionBuffer::new(), EventsBuffer::new())
             },
             BlockchainActorInputData::GetBlockHash(number) => {
                 BlockchainActorOutputData::GetBlockHash(
@@ -128,41 +149,36 @@ for BlockchainActor
                 let _ = std::mem::replace(client, c);
                 BlockchainActorOutputData::SetClient
             },
-            BlockchainActorInputData::GetBlockEvents(block) => {
-                let events = get_block_events(
-                    client,
-                    client.events_decoder(),
-                    block.header().hash()
-                ).await;
-                let events = events.map(|ok| {
-                    ok.into_iter().filter_map(|x| { 
-                        known_events::<RuntimeT>(&x, &block).transpose()
-                    }).collect()
-                });
-                BlockchainActorOutputData::GetBlockEvents(events)
-            },
-            BlockchainActorInputData::GetBlockEvents2(hash, buf) => {
+            BlockchainActorInputData::GetBlockEvents(hash, subscription_buffer, events_buffer) => {
                 let block = match client.block(Some(hash)).await {
                     Ok(Some(block)) => block,
                     Ok(None) => {
                         // Block not found:
-                        return BlockchainActorOutput::Ok(BlockchainActorOutputData::GetBlockEvents2(Ok(None), buf));
+                        return BlockchainActorOutput::Ok(
+                            BlockchainActorOutputData::GetBlockEvents {
+                                maybe_events: Ok(None), subscription_buffer, events_buffer
+                            });
                     },
                     Err(e) => {
-                        return BlockchainActorOutput::Ok(BlockchainActorOutputData::GetBlockEvents2(Err(e), buf));
+                        return BlockchainActorOutput::Ok(
+                            BlockchainActorOutputData::GetBlockEvents {
+                                maybe_events: Err(e), subscription_buffer, events_buffer
+                            });
                     },
                 };
-                let events = get_block_events(
+                let maybe_events = get_block_events(
                     client,
                     client.events_decoder(),
                     hash
                 ).await.map(|ok| {
-                    Some(ok.into_iter().filter_map(|x| { 
-                        known_events::<RuntimeT>(&x, &block.block).transpose()
-                    }).collect())
+                    let mut list: Vec<_> = ok.into_iter().filter_map(|x| {
+                        known_domain_events::<RuntimeT>(&x, &block.block).transpose()
+                    }).collect();
+                    list.push(Ok(InfrastructureEvent::block_created(&block.block, list.len() as u32).into()));
+                    Some(list)
                 });
-                BlockchainActorOutputData::GetBlockEvents2(events, buf)
-            },
+                BlockchainActorOutputData::GetBlockEvents { maybe_events, subscription_buffer, events_buffer }
+            }
             BlockchainActorInputData::GetReplayedBlockEvents(hash, replay) => {
                 let block = match client.block(Some(hash)).await {
                     Ok(Some(block)) => block,
@@ -179,13 +195,15 @@ for BlockchainActor
                     client.events_decoder(),
                     hash
                 ).await.map(|ok| {
-                    Some(ok.into_iter().filter_map(|x| { 
-                        known_events::<RuntimeT>(&x, &block.block).transpose()
-                    }).collect())
+                    let mut list: Vec<_> = ok.into_iter().filter_map(|x| {
+                        known_domain_events::<RuntimeT>(&x, &block.block).transpose()
+                    }).collect();
+                    list.push(Ok(InfrastructureEvent::block_created(&block.block, list.len() as u32).into()));
+                    Some(list)
                 });
                 BlockchainActorOutputData::GetReplayedBlockEvents(events, replay)
             },
-            BlockchainActorInputData::ReplayBlocks(last_known_block, head_block, buf) => {
+            BlockchainActorInputData::ReplayBlocks(last_known_block, head_block, subscription_buffer, events_buffer) => {
                 let client2 = client.clone();
                 let (tx, rx) = mpsc::channel(1);
                 let replay_blocks_task = tokio::spawn(async move {
@@ -210,8 +228,8 @@ for BlockchainActor
                         if tx.send(current).await.is_err() { break }
                     }
                 });
-                BlockchainActorOutputData::ReplayBlocks((replay_blocks_task, rx, buf))
-            },
+                BlockchainActorOutputData::ReplayBlocks((replay_blocks_task, rx, subscription_buffer, events_buffer))
+            }
         };
         BlockchainActorOutput::Ok(output)
     }
@@ -238,7 +256,7 @@ async fn get_block_events(
     decoder: &EventsDecoder<RuntimeT>,
     hash: <RuntimeT as System>::Hash
 )
-    -> Result<Vec<RawEvent>, substrate_subxt::Error>
+    -> Result<Vec<(u32, RawEvent)>, substrate_subxt::Error>
 {
     let change_set = client
         .query_storage_at(&[SystemEvents::new().into()], Some(hash))
@@ -253,12 +271,12 @@ async fn get_block_events(
                 Err(error) => return Err(error),
             };
             for (phase, raw) in raw_events {
-                if let Phase::ApplyExtrinsic(_i) = phase {
+                if let Phase::ApplyExtrinsic(i) = phase {
                     let event = match raw {
                         Raw::Event(event) => event,
                         Raw::Error(err) => return Err(err.into()),
                     };
-                    events.push(event);
+                    events.push((i, event));
                 }
             }
         }
