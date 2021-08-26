@@ -31,7 +31,7 @@
 //! * `fulfill_nda_content_access_request` - Granter fulfill access request to the data
 //! * `reject_nda_content_access_request` - Granter reject access request to the data
 //! * [`create_review`](./enum.Call.html#variant.create_review)
-//! * [`vote_for_review`](./enum.Call.html#variant.vote_for_review)
+//! * [`upvote_review`](./enum.Call.html#variant.upvote_review)
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -302,7 +302,7 @@ decl_event! {
         /// Event emitted when a review has been created. [BelongsTo, Review]
         ReviewCreated(AccountId, Review),
         /// Emitted when a DAO votes for a review
-        ReviewVoted(ReviewId, AccountId, DomainId),
+        ReviewUpvoted(ReviewId, AccountId, DomainId),
 
         /// Event emitted when a simple crowd funding has been created.
         SimpleCrowdfundingCreated(InvestmentId),
@@ -876,12 +876,12 @@ decl_module! {
         ///
         /// The origin for this call must be _Signed_.
         #[weight = 10_000]
-        fn vote_for_review(origin,
+        fn upvote_review(origin,
             review_id: ReviewId,
             domain_id: DomainId,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::vote_for_review_impl(account, review_id, domain_id)
+            Self::upvote_review_impl(account, review_id, domain_id)
         }
 
         /// Allow a user to create domains.

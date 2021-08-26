@@ -82,7 +82,7 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    pub(super) fn vote_for_review_impl(
+    pub(super) fn upvote_review_impl(
         account: T::AccountId,
         review_id: ReviewId,
         domain_id: DomainId,
@@ -112,7 +112,7 @@ impl<T: Config> Module<T> {
         };
 
         ReviewVoteMap::<T>::insert((review_id, account.clone(), domain_id), vote);
-        Self::deposit_event(RawEvent::ReviewVoted(review_id, account, domain_id));
+        Self::deposit_event(RawEvent::ReviewUpvoted(review_id, account, domain_id));
 
         Ok(())
     }
