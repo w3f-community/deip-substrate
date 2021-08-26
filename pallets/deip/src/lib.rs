@@ -30,7 +30,8 @@
 //! * `create_nda_content_access_request` - Some side request access to the data of contract
 //! * `fulfill_nda_content_access_request` - Granter fulfill access request to the data
 //! * `reject_nda_content_access_request` - Granter reject access request to the data
-//! * `create_review` - Create Review
+//! * [`create_review`](./enum.Call.html#variant.create_review)
+//! * [`upvote_review`](./enum.Call.html#variant.upvote_review)
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -72,6 +73,10 @@ pub use investment_opportunity::{Id as InvestmentId};
 
 mod contribution;
 use contribution::{Contribution as Investment};
+
+mod review;
+pub use review::{Id as ReviewId, Review as Review};
+use review::Vote as DeipReviewVote;
 
 pub mod traits;
 
@@ -134,41 +139,20 @@ pub type ProjectContentId = H160;
 pub type NdaId = H160;
 /// Unique NdaAccess Request reference 
 pub type NdaAccessRequestId = H160;
-/// Unique Review reference 
-pub type ReviewId = H160;
 
 type AccountIdOf<T> = <T as system::Config>::AccountId;
+type MomentOf<T> = <T as pallet_timestamp::Config>::Moment;
 pub type ProjectOf<T> = Project<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type ReviewOf<T> = Review<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, <T as pallet_timestamp::Config>::Moment>;
+pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, MomentOf<T>>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, AccountIdOf<T>>;
 pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<<T as pallet_timestamp::Config>::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<MomentOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, <T as pallet_timestamp::Config>::Moment>;
+pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, MomentOf<T>>;
 pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
 pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
-
-/// Review 
-#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct Review<Hash, AccountId> {
-    /// Reference for external world and uniques control 
-    external_id: ReviewId,
-    /// Reference to the Team 
-    author: AccountId,
-    /// Hash of content
-    content: Hash,
-    /// List of Domains aka tags Project matches
-    domains: Vec<DomainId>,
-    /// Model number by which the evaluation is carried out
-    assessment_model: u32,
-    /// percent in "50.00 %" format
-    weight: Vec<u8>,
-    /// Reference to Project Content
-    project_content_external_id: ProjectContentId,
-}
+type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -317,6 +301,8 @@ decl_event! {
 
         /// Event emitted when a review has been created. [BelongsTo, Review]
         ReviewCreated(AccountId, Review),
+        /// Emitted when a DAO votes for a review
+        ReviewUpvoted(ReviewId, AccountId, DomainId),
 
         /// Event emitted when a simple crowd funding has been created.
         SimpleCrowdfundingCreated(InvestmentId),
@@ -389,9 +375,14 @@ decl_error! {
         /// Nda access request already finalized
         NdaAccessRequestAlreadyFinalized,
 
-        /// Cannot add a review because a review with this ID is already a exists
+        /// Cannot add a review because a review with this ID already exists
         ReviewAlreadyExists,
-        
+        ReviewVoteAlreadyExists,
+        ReviewVoteNoSuchDomain,
+        ReviewVoteNoSuchReview,
+        ReviewVoteUnrelatedDomain,
+        ReviewAlreadyVotedWithDomain,
+
         // ==== General =====
 
         /// Access Forbiten
@@ -452,6 +443,8 @@ decl_storage! {
         ReviewMap get(fn review): map hasher(identity) ReviewId => ReviewOf<T>;
         /// Review list, guarantees uniquest and provides Review listing
         Reviews get(fn reviews): Vec<(ReviewId, T::AccountId)>;
+
+        ReviewVoteMap: map hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => DeipReviewVoteOf<T>;
 
         // The set of all Domains.
         Domains get(fn domains) config(): map hasher(blake2_128_concat) DomainId => Domain;
@@ -862,9 +855,9 @@ decl_module! {
 
         /// Allow a user to create review.
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_.
         ///
-		/// - `review`: [Review](./struct.Review.html) to be created
+        /// - `review`: [Review](./struct.Review.html) to be created
         #[weight = 10_000]
         fn create_review(origin,
             external_id: ReviewId,
@@ -874,43 +867,23 @@ decl_module! {
             assessment_model: u32,
             weight: Vec<u8>,
             project_content_external_id: ProjectContentId,
-        ) {
+        ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            
-            let review = ReviewOf::<T> {
-                external_id,
-                author: author.into(),
-                content,
-                domains,
-                assessment_model,
-                weight,
-                project_content_external_id
-            };
-
-            let mut reviews = Reviews::<T>::get();
-
-            let index_to_insert_review = reviews.binary_search_by_key(&review.external_id, |&(a,_)| a)
-                .err().ok_or(Error::<T>::ReviewAlreadyExists)?;
-
-            ProjectsContent::<T>::get().iter().find(|(id, ..)| id == &review.project_content_external_id)
-                .ok_or(Error::<T>::NoSuchProjectContent)?;
-            
-            for domain in &review.domains {
-                ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
-            }
-
-            reviews.insert(index_to_insert_review, (review.external_id,  review.author.clone()));
-            Reviews::<T>::put(reviews);
-
-            // Store the content
-            ReviewMap::<T>::insert(review.external_id, review.clone());
-
-            // Emit an event that the content was created.
-            Self::deposit_event(RawEvent::ReviewCreated(account, review));
+            Self::create_review_impl(account, external_id, author, content, domains, assessment_model, weight, project_content_external_id)
         }
 
+        /// Allows DAO to vote for a review.
+        ///
+        /// The origin for this call must be _Signed_.
+        #[weight = 10_000]
+        fn upvote_review(origin,
+            review_id: ReviewId,
+            domain_id: DomainId,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::upvote_review_impl(account, review_id, domain_id)
+        }
 
-        
         /// Allow a user to create domains.
         ///
 		/// The origin for this call must be _Signed_. 
