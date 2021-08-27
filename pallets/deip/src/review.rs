@@ -44,6 +44,12 @@ impl<T: Config> Module<T> {
         weight: Vec<u8>,
         project_content_external_id: ProjectContentId,
     ) -> DispatchResult {
+        ensure!(!domains.is_empty(), Error::<T>::ReviewNoDomainSpecified);
+
+        for domain in &domains {
+            ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
+        }
+
         let review = Review {
             external_id,
             author: author.into(),
@@ -64,10 +70,6 @@ impl<T: Config> Module<T> {
             .iter()
             .find(|(id, ..)| id == &review.project_content_external_id)
             .ok_or(Error::<T>::NoSuchProjectContent)?;
-
-        for domain in &review.domains {
-            ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
-        }
 
         reviews.insert(
             index_to_insert_review,
