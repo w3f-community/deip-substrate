@@ -377,6 +377,7 @@ decl_error! {
 
         /// Cannot add a review because a review with this ID already exists
         ReviewAlreadyExists,
+        ReviewNoDomainSpecified,
         ReviewVoteAlreadyExists,
         ReviewVoteNoSuchDomain,
         ReviewVoteNoSuchReview,
