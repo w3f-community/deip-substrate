@@ -108,11 +108,12 @@ impl<T: DeipProposal + Deip + DeipOrg> Serialize for DomainEventData<T> {
             NdaAccessRequestRejected(e) => e.serialize(serializer),
             DomainAdded(e) => e.serialize(serializer),
             ReviewCreated(e) => e.serialize(serializer),
-            ProjectTokenSaleCreated(e) => e.serialize(serializer),
-            ProjectTokenSaleActivated(e) => e.serialize(serializer),
-            ProjectTokenSaleFinished(e) => e.serialize(serializer),
-            ProjectTokenSaleExpired(e) => e.serialize(serializer),
-            ProjectTokenSaleContributed(e) => e.serialize(serializer),
+            ReviewUpvoted(e) => e.serialize(serializer),
+            SimpleCrowdfundingCreated(e) => e.serialize(serializer),
+            SimpleCrowdfundingActivated(e) => e.serialize(serializer),
+            SimpleCrowdfundingFinished(e) => e.serialize(serializer),
+            SimpleCrowdfundingExpired(e) => e.serialize(serializer),
+            Invested(e) => e.serialize(serializer),
             // =============== DeipOrg:
             OrgCreate(e) => e.serialize(serializer),
             OrgTransferOwnership(e) => e.serialize(serializer),
@@ -141,11 +142,12 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg> {
     NdaAccessRequestRejected(deip::NdaAccessRequestRejectedEvent<T>),
     DomainAdded(deip::DomainAddedEvent<T>),
     ReviewCreated(deip::ReviewCreatedEvent<T>),
-    ProjectTokenSaleCreated(deip::SimpleCrowdfundingCreatedEvent<T>),
-    ProjectTokenSaleActivated(deip::SimpleCrowdfundingActivatedEvent<T>),
-    ProjectTokenSaleFinished(deip::SimpleCrowdfundingFinishedEvent<T>),
-    ProjectTokenSaleExpired(deip::SimpleCrowdfundingExpiredEvent<T>),
-    ProjectTokenSaleContributed(deip::InvestedEvent<T>),
+    ReviewUpvoted(deip::ReviewUpvotedEvent<T>),
+    SimpleCrowdfundingCreated(deip::SimpleCrowdfundingCreatedEvent<T>),
+    SimpleCrowdfundingActivated(deip::SimpleCrowdfundingActivatedEvent<T>),
+    SimpleCrowdfundingFinished(deip::SimpleCrowdfundingFinishedEvent<T>),
+    SimpleCrowdfundingExpired(deip::SimpleCrowdfundingExpiredEvent<T>),
+    Invested(deip::InvestedEvent<T>),
     // DeipOrg:
     OrgCreate(deip_org::OrgCreateEvent<T>),
     OrgTransferOwnership(deip_org::OrgTransferOwnershipEvent<T>),
@@ -286,11 +288,19 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + Debug>(
             meta,
         },
         (                               
+            deip::ReviewUpvotedEvent::<T>::MODULE,
+            deip::ReviewUpvotedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "project_reviewUpvoted".to_string(),
+            data: decode_event_data(raw).map(ReviewUpvoted)?,
+            meta,
+        },
+        (                               
             deip::SimpleCrowdfundingCreatedEvent::<T>::MODULE,
             deip::SimpleCrowdfundingCreatedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "project_tokenSaleCreated".to_string(),
-            data: decode_event_data(raw).map(ProjectTokenSaleCreated)?,
+            data: decode_event_data(raw).map(SimpleCrowdfundingCreated)?,
             meta,
         },
         (                               
@@ -298,7 +308,7 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + Debug>(
             deip::SimpleCrowdfundingActivatedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "project_tokenSaleActivated".to_string(),
-            data: decode_event_data(raw).map(ProjectTokenSaleActivated)?,
+            data: decode_event_data(raw).map(SimpleCrowdfundingActivated)?,
             meta,
         },
         (                               
@@ -306,7 +316,7 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + Debug>(
             deip::SimpleCrowdfundingFinishedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "project_tokenSaleFinished".to_string(),
-            data: decode_event_data(raw).map(ProjectTokenSaleFinished)?,
+            data: decode_event_data(raw).map(SimpleCrowdfundingFinished)?,
             meta,
         },
         (                               
@@ -314,7 +324,7 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + Debug>(
             deip::SimpleCrowdfundingExpiredEvent::<T>::EVENT
         ) => DomainEvent {
             name: "project_tokenSaleExpired".to_string(),
-            data: decode_event_data(raw).map(ProjectTokenSaleExpired)?,
+            data: decode_event_data(raw).map(SimpleCrowdfundingExpired)?,
             meta,
         },
         (                               
@@ -322,7 +332,7 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + Debug>(
             deip::InvestedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "project_tokenSaleContributed".to_string(),
-            data: decode_event_data(raw).map(ProjectTokenSaleContributed)?,
+            data: decode_event_data(raw).map(Invested)?,
             meta,
         },
         // =========== DeipOrg:

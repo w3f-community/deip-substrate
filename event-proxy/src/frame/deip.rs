@@ -155,6 +155,20 @@ impl<T: Deip> Serialize for ReviewCreatedEvent<T> {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+pub struct ReviewUpvotedEvent<T: Deip>(T::ReviewId, T::AccountId, T::DomainId);
+impl<T: Deip> Serialize for ReviewUpvotedEvent<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+        where S: Serializer
+    {
+        let mut s = serializer.serialize_struct("ReviewUpvotedEvent", 2)?;
+        s.serialize_field("review_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.1)?;
+        s.serialize_field("domain_id", &self.2)?;
+        s.end()
+    }
+}
+
 const INVESTMENT_ID_KEY: &str = "investment_id";
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
