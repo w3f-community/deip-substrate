@@ -67,9 +67,11 @@ mod tests;
 mod investment_opportunity;
 use investment_opportunity::{
     Status as SimpleCrowdfundingStatus,
-    Info as SimpleCrowdfunding,
-    InvestmentOpportunity as FundingModel};
-pub use investment_opportunity::{Id as InvestmentId};
+    Info as SimpleCrowdfunding};
+pub use investment_opportunity::{
+    Id as InvestmentId,
+    FundingModel, FundingModelOf,
+};
 
 mod contribution;
 use contribution::{Contribution as Investment};
@@ -534,7 +536,7 @@ decl_module! {
             external_id: InvestmentId,
             creator: T::DeipAccountId,
             shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
-            funding_model: FundingModel<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+            funding_model: FundingModelOf<T>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::create_investment_opportunity_impl(account, external_id, creator.into(), shares, funding_model)

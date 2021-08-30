@@ -28,15 +28,17 @@ impl Serialize for runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             },
             Call::Deip(pallet_deip::Call::create_investment_opportunity(
                               external_id,
-                              project_id,
-                              investment_type)) => {
+                              creator,
+                              shares,
+                              funding_model)) => {
                 CallObject {
                     module: "deip",
                     call: "create_investment_opportunity",
                     args: &DeipCreateInvestmentOpportunityCallArgs {
                         external_id,
-                        project_id,
-                        investment_type,
+                        creator,
+                        shares,
+                        funding_model
                     },
                 }.serialize(serializer)
             },
@@ -330,10 +332,11 @@ struct DeipInvestCallArgs<A, B> {
 }
 
 #[derive(Serialize)]
-struct DeipCreateInvestmentOpportunityCallArgs<A, B, C> {
+struct DeipCreateInvestmentOpportunityCallArgs<A, B, C, D> {
     external_id: A,
-    project_id: B,
-    investment_type: C,
+    creator: B,
+    shares: C,
+    funding_model: D,
 }
 
 #[derive(Serialize)]

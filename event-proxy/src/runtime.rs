@@ -45,13 +45,13 @@ impl frame::deip::Deip for RuntimeT {
     type DomainId = pallet_deip::DomainId;
     type ProjectId = pallet_deip::ProjectId;
     type Project = pallet_deip::Project<Self::Hash, Self::AccountId>;
+    type ReviewId = pallet_deip::ReviewId;
     type Review = pallet_deip::Review<Self::Hash, Self::AccountId>;
     type NdaId = pallet_deip::NdaId;
     type NdaAccessRequestId = pallet_deip::NdaAccessRequestId;
     type ProjectContentId = pallet_deip::ProjectContentId;
-    type ProjectTokenSaleId = pallet_deip::InvestmentId;
-    type InvestmentId = Self::ProjectTokenSaleId;
-    type ProjectTokenSale = pallet_deip::ProjectTokenSaleOf<node_template_runtime::Runtime>;
+    type InvestmentId = pallet_deip::InvestmentId;
+    type FundingModel = pallet_deip::FundingModelOf<node_template_runtime::Runtime>;
 }
 
 impl frame::deip_org::DeipOrg for RuntimeT {

@@ -13,7 +13,7 @@ use substrate_subxt::NodeTemplateRuntime;
 
 use tokio::sync::mpsc;
 use futures::stream::{FuturesOrdered, StreamExt};
-use futures::{Future, SinkExt};
+use futures::{Future};
 
 const URL: &str = "ws://localhost:9944/";
 
@@ -23,15 +23,15 @@ use app::{
     Actor, ActorI, ActorO, ActorIO,
     RpcClientBuilderActor, RpcClientBuilderActorIO, RpcClientBuilderActorInput,
     MessageBrokerActor, MessageBrokerActorIO, MessageBrokerActorInput, MessageBrokerActorOutput, MessageBrokerActorOutputData,
-    BlockchainActor, BlockchainActorIO, BlockchainActorInput, BlockchainActorOutput, BlockchainActorOutputData, BlocksReplay, BlockEvents,
+    BlockchainActor, BlockchainActorIO, BlockchainActorInput, BlockchainActorOutput, BlockchainActorOutputData, BlocksReplay,
     OffchainActor, OffchainActorIO, OffchainActorInput, OffchainActorOutput, OffchainActorOutputData,
 };
 
 
 fn last_known_block() -> events::BlockMetadata<RuntimeT> {
-    let number = 44051;
-    let hash = "17d3f43a698450682d78f6c5b0c9a5c1426d58791d155c2140b63f0bfc224658";
-    let parent_hash = "42594230a55405ef897523d614343a68bc2b91ac035099dc4f8f64a02bfabb45";
+    let number = 203;
+    let hash = "24e1f2517d77bd828896cdc2d4710edd3d67b1ac26e883130a622ab5ff37fa1e";
+    let parent_hash = "cf17566ffcc74d240bbeb25be16a7ed4f773a571af1d0cb77b7239b96935f30f";
     events::BlockMetadata {
         number,
         hash: sp_core::H256::from_slice(hex::decode(hash).unwrap().as_slice()),
@@ -87,7 +87,7 @@ macro_rules! blockchain_actor_SubscribeFinalizedBlocks {
 #[tokio::main]
 async fn main() {
     
-    // flexi_logger::Logger::try_with_env().unwrap().start().unwrap();
+    flexi_logger::Logger::try_with_env().unwrap().start().unwrap();
     
     // Init rpc-client-builder-actor:
     let mut rpc_client_builder_actor = RpcClientBuilderActor;
@@ -206,12 +206,6 @@ async fn main() {
             release_actor(io, &mut released_blockchain_actor_queue).await;
             let output = if maybe_output.is_none() { unreachable!(); } else { maybe_output.unwrap() };
             match output {
-                BlockchainActorOutput::Ok(BlockchainActorOutputData::GetBlockHash(_maybe_hash)) => {
-                    unreachable!();
-                },
-                BlockchainActorOutput::Ok(BlockchainActorOutputData::GetBlock(_maybe_block)) => {
-                    unreachable!();
-                },
                 BlockchainActorOutput::NoClient(_input) => {
                     reset_blockchain_actor!(rpc_client_builder_actor_task_queue, released_rpc_client_builder_actor_queue);
                 },

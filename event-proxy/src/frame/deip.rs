@@ -14,14 +14,16 @@ pub trait Deip: System {
     type DomainId: Parameter + Member + Serialize;
     type ProjectId: Parameter + Member + Serialize;
     type Project: Parameter + Member + Serialize;
+    type ReviewId: Parameter + Member + Serialize;
     type Review: Parameter + Member + Serialize;
     type NdaId: Parameter + Member + Serialize;
     type NdaAccessRequestId: Parameter + Member + Serialize;
     type ProjectContentId: Parameter + Member + Serialize;
-    type ProjectTokenSaleId: Parameter + Member + Serialize;
     type InvestmentId: Parameter + Member + Serialize;
-    type ProjectTokenSale: Parameter + Member + Serialize;
+    type FundingModel: Parameter + Member + Serialize;
 }
+
+const ACCOUNT_ID_KEY: &str = "account_id";
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
 pub struct ProjectCreatedEvent<T: Deip>(T::AccountId, T::Project);
@@ -30,7 +32,7 @@ impl<T: Deip> Serialize for ProjectCreatedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("ProjectCreatedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("project", &self.1)?;
         s.end()
     }
@@ -43,7 +45,7 @@ impl<T: Deip> Serialize for ProjectRemovedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("ProjectRemovedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("project", &self.1)?;
         s.end()
     }
@@ -56,7 +58,7 @@ impl<T: Deip> Serialize for ProjectUpdatedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("ProjectUpdatedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("project_id", &self.1)?;
         s.end()
     }
@@ -69,7 +71,7 @@ impl<T: Deip> Serialize for ProjectContentCreatedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("ProjectContentCreatedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("content_id", &self.1)?;
         s.end()
     }
@@ -82,7 +84,7 @@ impl<T: Deip> Serialize for NdaCreatedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("NdaCreatedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("nda_id", &self.1)?;
         s.end()
     }
@@ -95,7 +97,7 @@ impl<T: Deip> Serialize for NdaAccessRequestCreatedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("NdaAccessRequestCreatedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("access_request_id", &self.1)?;
         s.end()
     }
@@ -108,7 +110,7 @@ impl<T: Deip> Serialize for NdaAccessRequestFulfilledEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("NdaAccessRequestFulfilledEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("access_request_id", &self.1)?;
         s.end()
     }
@@ -121,7 +123,7 @@ impl<T: Deip> Serialize for NdaAccessRequestRejectedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("NdaAccessRequestRejectedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("access_request_id", &self.1)?;
         s.end()
     }
@@ -134,7 +136,7 @@ impl<T: Deip> Serialize for DomainAddedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("DomainAddedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("domain_id", &self.1)?;
         s.end()
     }
@@ -147,73 +149,71 @@ impl<T: Deip> Serialize for ReviewCreatedEvent<T> {
         where S: Serializer
     {
         let mut s = serializer.serialize_struct("ReviewCreatedEvent", 2)?;
-        s.serialize_field("account_id", &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.0)?;
         s.serialize_field("review", &self.1)?;
         s.end()
     }
 }
 
+const INVESTMENT_ID_KEY: &str = "investment_id";
+
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct ProjectTokenSaleCreatedEvent<T: Deip>(T::ProjectId, T::ProjectTokenSale);
-impl<T: Deip> Serialize for ProjectTokenSaleCreatedEvent<T> {
+pub struct SimpleCrowdfundingCreatedEvent<T: Deip>(T::InvestmentId);
+impl<T: Deip> Serialize for SimpleCrowdfundingCreatedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("ProjectTokenSaleCreatedEvent", 2)?;
-        s.serialize_field("project_id", &self.0)?;
-        s.serialize_field("project_token_sale", &self.1)?;
+        let mut s = serializer.serialize_struct("SimpleCrowdfundingCreatedEvent", 1)?;
+        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
         s.end()
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct ProjectTokenSaleActivatedEvent<T: Deip>(T::ProjectId, T::InvestmentId);
-impl<T: Deip> Serialize for ProjectTokenSaleActivatedEvent<T> {
+pub struct SimpleCrowdfundingActivatedEvent<T: Deip>(T::InvestmentId);
+impl<T: Deip> Serialize for SimpleCrowdfundingActivatedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("ProjectTokenSaleActivatedEvent", 2)?;
-        s.serialize_field("project_id", &self.0)?;
-        s.serialize_field("investment_id", &self.1)?;
+        let mut s = serializer.serialize_struct("SimpleCrowdfundingActivatedEvent", 1)?;
+        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
         s.end()
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct ProjectTokenSaleFinishedEvent<T: Deip>(T::ProjectId, T::InvestmentId);
-impl<T: Deip> Serialize for ProjectTokenSaleFinishedEvent<T> {
+pub struct SimpleCrowdfundingFinishedEvent<T: Deip>(T::InvestmentId);
+impl<T: Deip> Serialize for SimpleCrowdfundingFinishedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("ProjectTokenSaleFinishedEvent", 2)?;
-        s.serialize_field("project_id", &self.0)?;
-        s.serialize_field("investment_id", &self.1)?;
+        let mut s = serializer.serialize_struct("SimpleCrowdfundingFinishedEvent", 1)?;
+        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
         s.end()
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct ProjectTokenSaleExpiredEvent<T: Deip>(T::ProjectId, T::InvestmentId);
-impl<T: Deip> Serialize for ProjectTokenSaleExpiredEvent<T> {
+pub struct SimpleCrowdfundingExpiredEvent<T: Deip>(T::InvestmentId);
+impl<T: Deip> Serialize for SimpleCrowdfundingExpiredEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("ProjectTokenSaleExpiredEvent", 2)?;
-        s.serialize_field("project_id", &self.0)?;
-        s.serialize_field("investment_id", &self.1)?;
+        let mut s = serializer.serialize_struct("SimpleCrowdfundingExpiredEvent", 1)?;
+        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
         s.end()
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct ProjectTokenSaleContributedEvent<T: Deip>(T::InvestmentId, T::AccountId);
-impl<T: Deip> Serialize for ProjectTokenSaleContributedEvent<T> {
+pub struct InvestedEvent<T: Deip>(T::InvestmentId, T::AccountId);
+impl<T: Deip> Serialize for InvestedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("ProjectTokenSaleContributedEvent", 2)?;
-        s.serialize_field("investment_id", &self.0)?;
-        s.serialize_field("account_id", &self.1)?;
+        let mut s = serializer.serialize_struct("InvestedEvent", 2)?;
+        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.1)?;
         s.end()
     }
 }

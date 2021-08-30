@@ -9,6 +9,9 @@ use sp_runtime::{
 
 /// Unique InvestmentOpportunity ID reference
 pub type Id = H160;
+/// Type alias to be specialized over Runtime type
+#[allow(type_alias_bounds)]
+pub type FundingModelOf<T: Config> = FundingModel<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 
 #[derive(Encode, Decode, Clone, Copy, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -29,7 +32,7 @@ impl Default for Status {
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum InvestmentOpportunity<Moment, AssetId, AssetBalance> {
+pub enum FundingModel<Moment, AssetId, AssetBalance> {
     SimpleCrowdfunding {
         /// a moment when the crowdfunding starts. Must be later than current moment.
         start_time: Moment,
@@ -71,12 +74,12 @@ impl<T: Config> Module<T> {
         external_id: Id,
         creator: AccountIdOf<T>,
         shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
-        funding_model: InvestmentOpportunity<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+        funding_model: FundingModelOf<T>,
     ) -> DispatchResult {
         ensure!(account == creator, Error::<T>::NoPermission);
 
         match funding_model {
-            InvestmentOpportunity::SimpleCrowdfunding {
+            FundingModel::SimpleCrowdfunding {
                 start_time,
                 end_time,
                 asset_id,

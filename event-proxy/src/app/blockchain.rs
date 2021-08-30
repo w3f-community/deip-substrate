@@ -1,17 +1,12 @@
 use crate::actor::*;
 use super::actor_io::*;
 
-use std::collections::VecDeque;
-
-use substrate_subxt::{Client, ChainBlock};
+use substrate_subxt::{Client};
 use substrate_subxt::system::System;
 use substrate_subxt::{RawEvent, Phase, Raw};
 use substrate_subxt::{EventsDecoder};
 
 use jsonrpsee_ws_client::Subscription;
-
-use sp_runtime::generic::Block;
-use sp_runtime::traits::{Block as _Block};
 
 use sp_core::storage::StorageKey;
 use sp_core::hashing::twox_128;
@@ -31,7 +26,6 @@ impl BlockchainActor {
     }
 }
 
-pub type BlockT<T> = Block<<T as System>::Header, <T as System>::Extrinsic>;
 pub type LastKnownBlock = BlockMetadata<RuntimeT>;
 pub type BlocksReplay = (
     tokio::task::JoinHandle<()>,
@@ -52,8 +46,6 @@ pub type FinalizedBlocksSubscriptionItem = Result<Option<<RuntimeT as System>::H
 
 pub enum BlockchainActorInputData {
     SubscribeFinalizedBlocks(LastKnownBlock),
-    GetBlockHash(<RuntimeT as System>::BlockNumber),
-    GetBlock(<RuntimeT as System>::Hash),
     SetClient(Client<RuntimeT>),
     GetBlockEvents(<RuntimeT as System>::Hash, SubscriptionBuffer, EventsBuffer),
     ReplayBlocks(LastKnownBlock, <RuntimeT as System>::Hash, SubscriptionBuffer, EventsBuffer),
@@ -63,12 +55,6 @@ pub type BlockchainActorInput = ActorDirective<BlockchainActorInputData>;
 impl BlockchainActorInput {
     pub fn subscribe_finalized_blocks(last_known_block: LastKnownBlock) -> Self {
         Self::Input(BlockchainActorInputData::SubscribeFinalizedBlocks(last_known_block))
-    }
-    pub fn get_block_hash(number: <RuntimeT as System>::Header) -> Self {
-        Self::Input(BlockchainActorInputData::GetBlockHash(number.number))
-    }
-    pub fn get_block(hash: <RuntimeT as System>::Hash) -> Self {
-        Self::Input(BlockchainActorInputData::GetBlock(hash))
     }
     pub fn set_client(client: Client<RuntimeT>) -> Self {
         Self::Input(BlockchainActorInputData::SetClient(client))
@@ -99,8 +85,6 @@ pub enum BlockchainActorOutput {
 }
 pub enum BlockchainActorOutputData {
     SubscribeFinalizedBlocks(Result<FinalizedBlocksSubscription, substrate_subxt::Error>, LastKnownBlock, SubscriptionBuffer, EventsBuffer),
-    GetBlockHash(Result<Option<<RuntimeT as System>::Hash>, substrate_subxt::Error>),
-    GetBlock(Result<Option<ChainBlock<RuntimeT>>, substrate_subxt::Error>),
     SetClient,
     GetBlockEvents {
         maybe_events: BlockEvents,
@@ -136,14 +120,6 @@ for BlockchainActor
             BlockchainActorInputData::SubscribeFinalizedBlocks(last_known_block) => {
                 BlockchainActorOutputData::SubscribeFinalizedBlocks(
                     client.subscribe_finalized_blocks().await, last_known_block, SubscriptionBuffer::new(), EventsBuffer::new())
-            },
-            BlockchainActorInputData::GetBlockHash(number) => {
-                BlockchainActorOutputData::GetBlockHash(
-                    client.block_hash(Some(number.into())).await)
-            },
-            BlockchainActorInputData::GetBlock(hash) => {
-                BlockchainActorOutputData::GetBlock(
-                    client.block(Some(hash)).await)
             },
             BlockchainActorInputData::SetClient(c) => {
                 let _ = std::mem::replace(client, c);

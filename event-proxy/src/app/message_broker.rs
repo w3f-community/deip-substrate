@@ -4,9 +4,6 @@ use super::actor_io::*;
 use rdkafka::producer::{FutureRecord, FutureProducer, future_producer::OwnedDeliveryResult};
 use rdkafka::util::Timeout;
 
-use crate::events::{SpecializedEvent};
-use crate::RuntimeT;
-
 
 pub const BOOTSTRAP_SERVERS: &str = "127.0.0.1:9092";
 pub const TOPIC: &str = "blockchain";
