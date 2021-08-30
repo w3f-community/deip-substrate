@@ -42,6 +42,36 @@ impl Serialize for runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
                     },
                 }.serialize(serializer)
             },
+            Call::Deip(pallet_deip::Call::activate_crowdfunding(
+                              sale_id)) => {
+                CallObject {
+                    module: "deip",
+                    call: "activate_crowdfunding",
+                    args: &DeipActivateCrowdfundingCallArgs {
+                        sale_id
+                    },
+                }.serialize(serializer)
+            },
+            Call::Deip(pallet_deip::Call::expire_crowdfunding(
+                              sale_id)) => {
+                CallObject {
+                    module: "deip",
+                    call: "expire_crowdfunding",
+                    args: &DeipExpireCrowdfundingCallArgs {
+                        sale_id
+                    },
+                }.serialize(serializer)
+            },
+            Call::Deip(pallet_deip::Call::finish_crowdfunding(
+                              sale_id)) => {
+                CallObject {
+                    module: "deip",
+                    call: "finish_crowdfunding",
+                    args: &DeipFinishCrowdfundingCallArgs {
+                        sale_id
+                    },
+                }.serialize(serializer)
+            },
             Call::Deip(pallet_deip::Call::invest(
                               id,
                               amount)) => {
@@ -329,6 +359,21 @@ struct DeipCreateProjectContentCallArgs<A, B, C, D, E, F, G, H> {
 struct DeipInvestCallArgs<A, B> {
     id: A,
     amount: B,
+}
+
+#[derive(Serialize)]
+struct DeipFinishCrowdfundingCallArgs<A> {
+    sale_id: A,
+}
+
+#[derive(Serialize)]
+struct DeipExpireCrowdfundingCallArgs<A> {
+    sale_id: A,
+}
+
+#[derive(Serialize)]
+struct DeipActivateCrowdfundingCallArgs<A> {
+    sale_id: A,
 }
 
 #[derive(Serialize)]
