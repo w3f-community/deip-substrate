@@ -333,6 +333,7 @@ decl_event! {
         Invested(InvestmentId, AccountId),
 
         ContractAgreementCreated(ContractAgreementId),
+        ContractAgreementAccepted(ContractAgreementId, AccountId),
     }
 }
 
@@ -439,6 +440,11 @@ decl_error! {
         ContractAgreementFeeMustBePositive,
         ContractAgreementLicenseTwoPartiesRequired,
         ContractAgreementLicenseNoLicenser,
+        ContractAgreementNotFound,
+        ContractAgreementAcceptWrongAgreement,
+        ContractAgreementLicenseAlreadyAccepted,
+        ContractAgreementLicensePartyIsNotLicenser,
+        ContractAgreementLicenseExpired,
     }
 }
 

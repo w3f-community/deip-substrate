@@ -164,6 +164,73 @@ impl<T: Config> Module<T> {
         id: Id,
         party: AccountIdOf<T>,
     ) -> DispatchResult {
-        todo!();
+        ensure!(account == party, Error::<T>::NoPermission);
+
+        let agreement = ContractAgreementMap::<T>::try_get(id)
+            .map_err(|_| Error::<T>::ContractAgreementNotFound)?;
+
+        match agreement {
+            ContractAgreement::TechnologyLicense(status) => {
+                Self::accept_project_license(party, status)
+            }
+            ContractAgreement::None => {
+                Err(Error::<T>::ContractAgreementAcceptWrongAgreement.into())
+            }
+        }
+    }
+
+    fn accept_project_license(
+        party: AccountIdOf<T>,
+        status: TechnologyLicenseStatus<
+            AccountIdOf<T>,
+            HashOf<T>,
+            MomentOf<T>,
+            DeipAssetIdOf<T>,
+            DeipAssetBalanceOf<T>,
+        >,
+    ) -> DispatchResult {
+        match status {
+            TechnologyLicenseStatus::Unsigned(license) => {
+                Self::accept_project_license_by_licenser(party, license)
+            }
+            TechnologyLicenseStatus::SignedByLicenser(license) => {
+                todo!();
+            }
+            TechnologyLicenseStatus::Signed(_) => {
+                Err(Error::<T>::ContractAgreementLicenseAlreadyAccepted.into())
+            }
+        }
+    }
+
+    fn accept_project_license_by_licenser(
+        licenser: AccountIdOf<T>,
+        license: TechnologyLicense<
+            AccountIdOf<T>,
+            HashOf<T>,
+            MomentOf<T>,
+            DeipAssetIdOf<T>,
+            DeipAssetBalanceOf<T>,
+        >,
+    ) -> DispatchResult {
+        ensure!(
+            licenser == license.licenser,
+            Error::<T>::ContractAgreementLicensePartyIsNotLicenser
+        );
+
+        let now = pallet_timestamp::Module::<T>::get();
+        match license.end_time {
+            Some(end_time) => {
+                ensure!(now <= end_time, Error::<T>::ContractAgreementLicenseExpired)
+            }
+            None => (),
+        }
+
+        let id = license.id;
+        let status = TechnologyLicenseStatus::SignedByLicenser(license);
+        ContractAgreementMap::<T>::insert(id, ContractAgreement::TechnologyLicense(status));
+
+        Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licenser));
+
+        Ok(())
     }
 }
