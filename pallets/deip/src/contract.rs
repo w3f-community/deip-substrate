@@ -158,4 +158,12 @@ impl<T: Config> Module<T> {
 
         Ok(())
     }
+
+    pub(super) fn accept_contract_agreement_impl(
+        account: AccountIdOf<T>,
+        id: Id,
+        party: AccountIdOf<T>,
+    ) -> DispatchResult {
+        todo!();
+    }
 }

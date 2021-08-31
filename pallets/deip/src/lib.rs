@@ -33,6 +33,7 @@
 //! * [`create_review`](./enum.Call.html#variant.create_review)
 //! * [`upvote_review`](./enum.Call.html#variant.upvote_review)
 //! * [`create_contract_agreement`](./enum.Call.html#variant.create_contract_agreement)
+//! * [`accept_contract_agreement`](./enum.Call.html#variant.accept_contract_agreement)
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -965,6 +966,20 @@ decl_module! {
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::create_contract_agreement_impl(account, id, creator.into(), parties, hash, start_time, end_time, terms)
+        }
+
+        /// Allows a party to sign the contract agreement created earlier.
+        ///
+        /// The origin for this call must be _Signed_.
+        /// - `id` - identifies the contract to accept. Check [`ContractAgreementTerms`] for
+        ///     supported types
+        #[weight = 10_000]
+        fn accept_contract_agreement(origin,
+            id: ContractAgreementId,
+            party: T::DeipAccountId,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::accept_contract_agreement_impl(account, id, party.into())
         }
 
         fn offchain_worker(_n: T::BlockNumber) {
