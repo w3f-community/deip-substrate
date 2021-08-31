@@ -12,7 +12,6 @@ version = '3.0.0'
 
 [dependencies]
 substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "f5e841612fbfe175a33c8c02116f561de67003f9" }
-#substrate-subxt = { path = "../../substrate-subxt" }
 jsonrpsee-ws-client = { version = "0.2.0", default-features = false , features = ["tokio1"] }
 rdkafka = { version = "=0.26.0", default_features = true, features = ["cmake-build"] }
 tokio = { version = "1", features = ["full"] }
@@ -28,6 +27,7 @@ sp-runtime = "3.0.0"
 pallet-deip-proposal = { path = "../pallets/deip_proposal" }
 pallet-deip-org = { path = "../pallets/deip_org" }
 pallet-deip = { path = "../pallets/deip"}
+pallet-deip-assets = { path = "../pallets/deip_assets"}
 node-template-runtime = { path = '../runtime'}
 
 codec = { package = "parity-scale-codec", version = "2.1", default-features = false, features = ["derive", "full"] }
