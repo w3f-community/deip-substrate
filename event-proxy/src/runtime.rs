@@ -1,15 +1,19 @@
 use codec::{Encode, Decode};
 use super::{frame, RuntimeT};
 
+use pallet_deip_assets::pallet_assets;
+
+type RealRuntime = node_template_runtime::Runtime;
+
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode)]
 pub struct WrappedCall<T>(pub T);
 
 impl frame::deip_proposal::DeipProposal for RuntimeT {
-    type ProposalBatch = pallet_deip_proposal::proposal::ProposalBatch<node_template_runtime::Runtime>;
-    type InputProposalBatch = pallet_deip_proposal::proposal::InputProposalBatch<node_template_runtime::Runtime>;
+    type ProposalBatch = pallet_deip_proposal::proposal::ProposalBatch<RealRuntime>;
+    type InputProposalBatch = pallet_deip_proposal::proposal::InputProposalBatch<RealRuntime>;
     type ProposalId = pallet_deip_proposal::proposal::ProposalId;
     type Call = node_template_runtime::Call;
-    type BatchItem = pallet_deip_proposal::proposal::ProposalBatchItemOf<node_template_runtime::Runtime>;
+    type BatchItem = pallet_deip_proposal::proposal::ProposalBatchItemOf<RealRuntime>;
     type ProposalState = pallet_deip_proposal::proposal::ProposalState;
     type WrappedBatch = Vec<pallet_deip_proposal::proposal::BatchItem<
         node_template_runtime::AccountId, Self::WrappedCall>>;
@@ -51,9 +55,17 @@ impl frame::deip::Deip for RuntimeT {
     type NdaAccessRequestId = pallet_deip::NdaAccessRequestId;
     type ProjectContentId = pallet_deip::ProjectContentId;
     type InvestmentId = pallet_deip::InvestmentId;
-    type FundingModel = pallet_deip::FundingModelOf<node_template_runtime::Runtime>;
+    type FundingModel = pallet_deip::FundingModelOf<RealRuntime>;
 }
 
 impl frame::deip_org::DeipOrg for RuntimeT {
-    type Org = pallet_deip_org::org::OrgOf<node_template_runtime::Runtime>;
+    type Org = pallet_deip_org::org::OrgOf<RealRuntime>;
+}
+
+type AssetId = <RealRuntime as pallet_assets::Config>::AssetId;
+type Balance = <RealRuntime as pallet_assets::Config>::Balance;
+
+impl frame::deip_assets::DeipAssets for RuntimeT {
+    type AssetId = AssetId;
+    type Balance = Balance;
 }

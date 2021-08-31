@@ -30,6 +30,9 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// Re-export to use implementation details in dependent crates:
+pub use pallet_assets;
+
 pub mod traits;
 
 pub mod serializable;
