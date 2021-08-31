@@ -32,6 +32,7 @@
 //! * `reject_nda_content_access_request` - Granter reject access request to the data
 //! * [`create_review`](./enum.Call.html#variant.create_review)
 //! * [`upvote_review`](./enum.Call.html#variant.upvote_review)
+//! * [`create_contract_agreement`](./enum.Call.html#variant.create_contract_agreement)
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -82,6 +83,9 @@ use review::Vote as DeipReviewVote;
 
 mod asset;
 pub use asset::Asset as DeipAsset;
+
+mod contract;
+use contract::{Id as ContractAgreementId, Terms as ContractAgreementTerms};
 
 pub mod traits;
 
@@ -147,11 +151,12 @@ pub type NdaAccessRequestId = H160;
 
 type AccountIdOf<T> = <T as system::Config>::AccountId;
 type MomentOf<T> = <T as pallet_timestamp::Config>::Moment;
-pub type ProjectOf<T> = Project<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type ReviewOf<T> = Review<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type NdaOf<T> = Nda<<T as system::Config>::Hash, AccountIdOf<T>, MomentOf<T>>;
-pub type NdaAccessRequestOf<T> = NdaAccessRequest<<T as system::Config>::Hash, AccountIdOf<T>>;
-pub type ProjectContentOf<T> = ProjectContent<<T as system::Config>::Hash, AccountIdOf<T>>;
+pub type HashOf<T> = <T as system::Config>::Hash;
+pub type ProjectOf<T> = Project<HashOf<T>, AccountIdOf<T>>;
+pub type ReviewOf<T> = Review<HashOf<T>, AccountIdOf<T>>;
+pub type NdaOf<T> = Nda<HashOf<T>, AccountIdOf<T>, MomentOf<T>>;
+pub type NdaAccessRequestOf<T> = NdaAccessRequest<HashOf<T>, AccountIdOf<T>>;
+pub type ProjectContentOf<T> = ProjectContent<HashOf<T>, AccountIdOf<T>>;
 pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<MomentOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, MomentOf<T>>;
@@ -418,6 +423,10 @@ decl_error! {
         InvestingNotActive,
         InvestingNotEnoughFunds,
         InvestingWrongAsset,
+
+        ContractAgreementNoParties,
+        ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment,
+        ContractAgreementEndTimeMustBeLaterStartTime,
     }
 }
 
@@ -919,6 +928,30 @@ decl_module! {
             DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
             
             Self::deposit_event(RawEvent::DomainAdded(account, external_id));
+        }
+
+        /// Allows DAO to create a contract agreement between parties.
+        ///
+        /// The origin for this call must be _Signed_.
+        /// - `creator` - creator of the contract agreement. A contract can be created by
+        ///     a thirdparty
+        /// - `parties` - signatures from all parties must be collected in order
+        ///     to consider the contract as approved
+        /// - `hash` - hash of contract agreement offchain metadata
+        /// - `start_time`/`end_time`
+        /// - `terms` - specifies type of the contract agreement. For details see [`ContractAgreementTerms`].
+        #[weight = 10_000]
+        fn create_contract_agreement(origin,
+            id: ContractAgreementId,
+            creator: T::DeipAccountId,
+            parties: Vec<T::DeipAccountId>,
+            hash: HashOf<T>,
+            start_time: Option<MomentOf<T>>,
+            end_time: Option<MomentOf<T>>,
+            terms: ContractAgreementTerms<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::create_contract_agreement_impl(account, id, creator.into(), parties, hash, start_time, end_time, terms)
         }
 
         fn offchain_worker(_n: T::BlockNumber) {
