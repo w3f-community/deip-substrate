@@ -10,7 +10,8 @@ use sp_runtime::traits::{Block as _Block, Header as _Header};
 use super::frame::{
     deip_proposal::{self, DeipProposal},
     deip::{self, Deip},
-    deip_org::{self, DeipOrg}
+    deip_org::{self, DeipOrg},
+    deip_assets::{self, DeipAssets},
 };
 
 #[derive(Serialize, Debug, Copy, Clone)]
@@ -75,18 +76,18 @@ pub struct DomainEventMeta<Block> {
 pub type DomainEvent<T> = BaseEvent<DomainEventData<T>, DomainEventMeta<BlockMetadata<T>>>;
 
 impl<T> From<DomainEvent<T>> for SpecializedEvent<T>
-    where T: Deip + DeipProposal + DeipOrg
+    where T: Deip + DeipProposal + DeipOrg + DeipAssets
 {
     fn from(source: DomainEvent<T>) -> Self { Self::Domain(source) }
 }
 
 impl<T> From<InfrastructureEvent<T>> for SpecializedEvent<T>
-    where T: Deip + DeipProposal + DeipOrg
+    where T: Deip + DeipProposal + DeipOrg + DeipAssets
 {
     fn from(source: InfrastructureEvent<T>) -> Self { Self::Infrastructure(source) }
 }
 
-impl<T: DeipProposal + Deip + DeipOrg> Serialize for DomainEventData<T> {
+impl<T: DeipProposal + Deip + DeipOrg + DeipAssets> Serialize for DomainEventData<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
@@ -117,6 +118,22 @@ impl<T: DeipProposal + Deip + DeipOrg> Serialize for DomainEventData<T> {
             // =============== DeipOrg:
             OrgCreate(e) => e.serialize(serializer),
             OrgTransferOwnership(e) => e.serialize(serializer),
+            // =============== DeipAssets:
+            AssetClassCreated(e) => e.serialize(serializer),
+            AssetIssued(e) => e.serialize(serializer),
+            AssetTransferred(e) => e.serialize(serializer),
+            AssetBurned(e) => e.serialize(serializer),
+            AssetTeamChanged(e) => e.serialize(serializer),
+            AssetOwnerChanged(e) => e.serialize(serializer),
+            AssetForceTransferred(e) => e.serialize(serializer),
+            AssetAccountFrozen(e) => e.serialize(serializer),
+            AssetAccountThawed(e) => e.serialize(serializer),
+            AssetFrozen(e) => e.serialize(serializer),
+            AssetThawed(e) => e.serialize(serializer),
+            AssetClassDestroyed(e) => e.serialize(serializer),
+            AssetClassForceCreated(e) => e.serialize(serializer),
+            AssetMaxZombiesChanged(e) => e.serialize(serializer),
+            AssetMetadataSet(e) => e.serialize(serializer),
         }
     }
 }
@@ -124,7 +141,7 @@ impl<T: DeipProposal + Deip + DeipOrg> Serialize for DomainEventData<T> {
 pub use DomainEventData::*;
 
 #[derive(Debug)]
-pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg> {
+pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg + DeipAssets> {
     // DeipProposal:
     ProposalProposed(deip_proposal::ProposedEvent<T>),
     ProposalApproved(deip_proposal::ApprovedEvent<T>),
@@ -151,9 +168,25 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg> {
     // DeipOrg:
     OrgCreate(deip_org::OrgCreateEvent<T>),
     OrgTransferOwnership(deip_org::OrgTransferOwnershipEvent<T>),
+    // DeipAssets:
+    AssetClassCreated(deip_assets::CreatedEvent<T>),
+    AssetIssued(deip_assets::IssuedEvent<T>),
+    AssetTransferred(deip_assets::TransferredEvent<T>),
+    AssetBurned(deip_assets::BurnedEvent<T>),
+    AssetTeamChanged(deip_assets::TeamChangedEvent<T>),
+    AssetOwnerChanged(deip_assets::OwnerChangedEvent<T>),
+    AssetForceTransferred(deip_assets::ForceTransferredEvent<T>),
+    AssetAccountFrozen(deip_assets::FrozenEvent<T>),
+    AssetAccountThawed(deip_assets::ThawedEvent<T>),
+    AssetFrozen(deip_assets::AssetFrozenEvent<T>),
+    AssetThawed(deip_assets::AssetThawedEvent<T>),
+    AssetClassDestroyed(deip_assets::DestroyedEvent<T>),
+    AssetClassForceCreated(deip_assets::ForceCreatedEvent<T>),
+    AssetMaxZombiesChanged(deip_assets::MaxZombiesChangedEvent<T>),
+    AssetMetadataSet(deip_assets::MetadataSetEvent<T>),
 }
 
-pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + Debug>(
+pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + DeipAssets + Debug>(
     raw: &(u32, RawEvent),
     block: &Block<<T as System>::Header, <T as System>::Extrinsic>
 )
@@ -350,6 +383,127 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + Debug>(
         ) => DomainEvent {
             name: "dao_transferOwnership".to_string(),
             data: decode_event_data(raw).map(OrgTransferOwnership)?,
+            meta,
+        },
+        // =========== DeipAssets:
+        (                               
+            deip_assets::CreatedEvent::<T>::MODULE,
+            deip_assets::CreatedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_class_created".to_string(),
+            data: decode_event_data(raw).map(AssetClassCreated)?,
+            meta,
+        },
+        (                               
+            deip_assets::IssuedEvent::<T>::MODULE,
+            deip_assets::IssuedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_issued".to_string(),
+            data: decode_event_data(raw).map(AssetIssued)?,
+            meta,
+        },
+        (                               
+            deip_assets::TransferredEvent::<T>::MODULE,
+            deip_assets::TransferredEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_transferred".to_string(),
+            data: decode_event_data(raw).map(AssetTransferred)?,
+            meta,
+        },
+        (                               
+            deip_assets::BurnedEvent::<T>::MODULE,
+            deip_assets::BurnedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_burned".to_string(),
+            data: decode_event_data(raw).map(AssetBurned)?,
+            meta,
+        },
+        (                               
+            deip_assets::TeamChangedEvent::<T>::MODULE,
+            deip_assets::TeamChangedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_team_changed".to_string(),
+            data: decode_event_data(raw).map(AssetTeamChanged)?,
+            meta,
+        },
+        (                               
+            deip_assets::OwnerChangedEvent::<T>::MODULE,
+            deip_assets::OwnerChangedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_owner_changed".to_string(),
+            data: decode_event_data(raw).map(AssetOwnerChanged)?,
+            meta,
+        },
+        (                               
+            deip_assets::ForceTransferredEvent::<T>::MODULE,
+            deip_assets::ForceTransferredEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_force_transferred".to_string(),
+            data: decode_event_data(raw).map(AssetForceTransferred)?,
+            meta,
+        },
+        (                               
+            deip_assets::FrozenEvent::<T>::MODULE,
+            deip_assets::FrozenEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_account_frozen".to_string(),
+            data: decode_event_data(raw).map(AssetAccountFrozen)?,
+            meta,
+        },
+        (                               
+            deip_assets::ThawedEvent::<T>::MODULE,
+            deip_assets::ThawedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_account_thawed".to_string(),
+            data: decode_event_data(raw).map(AssetAccountThawed)?,
+            meta,
+        },
+        (                               
+            deip_assets::AssetFrozenEvent::<T>::MODULE,
+            deip_assets::AssetFrozenEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_frozen".to_string(),
+            data: decode_event_data(raw).map(AssetFrozen)?,
+            meta,
+        },
+        (                               
+            deip_assets::AssetThawedEvent::<T>::MODULE,
+            deip_assets::AssetThawedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_thawed".to_string(),
+            data: decode_event_data(raw).map(AssetThawed)?,
+            meta,
+        },
+        (                               
+            deip_assets::DestroyedEvent::<T>::MODULE,
+            deip_assets::DestroyedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_class_destroyed".to_string(),
+            data: decode_event_data(raw).map(AssetClassDestroyed)?,
+            meta,
+        },
+        (                               
+            deip_assets::ForceCreatedEvent::<T>::MODULE,
+            deip_assets::ForceCreatedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_class_force_created".to_string(),
+            data: decode_event_data(raw).map(AssetClassForceCreated)?,
+            meta,
+        },
+        (                               
+            deip_assets::MaxZombiesChangedEvent::<T>::MODULE,
+            deip_assets::MaxZombiesChangedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_max_zombies_changed".to_string(),
+            data: decode_event_data(raw).map(AssetMaxZombiesChanged)?,
+            meta,
+        },
+        (                               
+            deip_assets::MetadataSetEvent::<T>::MODULE,
+            deip_assets::MetadataSetEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_metadata_set".to_string(),
+            data: decode_event_data(raw).map(AssetMetadataSet)?,
             meta,
         },
         _ => return Ok(None),
