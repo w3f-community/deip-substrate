@@ -85,7 +85,11 @@ mod asset;
 pub use asset::Asset as DeipAsset;
 
 mod contract;
-use contract::{Id as ContractAgreementId, Terms as ContractAgreementTerms};
+use contract::{
+    Id as ContractAgreementId,
+    Terms as ContractAgreementTerms,
+    Agreement as ContractAgreement,
+};
 
 pub mod traits;
 
@@ -164,6 +168,7 @@ pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSyst
 pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
 pub type DeipAssetOf<T> = DeipAsset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
+type ContractAgreementOf<T> = ContractAgreement<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -325,6 +330,8 @@ decl_event! {
         SimpleCrowdfundingExpired(InvestmentId),
         /// Event emitted when DAO invested to an opportunity
         Invested(InvestmentId, AccountId),
+
+        ContractAgreementCreated(ContractAgreementId),
     }
 }
 
@@ -429,6 +436,8 @@ decl_error! {
         ContractAgreementEndTimeMustBeLaterStartTime,
         ContractAgreementAlreadyExists,
         ContractAgreementFeeMustBePositive,
+        ContractAgreementLicenseTwoPartiesRequired,
+        ContractAgreementLicenseNoLicenser,
     }
 }
 
@@ -471,6 +480,8 @@ decl_storage! {
         // The total number of domains stored in the map.
         // Because the map does not store its size, we must store it separately
         DomainCount get(fn domain_count) config(): u32;
+
+        ContractAgreementMap: map hasher(identity) ContractAgreementId => ContractAgreementOf<T>;
     }
 }
 
