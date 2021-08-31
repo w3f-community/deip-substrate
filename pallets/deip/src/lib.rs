@@ -427,6 +427,8 @@ decl_error! {
         ContractAgreementNoParties,
         ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment,
         ContractAgreementEndTimeMustBeLaterStartTime,
+        ContractAgreementAlreadyExists,
+        ContractAgreementFeeMustBePositive,
     }
 }
 
