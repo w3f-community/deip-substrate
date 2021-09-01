@@ -81,6 +81,7 @@ pub use review::{Id as ReviewId, Review as Review};
 use review::Vote as DeipReviewVote;
 
 mod asset;
+pub use asset::Asset as DeipAsset;
 
 pub mod traits;
 
@@ -156,7 +157,7 @@ pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::B
 pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, MomentOf<T>>;
 pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
 pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
-pub type DeipAssetOf<T> = asset::Asset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type DeipAssetOf<T> = DeipAsset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
 
 /// PPossible project domains
