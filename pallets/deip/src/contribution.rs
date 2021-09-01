@@ -18,7 +18,7 @@ impl<T: Config> Module<T> {
     pub(super) fn invest_to_crowdfunding_impl(
         account: T::AccountId,
         sale_id: InvestmentId,
-        amount: DeipAssetBalanceOf<T>,
+        asset: DeipAssetOf<T>,
     ) -> DispatchResult {
         let sale = SimpleCrowdfundingMap::<T>::try_get(sale_id)
             .map_err(|_| Error::<T>::InvestingNotFound)?;
@@ -28,16 +28,13 @@ impl<T: Config> Module<T> {
             Error::<T>::InvestingNotActive
         );
 
-        let is_hard_cap_reached = if sale.total_amount.saturating_add(amount) >= sale.hard_cap {
-            true
-        } else {
-            false
-        };
+        ensure!(sale.asset_id == asset.id, Error::<T>::InvestingWrongAsset);
 
+        let is_hard_cap_reached = sale.total_amount.saturating_add(asset.amount) >= sale.hard_cap;
         let amount_to_contribute = if is_hard_cap_reached {
             sale.hard_cap.saturating_sub(sale.total_amount)
         } else {
-            amount
+            asset.amount
         };
 
         ensure!(
@@ -87,10 +84,7 @@ impl<T: Config> Module<T> {
 
         Self::collect_funds(sale_id, amount_to_contribute).expect("collect; already found");
 
-        Self::deposit_event(RawEvent::Invested(
-            sale_id,
-            account.clone(),
-        ));
+        Self::deposit_event(RawEvent::Invested(sale_id, account.clone()));
 
         if is_hard_cap_reached {
             Self::finish_crowdfunding_by_id(sale_id).expect("finish; already found");

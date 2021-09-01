@@ -9,9 +9,10 @@ use sp_runtime::{
 
 /// Unique InvestmentOpportunity ID reference
 pub type Id = H160;
+
 /// Type alias to be specialized over Runtime type
 #[allow(type_alias_bounds)]
-pub type FundingModelOf<T: Config> = FundingModel<T::Moment, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type FundingModelOf<T: Config> = FundingModel<MomentOf<T>, DeipAssetOf<T>>;
 
 #[derive(Encode, Decode, Clone, Copy, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -32,18 +33,16 @@ impl Default for Status {
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum FundingModel<Moment, AssetId, AssetBalance> {
+pub enum FundingModel<Moment, Asset> {
     SimpleCrowdfunding {
         /// a moment when the crowdfunding starts. Must be later than current moment.
         start_time: Moment,
         /// a moment when the crowdfunding ends. Must be later than `start_time`.
         end_time: Moment,
-        /// id of the asset intended to raise.
-        asset_id: AssetId,
         /// amount of units to raise.
-        soft_cap: AssetBalance,
+        soft_cap: Asset,
         /// amount upper limit of units to raise. Must be greater or equal to `soft_cap`.
-        hard_cap: AssetBalance,
+        hard_cap: Asset,
     },
 }
 
@@ -73,7 +72,7 @@ impl<T: Config> Module<T> {
         account: AccountIdOf<T>,
         external_id: Id,
         creator: AccountIdOf<T>,
-        shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
+        shares: Vec<DeipAssetOf<T>>,
         funding_model: FundingModelOf<T>,
     ) -> DispatchResult {
         ensure!(account == creator, Error::<T>::NoPermission);
@@ -82,7 +81,6 @@ impl<T: Config> Module<T> {
             FundingModel::SimpleCrowdfunding {
                 start_time,
                 end_time,
-                asset_id,
                 soft_cap,
                 hard_cap,
             } => Self::create_simple_crowdfunding(
@@ -90,7 +88,6 @@ impl<T: Config> Module<T> {
                 external_id,
                 start_time,
                 end_time,
-                asset_id,
                 soft_cap,
                 hard_cap,
                 shares,
@@ -103,16 +100,10 @@ impl<T: Config> Module<T> {
         external_id: Id,
         start_time: T::Moment,
         end_time: T::Moment,
-        asset_id: DeipAssetIdOf<T>,
-        soft_cap: DeipAssetBalanceOf<T>,
-        hard_cap: DeipAssetBalanceOf<T>,
-        shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
+        soft_cap: DeipAssetOf<T>,
+        hard_cap: DeipAssetOf<T>,
+        shares: Vec<DeipAssetOf<T>>,
     ) -> DispatchResult {
-        ensure!(
-            !SimpleCrowdfundingMap::<T>::contains_key(external_id),
-            Error::<T>::InvestmentOpportunityAlreadyExists
-        );
-
         let timestamp = pallet_timestamp::Module::<T>::get();
         ensure!(
             start_time >= timestamp,
@@ -123,12 +114,17 @@ impl<T: Config> Module<T> {
             Error::<T>::InvestmentOpportunityEndTimeMustBeLaterStartTime
         );
 
+        let asset_id = soft_cap.id;
         ensure!(
-            !soft_cap.is_zero(),
+            asset_id == hard_cap.id,
+            Error::<T>::InvestmentOpportunityCapDifferentAssets
+        );
+        ensure!(
+            soft_cap.amount > Zero::zero(),
             Error::<T>::InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum
         );
         ensure!(
-            hard_cap >= soft_cap,
+            hard_cap.amount >= soft_cap.amount,
             Error::<T>::InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap
         );
 
@@ -136,24 +132,29 @@ impl<T: Config> Module<T> {
             !shares.is_empty(),
             Error::<T>::InvestmentOpportunitySecurityTokenNotSpecified
         );
-        for (security_token_id, token_amount) in &shares {
+        let mut shares_to_reserve = Vec::with_capacity(shares.len());
+        for security_token in &shares {
             ensure!(
-                *security_token_id != asset_id,
+                security_token.id != asset_id,
                 Error::<T>::InvestmentOpportunityWrongAssetId
             );
 
             ensure!(
-                !token_amount.is_zero(),
+                security_token.amount > Zero::zero(),
                 Error::<T>::InvestmentOpportunityAssetAmountMustBePositive
             );
+
+            shares_to_reserve.push((security_token.id, security_token.amount));
         }
 
-        if let Err(e) = T::AssetSystem::transactionally_reserve(
-            &account,
-            external_id,
-            &shares,
-            asset_id,
-        ) {
+        ensure!(
+            !SimpleCrowdfundingMap::<T>::contains_key(external_id),
+            Error::<T>::InvestmentOpportunityAlreadyExists
+        );
+
+        if let Err(e) =
+            T::AssetSystem::transactionally_reserve(&account, external_id, &shares_to_reserve, asset_id)
+        {
             match e {
                 ReserveError::<DeipAssetIdOf<T>>::NotEnoughBalance => {
                     return Err(Error::<T>::InvestmentOpportunityBalanceIsNotEnough.into())
@@ -172,9 +173,9 @@ impl<T: Config> Module<T> {
             start_time,
             end_time,
             asset_id,
-            soft_cap,
-            hard_cap,
-            shares,
+            soft_cap: soft_cap.amount,
+            hard_cap: hard_cap.amount,
+            shares: shares_to_reserve,
             ..Default::default()
         };
 
