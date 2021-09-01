@@ -104,13 +104,13 @@ pub mod pallet {
     
     #[doc(hidden)]
     #[pallet::genesis_config]
-	#[derive(Default)]
-	pub struct GenesisConfig {}
+    #[derive(Default)]
+    pub struct GenesisConfig {}
     
     #[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig {
-		fn build(&self) {}
-	}
+    impl<T: Config> GenesisBuild<T> for GenesisConfig {
+        fn build(&self) {}
+    }
     
     use org::*;
     pub mod org {

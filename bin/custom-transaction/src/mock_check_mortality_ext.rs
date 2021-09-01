@@ -7,7 +7,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-// 	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,9 +19,9 @@ use codec::{Encode, Decode};
 // use crate::{Config, BlockHash};
 use crate::{Config};
 use sp_runtime::{
-	generic::Era,
-	traits::{SignedExtension},
-	transaction_validity::{TransactionValidityError},
+    generic::Era,
+    traits::{SignedExtension},
+    transaction_validity::{TransactionValidityError},
 };
 
 /// Check for transaction mortality.
@@ -29,32 +29,32 @@ use sp_runtime::{
 pub struct CheckMortality<T: Config + Send + Sync>(Era, std::marker::PhantomData<T>);
 
 impl<T: Config + Send + Sync> CheckMortality<T> {
-	/// utility constructor. Used only in client/factory code.
-	pub fn from(era: Era) -> Self {
-		Self(era, std::marker::PhantomData)
-	}
+    /// utility constructor. Used only in client/factory code.
+    pub fn from(era: Era) -> Self {
+        Self(era, std::marker::PhantomData)
+    }
 }
 
 impl<T: Config + Send + Sync> std::fmt::Debug for CheckMortality<T> {
-	#[cfg(feature = "std")]
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		write!(f, "CheckMortality({:?})", self.0)
-	}
+    #[cfg(feature = "std")]
+    fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
+        write!(f, "CheckMortality({:?})", self.0)
+    }
 
-	#[cfg(not(feature = "std"))]
-	fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result {
-		Ok(())
-	}
+    #[cfg(not(feature = "std"))]
+    fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result {
+        Ok(())
+    }
 }
 
 impl<T: Config + Send + Sync> SignedExtension for CheckMortality<T> {
-	type AccountId = T::AccountId;
-	type Call = T::Call;
-	type AdditionalSigned = super::Hash;
-	type Pre = ();
-	const IDENTIFIER: &'static str = "CheckMortality";
+    type AccountId = T::AccountId;
+    type Call = T::Call;
+    type AdditionalSigned = super::Hash;
+    type Pre = ();
+    const IDENTIFIER: &'static str = "CheckMortality";
 
-	fn additional_signed(&self) -> Result<Self::AdditionalSigned, TransactionValidityError> {
-		Ok(super::genesis_hash())
-	}
+    fn additional_signed(&self) -> Result<Self::AdditionalSigned, TransactionValidityError> {
+        Ok(super::genesis_hash())
+    }
 }

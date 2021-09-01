@@ -130,26 +130,26 @@ pub mod pallet {
     }
     
     #[pallet::validate_unsigned]
-	impl<T: Config> ValidateUnsigned for Pallet<T> {
-		type Call = Call<T>;
+    impl<T: Config> ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
 
-		/// Validate unsigned call to this module.
-		///
-		/// By default unsigned transactions are disallowed, but implementing the validator
-		/// here we make sure that some particular calls (the ones produced by offchain worker)
-		/// are being whitelisted and marked as valid.
-		fn validate_unsigned(
-			source: TransactionSource,
-			call: &Self::Call,
-		)
+        /// Validate unsigned call to this module.
+        ///
+        /// By default unsigned transactions are disallowed, but implementing the validator
+        /// here we make sure that some particular calls (the ones produced by offchain worker)
+        /// are being whitelisted and marked as valid.
+        fn validate_unsigned(
+            source: TransactionSource,
+            call: &Self::Call,
+        )
             -> TransactionValidity
         {
             // Firstly let's check that we get the local transaction.
             if !matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
                 return InvalidTransaction::Custom(super::NON_LOCAL).into()
             }
-			// Check that we call the right function.
-			if let Call::expire(ref proposal_id) = call {
+            // Check that we call the right function.
+            if let Call::expire(ref proposal_id) = call {
                 let proposal = ProposalRepository::<T>::get(proposal_id);
                 let now = pallet_timestamp::Module::<T>::get();
                 if proposal.is_none() { return InvalidTransaction::Stale.into() }
@@ -160,10 +160,10 @@ pub mod pallet {
                     .and_provides((*proposal_id, proposal.unwrap().created_at))
                     .build()
             } else {
-				InvalidTransaction::Call.into()
-			}
-		}
-	}
+                InvalidTransaction::Call.into()
+            }
+        }
+    }
     
     #[pallet::error]
     pub enum Error<T> {
@@ -217,13 +217,13 @@ pub mod pallet {
     
     #[doc(hidden)]
     #[pallet::genesis_config]
-	#[derive(Default)]
-	pub struct GenesisConfig {}
+    #[derive(Default)]
+    pub struct GenesisConfig {}
     
     #[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig {
-		fn build(&self) {}
-	}
+    impl<T: Config> GenesisBuild<T> for GenesisConfig {
+        fn build(&self) {}
+    }
     
     #[pallet::call]
     impl<T: Config> Pallet<T> {

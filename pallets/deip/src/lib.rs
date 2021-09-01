@@ -299,7 +299,7 @@ decl_event! {
         NdaAccessRequestRejected(AccountId, NdaAccessRequestId),
 
         /// Added a domain. [Creator, DomainId]
-		DomainAdded(AccountId, DomainId),
+        DomainAdded(AccountId, DomainId),
 
         /// Event emitted when a review has been created. [BelongsTo, Review]
         ReviewCreated(AccountId, Review),
@@ -331,7 +331,7 @@ decl_error! {
         /// Cannot add domain into the porject because this domain not exists
         DomainNotExists,
         /// Cannot add a project because a project with this ID is already a exists
-		ProjectAlreadyExists,
+        ProjectAlreadyExists,
 
         // ==== Project Content ====
        
@@ -344,7 +344,7 @@ decl_error! {
         /// The Reference does not exist.
         NoSuchReference, 
         /// Cannot add a project content because a project with this ID is already a finished
-		ProjectAlreadyFinished,
+        ProjectAlreadyFinished,
 
 
         // ==== Domains ====
@@ -470,9 +470,9 @@ decl_module! {
        
         /// Allow a user to create project.
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_. 
         ///
-		/// - `project`: [Project](./struct.Project.html) to be created.
+        /// - `project`: [Project](./struct.Project.html) to be created.
         #[weight = 10_000]
         fn create_project(origin,
             is_private: bool,
@@ -503,18 +503,18 @@ decl_module! {
             let mut projects = Projects::<T>::get();
 
             // We don't want to add duplicate projects, so we check whether the potential new
-			// project is already present in the list. Because the list is always ordered, we can
-			// leverage the binary search which makes this check O(log n).
-			match projects.binary_search_by_key(&project.external_id, |&(a,_)| a) {
-				// If the search succeeds, the project is already a exists, so just return
-				Ok(_) => return Err(Error::<T>::ProjectAlreadyExists.into()),
-				// If the search fails, the project is not a exists and we learned the index where
-				// they should be inserted
-				Err(index) => {
-					projects.insert(index, (project.external_id, project.team_id.clone()));
-					Projects::<T>::put(projects);
-				}
-			};
+            // project is already present in the list. Because the list is always ordered, we can
+            // leverage the binary search which makes this check O(log n).
+            match projects.binary_search_by_key(&project.external_id, |&(a,_)| a) {
+                // If the search succeeds, the project is already a exists, so just return
+                Ok(_) => return Err(Error::<T>::ProjectAlreadyExists.into()),
+                // If the search fails, the project is not a exists and we learned the index where
+                // they should be inserted
+                Err(index) => {
+                    projects.insert(index, (project.external_id, project.team_id.clone()));
+                    Projects::<T>::put(projects);
+                }
+            };
 
             // Store the projects related to account
             ProjectMap::<T>::insert(project.external_id, project.clone());
@@ -578,9 +578,9 @@ decl_module! {
 
         /// Allow a user to update project.
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_. 
         ///
-		/// - `project_id`: [Project]((./struct.Project.html)) identifier (external_id) to be updated
+        /// - `project_id`: [Project]((./struct.Project.html)) identifier (external_id) to be updated
         /// - `description`: Optional. Hash of description
         /// - `is_private`: Optional.  Determine visible project or not 
         #[weight = 10_000]
@@ -615,9 +615,9 @@ decl_module! {
 
         /// Allow a user to create project content.
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_. 
         ///
-		/// - `content`: [Content](./struct.ProjectContent.html) to be created
+        /// - `content`: [Content](./struct.ProjectContent.html) to be created
         #[weight = 10_000]
         fn create_project_content(origin,
             external_id: ProjectContentId,
@@ -674,9 +674,9 @@ decl_module! {
 
         /// Allow a user to create [NDA](./struct.Nda.html).
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_. 
         ///
-		/// - `end_date`: Unix Timestamp. Exparation date of contract
+        /// - `end_date`: Unix Timestamp. Exparation date of contract
         /// - `contract_hash`: Hash of the contract
         /// - `maybe_start_date`: Optional. Unix Timestamp. Entry into force of the contract
         /// - `parties`: List of involved Parties
@@ -742,9 +742,9 @@ decl_module! {
 
         /// Create [request](./struct.NdaAccessRequest.html) to access NDA content
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_. 
         ///
-		/// - `external_id`: Reference for external world and uniques control 
+        /// - `external_id`: Reference for external world and uniques control 
         /// - `nda_external_id`: Reference to NDA 
         /// - `encrypted_payload_hash`: Payload witch need to be decrypted
         /// - `encrypted_payload_iv`: IV of encrypted payload
@@ -794,9 +794,9 @@ decl_module! {
         
         /// Fulfill NDA access request
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_. 
         ///
-		/// - `external_id`: Reference for external world and uniques control 
+        /// - `external_id`: Reference for external world and uniques control 
         /// - `encrypted_payload_encryption_key`: Ecrypted key witch can decrypt payload
         /// - `proof_of_encrypted_payload_encryption_key`: Proof that requester has access to the encrypted data with his key 
         #[weight = 10_000]
@@ -829,9 +829,9 @@ decl_module! {
 
         /// Reject NDA access request
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_. 
         ///
-		/// - `external_id`: Reference for external world and uniques control 
+        /// - `external_id`: Reference for external world and uniques control 
          #[weight = 10_000]
          fn reject_nda_content_access_request(
              origin, 
@@ -889,9 +889,9 @@ decl_module! {
 
         /// Allow a user to create domains.
         ///
-		/// The origin for this call must be _Signed_. 
+        /// The origin for this call must be _Signed_. 
         ///
-		/// - `project`: [Domain](./struct.Domain.html) to be created.
+        /// - `project`: [Domain](./struct.Domain.html) to be created.
         #[weight = 10_000]
         fn add_domain(origin, domain: Domain) {
             let account = ensure_signed(origin)?;
@@ -987,10 +987,10 @@ impl<T: Config> ValidateUnsigned for Module<T> {
 }
 
 impl<T: Config> Module<T> {
-	fn is_project_finished(project_id: &ProjectId) -> bool {
-		ProjectContentMap::<T>::iter_prefix_values(project_id)
+    fn is_project_finished(project_id: &ProjectId) -> bool {
+        ProjectContentMap::<T>::iter_prefix_values(project_id)
             .any(|x| x.content_type == ProjectContentType::FinalResult)
-	}
+    }
     pub fn get_projects() -> Vec<(ProjectId, T::AccountId)>{
         Self::projects()
     }

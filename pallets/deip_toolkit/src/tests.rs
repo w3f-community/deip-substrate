@@ -11,20 +11,20 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<TestRunt
 type Block = frame_system::mocking::MockBlock<TestRuntime>;
 
 frame_support::construct_runtime!(
-	pub enum TestRuntime where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		Toolkit: pallet_deip_toolkit::{Module, Call, Storage, Event<T>, Config},
-	}
+    pub enum TestRuntime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Config, Storage, Event<T>},
+        Toolkit: pallet_deip_toolkit::{Module, Call, Storage, Event<T>, Config},
+    }
 );
 
 frame_support::parameter_types! {
-	pub const BlockHashCount: u64 = 250;
-	pub BlockWeights: frame_system::limits::BlockWeights =
-		frame_system::limits::BlockWeights::simple_max(1024);
+    pub const BlockHashCount: u64 = 250;
+    pub BlockWeights: frame_system::limits::BlockWeights =
+        frame_system::limits::BlockWeights::simple_max(1024);
 }
 
 impl frame_system::Config for TestRuntime {
@@ -73,11 +73,11 @@ fn with_test_ext<R>(t: impl FnOnce() -> R) -> R {
 use frame_support::{assert_noop, assert_ok};
 
 fn last_event() -> Event {
-	frame_system::Module::<TestRuntime>::events().pop().map(|e| e.event).expect("Event expected")
+    frame_system::Module::<TestRuntime>::events().pop().map(|e| e.event).expect("Event expected")
 }
 
 fn expect_event<E: Into<Event>>(e: E) {
-	assert_eq!(last_event(), e.into());
+    assert_eq!(last_event(), e.into());
 }
 
 #[test]
