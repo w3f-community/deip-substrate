@@ -380,6 +380,9 @@
 <span id="378">378</span>
 <span id="379">379</span>
 <span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::traits::DeipAssetSystem</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="kw-2">*</span>;
@@ -392,6 +395,9 @@
 
 <span class="doccomment">/// Unique InvestmentOpportunity ID reference</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Id</span> <span class="op">=</span> <span class="ident">H160</span>;
+<span class="doccomment">/// Type alias to be specialized over Runtime type</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">type_alias_bounds</span>)]</span>
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">FundingModelOf</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">FundingModel</span><span class="op">&lt;</span><span class="ident">T::Moment</span>, <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>)]</span>
 <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>))]</span>
@@ -412,7 +418,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
 <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>))]</span>
 <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">serde</span>(<span class="ident">rename_all</span> <span class="op">=</span> <span class="string">&quot;camelCase&quot;</span>))]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">InvestmentOpportunity</span><span class="op">&lt;</span><span class="ident">Moment</span>, <span class="ident">AssetId</span>, <span class="ident">AssetBalance</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">FundingModel</span><span class="op">&lt;</span><span class="ident">Moment</span>, <span class="ident">AssetId</span>, <span class="ident">AssetBalance</span><span class="op">&gt;</span> {
     <span class="ident">SimpleCrowdfunding</span> {
         <span class="doccomment">/// a moment when the crowdfunding starts. Must be later than current moment.</span>
         <span class="ident">start_time</span>: <span class="ident">Moment</span>,
@@ -454,12 +460,12 @@
         <span class="ident">external_id</span>: <span class="ident">Id</span>,
         <span class="ident">creator</span>: <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">shares</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
-        <span class="ident">funding_model</span>: <span class="ident">InvestmentOpportunity</span><span class="op">&lt;</span><span class="ident">T::Moment</span>, <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">funding_model</span>: <span class="ident">FundingModelOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
         <span class="macro">ensure!</span>(<span class="ident">account</span> <span class="op">=</span><span class="op">=</span> <span class="ident">creator</span>, <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::NoPermission</span>);
 
         <span class="kw">match</span> <span class="ident">funding_model</span> {
-            <span class="ident">InvestmentOpportunity::SimpleCrowdfunding</span> {
+            <span class="ident">FundingModel::SimpleCrowdfunding</span> {
                 <span class="ident">start_time</span>,
                 <span class="ident">end_time</span>,
                 <span class="ident">asset_id</span>,

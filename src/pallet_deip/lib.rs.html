@@ -1042,6 +1042,8 @@
 <span id="1040">1040</span>
 <span id="1041">1041</span>
 <span id="1042">1042</span>
+<span id="1043">1043</span>
+<span id="1044">1044</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -1112,9 +1114,11 @@
 <span class="kw">mod</span> <span class="ident">investment_opportunity</span>;
 <span class="kw">use</span> <span class="ident">investment_opportunity</span>::{
     <span class="ident">Status</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfundingStatus</span>,
-    <span class="ident">Info</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfunding</span>,
-    <span class="ident">InvestmentOpportunity</span> <span class="kw">as</span> <span class="ident">FundingModel</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">investment_opportunity</span>::{<span class="ident">Id</span> <span class="kw">as</span> <span class="ident">InvestmentId</span>};
+    <span class="ident">Info</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfunding</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">investment_opportunity</span>::{
+    <span class="ident">Id</span> <span class="kw">as</span> <span class="ident">InvestmentId</span>,
+    <span class="ident">FundingModel</span>, <span class="ident">FundingModelOf</span>,
+};
 
 <span class="kw">mod</span> <span class="ident">contribution</span>;
 <span class="kw">use</span> <span class="ident">contribution</span>::{<span class="ident">Contribution</span> <span class="kw">as</span> <span class="ident">Investment</span>};
@@ -1579,7 +1583,7 @@
             <span class="ident">external_id</span>: <span class="ident">InvestmentId</span>,
             <span class="ident">creator</span>: <span class="ident">T::DeipAccountId</span>,
             <span class="ident">shares</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
-            <span class="ident">funding_model</span>: <span class="ident">FundingModel</span><span class="op">&lt;</span><span class="ident">T::Moment</span>, <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+            <span class="ident">funding_model</span>: <span class="ident">FundingModelOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
             <span class="self">Self</span><span class="ident">::create_investment_opportunity_impl</span>(<span class="ident">account</span>, <span class="ident">external_id</span>, <span class="ident">creator</span>.<span class="ident">into</span>(), <span class="ident">shares</span>, <span class="ident">funding_model</span>)

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/nalgebra-0.21.1/src/geometry/rotation.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>rotation.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="shortcut icon" href="https://nalgebra.org/img/favicon.ico"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../nalgebra/index.html'><div class='logo-container rust-logo'><img src='../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/nalgebra-0.27.1/src/geometry/rotation.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>rotation.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="shortcut icon" href="https://nalgebra.org/img/favicon.ico"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../nalgebra/index.html'><div class='logo-container rust-logo'><img src='../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -546,6 +546,40 @@
 <span id="546">546</span>
 <span id="547">547</span>
 <span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="ident">approx</span>::{<span class="ident">AbsDiffEq</span>, <span class="ident">RelativeEq</span>, <span class="ident">UlpsEq</span>};
 <span class="kw">use</span> <span class="ident">num</span>::{<span class="ident">One</span>, <span class="ident">Zero</span>};
@@ -554,10 +588,10 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;abomonation-serialize&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident">std::io</span>::{<span class="prelude-ty">Result</span> <span class="kw">as</span> <span class="ident">IOResult</span>, <span class="ident">Write</span>};
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde-serialize&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde-serialize-no-std&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Deserializer</span>, <span class="ident">Serialize</span>, <span class="ident">Serializer</span>};
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde-serialize&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde-serialize-no-std&quot;</span>)]</span>
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::base::storage::Owned</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;abomonation-serialize&quot;</span>)]</span>
@@ -567,41 +601,64 @@
 <span class="kw">use</span> <span class="ident">simba::simd::SimdRealField</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::base::allocator::Allocator</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::base::dimension</span>::{<span class="ident">DimName</span>, <span class="ident">DimNameAdd</span>, <span class="ident">DimNameSum</span>, <span class="ident">U1</span>};
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::base</span>::{<span class="ident">DefaultAllocator</span>, <span class="ident">MatrixN</span>, <span class="ident">Scalar</span>, <span class="ident">VectorN</span>};
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::base::dimension</span>::{<span class="ident">DimNameAdd</span>, <span class="ident">DimNameSum</span>, <span class="ident">U1</span>};
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::base</span>::{<span class="ident">Const</span>, <span class="ident">DefaultAllocator</span>, <span class="ident">OMatrix</span>, <span class="ident">SMatrix</span>, <span class="ident">SVector</span>, <span class="ident">Scalar</span>, <span class="ident">Unit</span>};
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::geometry::Point</span>;
 
 <span class="doccomment">/// A rotation matrix.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// This is also known as an element of a Special Orthogonal (SO) group.</span>
+<span class="doccomment">/// The `Rotation` type can either represent a 2D or 3D rotation, represented as a matrix.</span>
+<span class="doccomment">/// For a rotation based on quaternions, see [`UnitQuaternion`](crate::UnitQuaternion) instead.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Note that instead of using the [`Rotation`](crate::Rotation) type in your code directly, you should use one</span>
+<span class="doccomment">/// of its aliases: [`Rotation2`](crate::Rotation2), or [`Rotation3`](crate::Rotation3). Though</span>
+<span class="doccomment">/// keep in mind that all the documentation of all the methods of these aliases will also appears on</span>
+<span class="doccomment">/// this page.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Construction</span>
+<span class="doccomment">/// * [Identity &lt;span style=&quot;float:right;&quot;&gt;`identity`&lt;/span&gt;](#identity)</span>
+<span class="doccomment">/// * [From a 2D rotation angle &lt;span style=&quot;float:right;&quot;&gt;`new`…&lt;/span&gt;](#construction-from-a-2d-rotation-angle)</span>
+<span class="doccomment">/// * [From an existing 2D matrix or rotations &lt;span style=&quot;float:right;&quot;&gt;`from_matrix`, `rotation_between`, `powf`…&lt;/span&gt;](#construction-from-an-existing-2d-matrix-or-rotations)</span>
+<span class="doccomment">/// * [From a 3D axis and/or angles &lt;span style=&quot;float:right;&quot;&gt;`new`, `from_euler_angles`, `from_axis_angle`…&lt;/span&gt;](#construction-from-a-3d-axis-andor-angles)</span>
+<span class="doccomment">/// * [From a 3D eye position and target point &lt;span style=&quot;float:right;&quot;&gt;`look_at`, `look_at_lh`, `rotation_between`…&lt;/span&gt;](#construction-from-a-3d-eye-position-and-target-point)</span>
+<span class="doccomment">/// * [From an existing 3D matrix or rotations &lt;span style=&quot;float:right;&quot;&gt;`from_matrix`, `rotation_between`, `powf`…&lt;/span&gt;](#construction-from-an-existing-3d-matrix-or-rotations)</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Transformation and composition</span>
+<span class="doccomment">/// Note that transforming vectors and points can be done by multiplication, e.g., `rotation * point`.</span>
+<span class="doccomment">/// Composing an rotation with another transformation can also be done by multiplication or division.</span>
+<span class="doccomment">/// * [3D axis and angle extraction &lt;span style=&quot;float:right;&quot;&gt;`angle`, `euler_angles`, `scaled_axis`, `angle_to`…&lt;/span&gt;](#3d-axis-and-angle-extraction)</span>
+<span class="doccomment">/// * [2D angle extraction &lt;span style=&quot;float:right;&quot;&gt;`angle`, `angle_to`…&lt;/span&gt;](#2d-angle-extraction)</span>
+<span class="doccomment">/// * [Transformation of a vector or a point &lt;span style=&quot;float:right;&quot;&gt;`transform_vector`, `inverse_transform_point`…&lt;/span&gt;](#transformation-of-a-vector-or-a-point)</span>
+<span class="doccomment">/// * [Transposition and inversion &lt;span style=&quot;float:right;&quot;&gt;`transpose`, `inverse`…&lt;/span&gt;](#transposition-and-inversion)</span>
+<span class="doccomment">/// * [Interpolation &lt;span style=&quot;float:right;&quot;&gt;`slerp`…&lt;/span&gt;](#interpolation)</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Conversion</span>
+<span class="doccomment">/// * [Conversion to a matrix &lt;span style=&quot;float:right;&quot;&gt;`matrix`, `to_homogeneous`…&lt;/span&gt;](#conversion-to-a-matrix)</span>
+<span class="doccomment">///</span>
 <span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">Scalar</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-{
-    <span class="ident">matrix</span>: <span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="ident">matrix</span>: <span class="ident">SMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">hash::Hash</span>, <span class="ident">D</span>: <span class="ident">DimName</span> <span class="op">+</span> <span class="ident">hash::Hash</span><span class="op">&gt;</span> <span class="ident">hash::Hash</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">hash::Hash</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">hash::Hash</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">DefaultAllocator</span> <span class="kw">as</span> <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Buffer</span>: <span class="ident">hash::Hash</span>,
+    <span class="op">&lt;</span><span class="ident">DefaultAllocator</span> <span class="kw">as</span> <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Buffer</span>: <span class="ident">hash::Hash</span>,
 {
     <span class="kw">fn</span> <span class="ident">hash</span><span class="op">&lt;</span><span class="ident">H</span>: <span class="ident">hash::Hasher</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">H</span>) {
         <span class="self">self</span>.<span class="ident">matrix</span>.<span class="ident">hash</span>(<span class="ident">state</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">Copy</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">Copy</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">DefaultAllocator</span> <span class="kw">as</span> <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Buffer</span>: <span class="ident">Copy</span>,
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">Copy</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Copy</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> <span class="kw">where</span>
+    <span class="op">&lt;</span><span class="ident">DefaultAllocator</span> <span class="kw">as</span> <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Buffer</span>: <span class="ident">Copy</span>
 {
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">Scalar</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-    <span class="op">&lt;</span><span class="ident">DefaultAllocator</span> <span class="kw">as</span> <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Buffer</span>: <span class="ident">Clone</span>,
+    <span class="op">&lt;</span><span class="ident">DefaultAllocator</span> <span class="kw">as</span> <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Buffer</span>: <span class="ident">Clone</span>,
 {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
@@ -610,12 +667,10 @@
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;abomonation-serialize&quot;</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> <span class="ident">Abomonation</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Abomonation</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">N</span>: <span class="ident">Scalar</span>,
-    <span class="ident">D</span>: <span class="ident">DimName</span>,
-    <span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>: <span class="ident">Abomonation</span>,
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
+    <span class="ident">T</span>: <span class="ident">Scalar</span>,
+    <span class="ident">SMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>: <span class="ident">Abomonation</span>,
 {
     <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">entomb</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">IOResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">matrix</span>.<span class="ident">entomb</span>(<span class="ident">writer</span>)
@@ -630,11 +685,10 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde-serialize&quot;</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">Scalar</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">Serialize</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde-serialize-no-std&quot;</span>)]</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Serialize</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-    <span class="ident">Owned</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>: <span class="ident">Serialize</span>,
+    <span class="ident">Owned</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span>: <span class="ident">Serialize</span>,
 {
     <span class="kw">fn</span> <span class="ident">serialize</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">serializer</span>: <span class="ident">S</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">S::Ok</span>, <span class="ident">S::Error</span><span class="op">&gt;</span>
     <span class="kw">where</span>
@@ -644,26 +698,57 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde-serialize&quot;</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">N</span>: <span class="ident">Scalar</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">Deserialize</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde-serialize-no-std&quot;</span>)]</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">Scalar</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Deserialize</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-    <span class="ident">Owned</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>: <span class="ident">Deserialize</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
+    <span class="ident">Owned</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span>: <span class="ident">Deserialize</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
 {
     <span class="kw">fn</span> <span class="ident">deserialize</span><span class="op">&lt;</span><span class="ident">Des</span><span class="op">&gt;</span>(<span class="ident">deserializer</span>: <span class="ident">Des</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Des::Error</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">Des</span>: <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
     {
-        <span class="kw">let</span> <span class="ident">matrix</span> <span class="op">=</span> <span class="ident">MatrixN</span>::<span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span><span class="ident">::deserialize</span>(<span class="ident">deserializer</span>)<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">matrix</span> <span class="op">=</span> <span class="ident">SMatrix</span>::<span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span><span class="ident">::deserialize</span>(<span class="ident">deserializer</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="self">Self</span><span class="ident">::from_matrix_unchecked</span>(<span class="ident">matrix</span>))
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">Scalar</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-{
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Creates a new rotation from the given square matrix.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// The matrix squareness is checked but not its orthonormality.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # Example</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// # use nalgebra::{Rotation2, Rotation3, Matrix2, Matrix3};</span>
+    <span class="doccomment">/// # use std::f32;</span>
+    <span class="doccomment">/// let mat = Matrix3::new(0.8660254, -0.5,      0.0,</span>
+    <span class="doccomment">///                        0.5,       0.8660254, 0.0,</span>
+    <span class="doccomment">///                        0.0,       0.0,       1.0);</span>
+    <span class="doccomment">/// let rot = Rotation3::from_matrix_unchecked(mat);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// assert_eq!(*rot.matrix(), mat);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mat = Matrix2::new(0.8660254, -0.5,</span>
+    <span class="doccomment">///                        0.5,       0.8660254);</span>
+    <span class="doccomment">/// let rot = Rotation2::from_matrix_unchecked(mat);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// assert_eq!(*rot.matrix(), mat);</span>
+    <span class="doccomment">/// ```</span>
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_matrix_unchecked</span>(<span class="ident">matrix</span>: <span class="ident">SMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="macro">assert!</span>(
+            <span class="ident">matrix</span>.<span class="ident">is_square</span>(),
+            <span class="string">&quot;Unable to create a rotation from a non-square matrix.&quot;</span>
+        );
+
+        <span class="self">Self</span> { <span class="ident">matrix</span> }
+    }
+}
+
+<span class="doccomment">/// # Conversion to a matrix</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {
     <span class="doccomment">/// A reference to the underlying matrix representation of this rotation.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Example</span>
@@ -683,14 +768,14 @@
     <span class="doccomment">/// assert_eq!(*rot.matrix(), expected);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matrix</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matrix</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">SMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">matrix</span>
     }
 
     <span class="doccomment">/// A mutable reference to the underlying matrix representation of this rotation.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;Use `.matrix_mut_unchecked()` instead.&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">matrix_mut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">matrix_mut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">SMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">matrix</span>
     }
 
@@ -700,7 +785,7 @@
     <span class="doccomment">/// non-square, non-inversible, or non-orthonormal. If one of those properties is broken,</span>
     <span class="doccomment">/// subsequent method calls may be UB.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matrix_mut_unchecked</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matrix_mut_unchecked</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">SMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">matrix</span>
     }
 
@@ -725,7 +810,7 @@
     <span class="doccomment">/// assert_eq!(mat, expected);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">matrix</span>
     }
 
@@ -733,7 +818,7 @@
     <span class="doccomment">/// Deprecated: Use [Rotation::into_inner] instead.</span>
     <span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;use `.into_inner()` instead&quot;</span>)]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unwrap</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unwrap</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">matrix</span>
     }
 
@@ -760,53 +845,24 @@
     <span class="doccomment">/// assert_eq!(rot.to_homogeneous(), expected);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_homogeneous</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">U1</span><span class="op">&gt;</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_homogeneous</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">OMatrix</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">U1</span><span class="op">&gt;</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">U1</span><span class="op">&gt;</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">N</span>: <span class="ident">Zero</span> <span class="op">+</span> <span class="ident">One</span>,
-        <span class="ident">D</span>: <span class="ident">DimNameAdd</span><span class="op">&lt;</span><span class="ident">U1</span><span class="op">&gt;</span>,
-        <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">U1</span><span class="op">&gt;</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">U1</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">T</span>: <span class="ident">Zero</span> <span class="op">+</span> <span class="ident">One</span>,
+        <span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>: <span class="ident">DimNameAdd</span><span class="op">&lt;</span><span class="ident">U1</span><span class="op">&gt;</span>,
+        <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">U1</span><span class="op">&gt;</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">U1</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     {
-        <span class="comment">// We could use `MatrixN::to_homogeneous()` here, but that would imply</span>
+        <span class="comment">// We could use `SMatrix::to_homogeneous()` here, but that would imply</span>
         <span class="comment">// adding the additional traits `DimAdd` and `IsNotStaticOne`. Maybe</span>
         <span class="comment">// these things will get nicer once specialization lands in Rust.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">MatrixN</span>::<span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">U1</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::identity</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">OMatrix</span>::<span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">U1</span><span class="op">&gt;</span>, <span class="ident">DimNameSum</span><span class="op">&lt;</span><span class="ident">Const</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>, <span class="ident">U1</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::identity</span>();
         <span class="ident">res</span>.<span class="ident">fixed_slice_mut</span>::<span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>(<span class="number">0</span>, <span class="number">0</span>).<span class="ident">copy_from</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">matrix</span>);
 
         <span class="ident">res</span>
     }
+}
 
-    <span class="doccomment">/// Creates a new rotation from the given square matrix.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The matrix squareness is checked but not its orthonormality.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Example</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// # use nalgebra::{Rotation2, Rotation3, Matrix2, Matrix3};</span>
-    <span class="doccomment">/// # use std::f32;</span>
-    <span class="doccomment">/// let mat = Matrix3::new(0.8660254, -0.5,      0.0,</span>
-    <span class="doccomment">///                        0.5,       0.8660254, 0.0,</span>
-    <span class="doccomment">///                        0.0,       0.0,       1.0);</span>
-    <span class="doccomment">/// let rot = Rotation3::from_matrix_unchecked(mat);</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// assert_eq!(*rot.matrix(), mat);</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// let mat = Matrix2::new(0.8660254, -0.5,</span>
-    <span class="doccomment">///                        0.5,       0.8660254);</span>
-    <span class="doccomment">/// let rot = Rotation2::from_matrix_unchecked(mat);</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// assert_eq!(*rot.matrix(), mat);</span>
-    <span class="doccomment">/// ```</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_matrix_unchecked</span>(<span class="ident">matrix</span>: <span class="ident">MatrixN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="macro">assert!</span>(
-            <span class="ident">matrix</span>.<span class="ident">is_square</span>(),
-            <span class="string">&quot;Unable to create a rotation from a non-square matrix.&quot;</span>
-        );
-
-        <span class="self">Self</span> { <span class="ident">matrix</span>: <span class="ident">matrix</span> }
-    }
-
+<span class="doccomment">/// # Transposition and inversion</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Transposes `self`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Same as `.inverse()` because the inverse of a rotation matrix is its transform.</span>
@@ -910,10 +966,10 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">SimdRealField</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="doccomment">/// # Transformation of a vector or a point</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">SimdRealField</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">N::Element</span>: <span class="ident">SimdRealField</span>,
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>,
+    <span class="ident">T::Element</span>: <span class="ident">SimdRealField</span>,
 {
     <span class="doccomment">/// Rotate the given point.</span>
     <span class="doccomment">///</span>
@@ -930,7 +986,7 @@
     <span class="doccomment">/// assert_relative_eq!(transformed_point, Point3::new(3.0, 2.0, -1.0), epsilon = 1.0e-6);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transform_point</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pt</span>: <span class="kw-2">&amp;</span><span class="ident">Point</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transform_point</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pt</span>: <span class="kw-2">&amp;</span><span class="ident">Point</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="self">self</span> <span class="op">*</span> <span class="ident">pt</span>
     }
 
@@ -949,7 +1005,7 @@
     <span class="doccomment">/// assert_relative_eq!(transformed_vector, Vector3::new(3.0, 2.0, -1.0), epsilon = 1.0e-6);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transform_vector</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="ident">VectorN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">VectorN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transform_vector</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="ident">SVector</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SVector</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="self">self</span> <span class="op">*</span> <span class="ident">v</span>
     }
 
@@ -968,7 +1024,7 @@
     <span class="doccomment">/// assert_relative_eq!(transformed_point, Point3::new(-3.0, 2.0, 1.0), epsilon = 1.0e-6);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inverse_transform_point</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pt</span>: <span class="kw-2">&amp;</span><span class="ident">Point</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inverse_transform_point</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pt</span>: <span class="kw-2">&amp;</span><span class="ident">Point</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="ident">Point::from</span>(<span class="self">self</span>.<span class="ident">inverse_transform_vector</span>(<span class="kw-2">&amp;</span><span class="ident">pt</span>.<span class="ident">coords</span>))
     }
 
@@ -987,34 +1043,49 @@
     <span class="doccomment">/// assert_relative_eq!(transformed_vector, Vector3::new(-3.0, 2.0, 1.0), epsilon = 1.0e-6);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inverse_transform_vector</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="ident">VectorN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">VectorN</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inverse_transform_vector</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="ident">SVector</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SVector</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">matrix</span>().<span class="ident">tr_mul</span>(<span class="ident">v</span>)
+    }
+
+    <span class="doccomment">/// Rotate the given vector by the inverse of this rotation. This may be</span>
+    <span class="doccomment">/// cheaper than inverting the rotation and then transforming the given</span>
+    <span class="doccomment">/// vector.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # Example</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// # #[macro_use] extern crate approx;</span>
+    <span class="doccomment">/// # use std::f32;</span>
+    <span class="doccomment">/// # use nalgebra::{Rotation2, Rotation3, UnitQuaternion, Vector3};</span>
+    <span class="doccomment">/// let rot = Rotation3::new(Vector3::z() * f32::consts::FRAC_PI_2);</span>
+    <span class="doccomment">/// let transformed_vector = rot.inverse_transform_unit_vector(&amp;Vector3::x_axis());</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// assert_relative_eq!(transformed_vector, -Vector3::y_axis(), epsilon = 1.0e-6);</span>
+    <span class="doccomment">/// ```</span>
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inverse_transform_unit_vector</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="ident">Unit</span><span class="op">&lt;</span><span class="ident">SVector</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Unit</span><span class="op">&lt;</span><span class="ident">SVector</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">Unit::new_unchecked</span>(<span class="self">self</span>.<span class="ident">inverse_transform_vector</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">v</span>))
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">Eq</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">Eq</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">PartialEq</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-{
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">PartialEq</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span> {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">right</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">matrix</span> <span class="op">=</span><span class="op">=</span> <span class="ident">right</span>.<span class="ident">matrix</span>
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">AbsDiffEq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">AbsDiffEq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">N</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">AbsDiffEq</span>,
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-    <span class="ident">N::Epsilon</span>: <span class="ident">Copy</span>,
+    <span class="ident">T</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">AbsDiffEq</span>,
+    <span class="ident">T::Epsilon</span>: <span class="ident">Copy</span>,
 {
-    <span class="kw">type</span> <span class="ident">Epsilon</span> <span class="op">=</span> <span class="ident">N::Epsilon</span>;
+    <span class="kw">type</span> <span class="ident">Epsilon</span> <span class="op">=</span> <span class="ident">T::Epsilon</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">default_epsilon</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::Epsilon</span> {
-        <span class="ident">N::default_epsilon</span>()
+        <span class="ident">T::default_epsilon</span>()
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
@@ -1023,15 +1094,14 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">RelativeEq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">RelativeEq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">N</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">RelativeEq</span>,
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-    <span class="ident">N::Epsilon</span>: <span class="ident">Copy</span>,
+    <span class="ident">T</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">RelativeEq</span>,
+    <span class="ident">T::Epsilon</span>: <span class="ident">Copy</span>,
 {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">default_max_relative</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::Epsilon</span> {
-        <span class="ident">N::default_max_relative</span>()
+        <span class="ident">T::default_max_relative</span>()
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
@@ -1046,15 +1116,14 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">UlpsEq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">UlpsEq</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">N</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">UlpsEq</span>,
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
-    <span class="ident">N::Epsilon</span>: <span class="ident">Copy</span>,
+    <span class="ident">T</span>: <span class="ident">Scalar</span> <span class="op">+</span> <span class="ident">UlpsEq</span>,
+    <span class="ident">T::Epsilon</span>: <span class="ident">Copy</span>,
 {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">default_max_ulps</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u32</span> {
-        <span class="ident">N::default_max_ulps</span>()
+        <span class="ident">T::default_max_ulps</span>()
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
@@ -1068,10 +1137,9 @@
  * Display
  *
  */</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>: <span class="ident">DimName</span><span class="op">&gt;</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">const</span> <span class="ident">D</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">Rotation</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">D</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">N</span>: <span class="ident">RealField</span> <span class="op">+</span> <span class="ident">fmt::Display</span>,
-    <span class="ident">DefaultAllocator</span>: <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">N</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Allocator</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">D</span>, <span class="ident">D</span><span class="op">&gt;</span>,
+    <span class="ident">T</span>: <span class="ident">RealField</span> <span class="op">+</span> <span class="ident">fmt::Display</span>,
 {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt::Formatter</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt::Result</span> {
         <span class="kw">let</span> <span class="ident">precision</span> <span class="op">=</span> <span class="ident">f</span>.<span class="ident">precision</span>().<span class="ident">unwrap_or</span>(<span class="number">3</span>);
@@ -1087,11 +1155,11 @@
 <span class="comment">//          //          * Absolute</span>
 <span class="comment">//          //          *</span>
 <span class="comment">//          //          */</span>
-<span class="comment">//          //         impl&lt;N: Absolute&gt; Absolute for $t&lt;N&gt; {</span>
-<span class="comment">//          //             type AbsoluteValue = $submatrix&lt;N::AbsoluteValue&gt;;</span>
+<span class="comment">//          //         impl&lt;T: Absolute&gt; Absolute for $t&lt;T&gt; {</span>
+<span class="comment">//          //             type AbsoluteValue = $submatrix&lt;T::AbsoluteValue&gt;;</span>
 <span class="comment">//          //</span>
 <span class="comment">//          //             #[inline]</span>
-<span class="comment">//          //             fn abs(m: &amp;$t&lt;N&gt;) -&gt; $submatrix&lt;N::AbsoluteValue&gt; {</span>
+<span class="comment">//          //             fn abs(m: &amp;$t&lt;T&gt;) -&gt; $submatrix&lt;T::AbsoluteValue&gt; {</span>
 <span class="comment">//          //                 Absolute::abs(&amp;m.submatrix)</span>
 <span class="comment">//          //             }</span>
 <span class="comment">//          //         }</span>
