@@ -41,6 +41,8 @@ pub use serializable::{AssetBalance as SerializableAssetBalance, AssetId as Seri
 #[doc(inline)]
 pub use pallet::*;
 
+const NON_LOCAL: u8 = 101;
+
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
@@ -49,6 +51,7 @@ pub mod pallet {
         traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
         transactional,
     };
+    use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
     use frame_system::{pallet_prelude::*, RawOrigin};
     use sp_runtime::traits::{One, StaticLookup, Zero};
     use sp_std::{prelude::*, vec};
@@ -70,9 +73,15 @@ pub mod pallet {
     type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
 
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_assets::Config {
+    pub trait Config:
+        frame_system::Config + pallet_assets::Config + SendTransactionTypes<Call<Self>>
+    {
         type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
         type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
+
+        /// Period of check for accounts with zero security tokens
+        #[pallet::constant]
+        type WipePeriod: Get<Self::BlockNumber>;
     }
 
     #[doc(hidden)]
@@ -82,7 +91,66 @@ pub mod pallet {
 
     #[doc(hidden)]
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(n: T::BlockNumber) {
+            if !sp_io::offchain::is_validator() {
+                return;
+            }
+
+            if n % T::WipePeriod::get() != Zero::zero() {
+                return;
+            }
+
+            for (asset, balances) in SecurityBalanceMap::<T>::iter() {
+                for balance in balances {
+                    if !Self::account_balance(&balance, &asset).is_zero() {
+                        continue;
+                    }
+
+                    let call = Call::wipe_security_balance(asset, balance);
+                    let _submit =
+                        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+                }
+            }
+        }
+    }
+
+    #[pallet::validate_unsigned]
+    impl<T: Config> ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
+
+        fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+            if !matches!(
+                source,
+                TransactionSource::Local | TransactionSource::InBlock
+            ) {
+                return InvalidTransaction::Custom(super::NON_LOCAL).into();
+            }
+
+            if let Call::wipe_security_balance(ref asset, ref account) = call {
+                if !Self::account_balance(account, asset).is_zero() {
+                    return InvalidTransaction::Stale.into();
+                }
+
+                let security_balances = match SecurityBalanceMap::<T>::try_get(*asset) {
+                    Err(_) => return InvalidTransaction::Stale.into(),
+                    Ok(b) => b,
+                };
+
+                if let Err(_) = security_balances.binary_search_by_key(&account, |a| a) {
+                    return InvalidTransaction::Stale.into();
+                }
+
+                ValidTransaction::with_tag_prefix("DeipAssetsOffchainWorker")
+                    .propagate(false)
+                    .longevity(5)
+                    .and_provides((*asset, account.clone()))
+                    .build()
+            } else {
+                InvalidTransaction::Call.into()
+            }
+        }
+    }
 
     #[pallet::error]
     pub enum Error<T> {
@@ -94,6 +162,8 @@ pub mod pallet {
         ProjectSecurityTokenAccountCannotBeFreezed,
         ReservedAssetCannotBeFreezed,
         ReservedAssetAccountCannotBeFreezed,
+        SecurityTokenNotFound,
+        SecurityTokenBalanceNotFound,
     }
 
     #[pallet::storage]
@@ -675,6 +745,29 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let call = pallet_assets::Call::<T>::set_metadata(id, name, symbol, decimals);
             call.dispatch_bypass_filter(origin)
+        }
+
+        #[pallet::weight(10_000)]
+        pub(super) fn wipe_security_balance(
+            origin: OriginFor<T>,
+            asset: AssetsAssetIdOf<T>,
+            account: AccountIdOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_none(origin)?;
+
+            SecurityBalanceMap::<T>::mutate_exists(asset, |maybe| match maybe.as_mut() {
+                None => Err(Error::<T>::SecurityTokenNotFound.into()),
+                Some(b) => match b.binary_search_by_key(&&account, |a| a) {
+                    Err(_) => Err(Error::<T>::SecurityTokenBalanceNotFound.into()),
+                    Ok(i) => {
+                        b.remove(i);
+                        if b.is_empty() {
+                            *maybe = None;
+                        }
+                        Ok(Some(0).into())
+                    }
+                },
+            })
         }
     }
 }

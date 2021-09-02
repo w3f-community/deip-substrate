@@ -188,6 +188,10 @@ impl pallet_assets::Config for Test {
     type WeightInfo = pallet_assets::weights::SubstrateWeight<Test>;
 }
 
+parameter_types! {
+	pub const WipePeriod: u64 = 10;
+}
+
 impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
     type ProjectId = pallet_deip::ProjectId;
     type InvestmentId = pallet_deip::InvestmentId;
@@ -200,6 +204,7 @@ impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
 impl pallet_deip_assets::Config for Test {
     type ProjectsInfo = Self;
     type DeipAccountId = Self::AccountId;
+    type WipePeriod = WipePeriod;
 }
 
 impl<LocalCall> system::offchain::SendTransactionTypes<LocalCall> for Test

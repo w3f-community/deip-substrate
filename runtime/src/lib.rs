@@ -432,9 +432,14 @@ impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Runtime {
     }
 }
 
+parameter_types! {
+	pub const WipePeriod: BlockNumber = DAYS;
+}
+
 impl pallet_deip_assets::Config for Runtime {
     type ProjectsInfo = Self;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
+    type WipePeriod = WipePeriod;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -460,7 +465,7 @@ construct_runtime!(
         DeipOrg: pallet_deip_org::{Module, Call, Storage, Event<T>, Config},
         Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
         Assets: pallet_assets::{Module, Storage, Event<T>},
-        DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>},
+        DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>, ValidateUnsigned},
     }
 );
 
