@@ -5,8 +5,10 @@ mod runtime;
 mod call_serializer;
 mod actor;
 mod app;
+mod config;
 
 use std::time::Duration;
+use std::process::exit;
 
 use substrate_subxt::{system::System};
 use substrate_subxt::NodeTemplateRuntime;
@@ -27,23 +29,10 @@ use app::{
     OffchainActor, OffchainActorIO, OffchainActorInput, OffchainActorOutput, OffchainActorOutputData,
 };
 
-
-fn last_known_block() -> app::LastKnownBlock {
-    None
-    // let number = 203;
-    // let hash = "24e1f2517d77bd828896cdc2d4710edd3d67b1ac26e883130a622ab5ff37fa1e";
-    // let parent_hash = "cf17566ffcc74d240bbeb25be16a7ed4f773a571af1d0cb77b7239b96935f30f";
-    // Ok(Some(events::BlockMetadata {
-    //     number,
-    //     hash: sp_core::H256::from_slice(hex::decode(hash).unwrap().as_slice()),
-    //     parent_hash: sp_core::H256::from_slice(hex::decode(parent_hash).unwrap().as_slice()),
-    // }))
-}
-
 macro_rules! reset {
-    ($actor_task_queue:ident, $_released_actor_queue:ident) => {
+    ($actor_task_queue:ident, $_released_actor_queue:ident, $last_known_block:expr) => {
         $actor_task_queue.push(init_actor_task::<_, _, OffchainActorIO>(
-            OffchainActorInput::build_client(Ok(last_known_block())),
+            OffchainActorInput::build_client(Ok($last_known_block.clone())),
             &mut $_released_actor_queue
         ).await);
     };
@@ -90,6 +79,13 @@ async fn main() {
     
     flexi_logger::Logger::try_with_env().unwrap().start().unwrap();
     
+    let config_file = "/home/ymitrofanov/Documents/DEIP/project/deip-polkadot/event-proxy/src/default_config.toml";
+    let config = config::load::<config::Offchain<app::LastKnownBlock>, _>(config_file)
+        .unwrap_or_else(|e| {
+            log::error!("{}\n EXIT(-1)", e.to_string());
+            exit(-1);
+        });
+    
     // Init rpc-client-builder-actor:
     let mut rpc_client_builder_actor = RpcClientBuilderActor;
     let (rpc_client_builder_actor_io, rpc_client_builder_actor_io2) = RpcClientBuilderActorIO::pair();
@@ -134,7 +130,7 @@ async fn main() {
     release_actor(offchain_actor_io2, &mut released_offchain_actor_queue).await;
     
     // Put the initial task to trigger main workflow:
-    reset!(offchain_actor_task_queue, released_offchain_actor_queue);
+    reset!(offchain_actor_task_queue, released_offchain_actor_queue, config.offchain.last_known_block);
     
     loop { tokio::select! {
         Some(offchain_actor_task_result) = offchain_actor_task_queue.next() => {
@@ -143,7 +139,7 @@ async fn main() {
             let output = if maybe_output.is_none() { unreachable!(); } else { maybe_output.unwrap() };
             match output {
                 OffchainActorOutput::NoClient => {
-                    reset!(offchain_actor_task_queue, released_offchain_actor_queue);
+                    reset!(offchain_actor_task_queue, released_offchain_actor_queue, config.offchain.last_known_block);
                 },
                 OffchainActorOutput::Output(OffchainActorOutputData::BuildClient(client)) => {
                     offchain_actor_SetClient!(client,
@@ -160,7 +156,7 @@ async fn main() {
                         },
                         Err(e) => {
                             log::error!("{:?}", e);
-                            reset!(offchain_actor_task_queue, released_offchain_actor_queue);
+                            reset!(offchain_actor_task_queue, released_offchain_actor_queue, config.offchain.last_known_block);
                         },
                     }
                 },
@@ -211,7 +207,7 @@ async fn main() {
                     reset_blockchain_actor!(rpc_client_builder_actor_task_queue, released_rpc_client_builder_actor_queue);
                 },
                 BlockchainActorOutput::Ok(BlockchainActorOutputData::SetClient) => {
-                    reset!(offchain_actor_task_queue, released_offchain_actor_queue);
+                    reset!(offchain_actor_task_queue, released_offchain_actor_queue, config.offchain.last_known_block);
                 },
                 BlockchainActorOutput::Ok(BlockchainActorOutputData::ReplayBlocks(replay)) => {
                     blocks_replay_task_queue.push(blocks_replay_task(replay));

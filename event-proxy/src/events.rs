@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use substrate_subxt::{RawEvent, Event, system::System};
 use codec::Decode;
-use serde::{Serialize, ser::{Serializer}};
+use serde::{Serialize, Deserialize, ser::{Serializer}};
 
 use sp_runtime::generic::Block;
 use sp_runtime::traits::{Block as _Block, Header as _Header};
@@ -16,7 +16,7 @@ use super::frame::{
 
 mod mapping;
 
-#[derive(Serialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct BlockMetadata<T: System> {
     pub number: T::BlockNumber,
     pub hash: T::Hash,
