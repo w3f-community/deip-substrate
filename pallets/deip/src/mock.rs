@@ -104,7 +104,7 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
         DeipAssets::get_security_tokens(id)
     }
 
-    fn get_security_token_balances(id: &Self::AssetId) -> Vec<AccountId> {
+    fn get_security_token_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
         DeipAssets::get_security_token_balances(id)
     }
 

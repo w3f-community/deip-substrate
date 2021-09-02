@@ -19,7 +19,7 @@ pub trait DeipAssetSystem<AccountId> {
 
     fn get_security_tokens(id: &ProjectId) -> Vec<Self::AssetId>;
 
-    fn get_security_token_balances(id: &Self::AssetId) -> Vec<AccountId>;
+    fn get_security_token_balances(id: &Self::AssetId) -> Option<Vec<AccountId>>;
 
     fn transactionally_transfer(
         from: &AccountId,

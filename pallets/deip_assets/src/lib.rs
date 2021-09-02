@@ -127,6 +127,10 @@ pub mod pallet {
         OptionQuery,
     >;
 
+    #[pallet::storage]
+    pub(super) type SecurityBalanceMap<T: Config> =
+        StorageMap<_, Identity, AssetsAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
+
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
         pub core_asset_admin: AccountIdOf<T>,
@@ -218,8 +222,8 @@ pub mod pallet {
             AssetIdByProjectId::<T>::try_get(id.clone()).unwrap_or_default()
         }
 
-        pub fn get_security_token_balances(id: &T::AssetId) -> Vec<AccountIdOf<T>> {
-            unimplemented!();
+        pub fn get_security_token_balances(id: &T::AssetId) -> Option<Vec<AccountIdOf<T>>> {
+            SecurityBalanceMap::<T>::try_get(*id).ok()
         }
 
         #[transactional]
@@ -229,10 +233,12 @@ pub mod pallet {
             transfers: &[(T::Balance, AccountIdOf<T>)],
         ) -> Result<(), ()> {
             for (amount, to) in transfers {
-                let to_source = <T::Lookup as StaticLookup>::unlookup(to.clone());
-
-                let call = pallet_assets::Call::<T>::transfer(asset, to_source, *amount);
-                let result = call.dispatch_bypass_filter(RawOrigin::Signed(from.clone()).into());
+                let result = Self::transfer_impl(
+                    RawOrigin::Signed(from.clone()).into(),
+                    asset,
+                    to.clone(),
+                    *amount,
+                );
                 if result.is_err() {
                     return Err(());
                 }
@@ -322,7 +328,6 @@ pub mod pallet {
                 T::Currency::deposit_creating(&info.creator, T::Currency::minimum_balance());
 
             let id_account = Self::investment_key(&id);
-            let creator_source = <T::Lookup as StaticLookup>::unlookup(info.creator.clone());
 
             for asset_id in info.assets.iter().chain(&[info.asset_id]) {
                 InvestmentByAssetId::<T>::mutate_exists(*asset_id, |maybe_investments| {
@@ -344,10 +349,12 @@ pub mod pallet {
                     continue;
                 }
 
-                let call =
-                    pallet_assets::Call::<T>::transfer(*asset_id, creator_source.clone(), amount);
-                let result =
-                    call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
+                let result = Self::transfer_impl(
+                    RawOrigin::Signed(id_account.clone()).into(),
+                    *asset_id,
+                    info.creator.clone(),
+                    amount,
+                );
                 if result.is_err() {
                     return Err(UnreserveError::AssetTransferFailed(*asset_id));
                 }
@@ -378,10 +385,13 @@ pub mod pallet {
             );
 
             let id_account = Self::investment_key(&id);
-            let who_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
 
-            let call = pallet_assets::Call::<T>::transfer(asset, who_source, amount);
-            let result = call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
+            let result = Self::transfer_impl(
+                RawOrigin::Signed(id_account.clone()).into(),
+                asset,
+                who.clone(),
+                amount,
+            );
             if result.is_err() {
                 return Err(UnreserveError::AssetTransferFailed(asset));
             }
@@ -411,6 +421,34 @@ pub mod pallet {
             }
 
             Ok(())
+        }
+
+        // stores `to` in the map of security balances if the asset secures some active
+        fn transfer_impl(
+            from: OriginFor<T>,
+            id: T::AssetId,
+            to: AccountIdOf<T>,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let target_source = <T::Lookup as StaticLookup>::unlookup(to.clone());
+            let call = pallet_assets::Call::<T>::transfer(id, target_source, amount);
+            let ok = call.dispatch_bypass_filter(from)?;
+
+            if let Some(_) = Self::try_get_tokenized_project(&id) {
+                SecurityBalanceMap::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
+                    None => {
+                        // this cannot happen but for any case
+                        *maybe = Some(vec![to]);
+                        return;
+                    }
+                    Some(b) => match b.binary_search_by_key(&&to, |a| a) {
+                        Ok(_) => (),
+                        Err(i) => b.insert(i, to),
+                    },
+                });
+            }
+
+            Ok(ok)
         }
     }
 
@@ -477,9 +515,30 @@ pub mod pallet {
             beneficiary: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let beneficiary_source = <T::Lookup as StaticLookup>::unlookup(beneficiary.into());
+            let beneficiary_source =
+                <T::Lookup as StaticLookup>::unlookup(beneficiary.clone().into());
             let call = pallet_assets::Call::<T>::mint(id, beneficiary_source, amount);
-            call.dispatch_bypass_filter(origin)
+            let result = call.dispatch_bypass_filter(origin)?;
+
+            if let Some(_) = Self::try_get_tokenized_project(&id) {
+                SecurityBalanceMap::<T>::mutate_exists(id, |maybe| {
+                    let balances = match maybe.as_mut() {
+                        None => {
+                            *maybe = Some(vec![beneficiary.into()]);
+                            return;
+                        }
+                        Some(b) => b,
+                    };
+
+                    let account = beneficiary.into();
+                    match balances.binary_search_by_key(&&account, |a| a) {
+                        Ok(_) => (),
+                        Err(i) => balances.insert(i, account),
+                    };
+                });
+            }
+
+            Ok(result)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
@@ -506,9 +565,7 @@ pub mod pallet {
             target: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let target_source = <T::Lookup as StaticLookup>::unlookup(target.into());
-            let call = pallet_assets::Call::<T>::transfer(id, target_source, amount);
-            call.dispatch_bypass_filter(origin)
+            Self::transfer_impl(origin, id, target.into(), amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]

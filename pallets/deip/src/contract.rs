@@ -309,7 +309,12 @@ impl<T: Config> Module<T> {
         let token_count: u128 = beneficiary_tokens.len().saturated_into();
         for token in &beneficiary_tokens {
             let token_supply: u128 = T::AssetSystem::total_supply(token).saturated_into();
-            let token_balances = T::AssetSystem::get_security_token_balances(token);
+            let token_balances = if let Some(balances) = T::AssetSystem::get_security_token_balances(token) {
+                balances
+            } else {
+                continue
+            };
+
             for token_balance in &token_balances {
                 let balance = T::AssetSystem::account_balance(&token_balance, token);
                 let revenue: u128 = (fee_to_distribute * balance).saturated_into();
