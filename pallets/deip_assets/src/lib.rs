@@ -199,6 +199,48 @@ pub mod pallet {
             T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
         }
 
+        pub fn try_get_tokenized_project(id: &T::AssetId) -> Option<DeipProjectIdOf<T>> {
+            match ProjectIdByAssetId::<T>::try_get(*id) {
+                Ok(project_id) => Some(project_id),
+                Err(_) => None,
+            }
+        }
+
+        pub fn account_balance(account: &AccountIdOf<T>, asset: &T::AssetId) -> T::Balance {
+            pallet_assets::Pallet::<T>::balance(*asset, account.clone())
+        }
+
+        pub fn total_supply(asset: &T::AssetId) -> T::Balance {
+            pallet_assets::Pallet::<T>::total_supply(*asset)
+        }
+
+        pub fn get_security_tokens(id: &DeipProjectIdOf<T>) -> Vec<T::AssetId> {
+            AssetIdByProjectId::<T>::try_get(id.clone()).unwrap_or_default()
+        }
+
+        pub fn get_security_token_balances(id: &T::AssetId) -> Vec<AccountIdOf<T>> {
+            unimplemented!();
+        }
+
+        #[transactional]
+        pub fn transactionally_transfer(
+            from: &AccountIdOf<T>,
+            asset: T::AssetId,
+            transfers: &[(T::Balance, AccountIdOf<T>)],
+        ) -> Result<(), ()> {
+            for (amount, to) in transfers {
+                let to_source = <T::Lookup as StaticLookup>::unlookup(to.clone());
+
+                let call = pallet_assets::Call::<T>::transfer(asset, to_source, *amount);
+                let result = call.dispatch_bypass_filter(RawOrigin::Signed(from.clone()).into());
+                if result.is_err() {
+                    return Err(());
+                }
+            }
+
+            Ok(())
+        }
+
         #[transactional]
         pub fn transactionally_reserve(
             account: &T::AccountId,

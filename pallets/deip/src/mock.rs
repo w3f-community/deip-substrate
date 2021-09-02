@@ -88,6 +88,34 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
     type Balance = u64;
     type AssetId = u32;
 
+    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<super::ProjectId> {
+        DeipAssets::try_get_tokenized_project(id)
+    }
+
+    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::account_balance(account, asset)
+    }
+
+    fn total_supply(asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::total_supply(asset)
+    }
+
+    fn get_security_tokens(id: &super::ProjectId) -> Vec<Self::AssetId> {
+        DeipAssets::get_security_tokens(id)
+    }
+
+    fn get_security_token_balances(id: &Self::AssetId) -> Vec<AccountId> {
+        DeipAssets::get_security_token_balances(id)
+    }
+
+    fn transactionally_transfer(
+        from: &AccountId,
+        asset: Self::AssetId,
+        transfers: &[(Self::Balance, AccountId)],
+    ) -> Result<(), ()> {
+        DeipAssets::transactionally_transfer(from, asset, transfers)
+    }
+
     fn transactionally_reserve(
         account: &u64,
         id: super::InvestmentId,
