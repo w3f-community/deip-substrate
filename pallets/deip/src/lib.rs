@@ -434,6 +434,7 @@ decl_error! {
         InvestingWrongAsset,
 
         ContractAgreementNoParties,
+        ContractAgreementDuplicateParties,
         ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment,
         ContractAgreementEndTimeMustBeLaterStartTime,
         ContractAgreementAlreadyExists,

@@ -67,6 +67,15 @@ impl<T: Config> Module<T> {
         ensure!(account == creator, Error::<T>::NoPermission);
         ensure!(!parties.is_empty(), Error::<T>::ContractAgreementNoParties);
 
+        for (i, party) in parties.iter().enumerate() {
+            for other_party in parties.iter().skip(i + 1) {
+                ensure!(
+                    party != other_party,
+                    Error::<T>::ContractAgreementDuplicateParties
+                );
+            }
+        }
+
         let now = pallet_timestamp::Module::<T>::get();
         if let Some(s) = start_time {
             ensure!(
