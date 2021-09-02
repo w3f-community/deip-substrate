@@ -26,7 +26,6 @@ impl BlockchainActor {
     }
 }
 
-pub type LastKnownBlock = BlockMetadata<RuntimeT>;
 pub type BlocksReplay = (
     tokio::task::JoinHandle<()>,
     mpsc::Receiver<<RuntimeT as System>::Header>,
@@ -45,15 +44,15 @@ pub type FinalizedBlocksSubscription = Subscription<<RuntimeT as System>::Header
 pub type FinalizedBlocksSubscriptionItem = Result<Option<<RuntimeT as System>::Header>, jsonrpsee_ws_client::Error>;
 
 pub enum BlockchainActorInputData {
-    SubscribeFinalizedBlocks(LastKnownBlock),
+    SubscribeFinalizedBlocks(super::LastKnownBlock),
     SetClient(Client<RuntimeT>),
     GetBlockEvents(<RuntimeT as System>::Hash, SubscriptionBuffer, EventsBuffer),
-    ReplayBlocks(LastKnownBlock, <RuntimeT as System>::Hash, SubscriptionBuffer, EventsBuffer),
+    ReplayBlocks(super::LastKnownBlock, <RuntimeT as System>::Hash, SubscriptionBuffer, EventsBuffer),
     GetReplayedBlockEvents(<RuntimeT as System>::Hash, BlocksReplay),
 }
 pub type BlockchainActorInput = ActorDirective<BlockchainActorInputData>;
 impl BlockchainActorInput {
-    pub fn subscribe_finalized_blocks(last_known_block: LastKnownBlock) -> Self {
+    pub fn subscribe_finalized_blocks(last_known_block: super::LastKnownBlock) -> Self {
         Self::Input(BlockchainActorInputData::SubscribeFinalizedBlocks(last_known_block))
     }
     pub fn set_client(client: Client<RuntimeT>) -> Self {
@@ -67,7 +66,7 @@ impl BlockchainActorInput {
         BlockchainActorInputData::GetBlockEvents(hash, subscription_buffer, events_buffer)
     ) }
     pub fn replay_blocks(
-        last_known_block: LastKnownBlock,
+        last_known_block: super::LastKnownBlock,
         head_block: <RuntimeT as System>::Hash,
         subscription_buffer: SubscriptionBuffer,
         events_buffer: EventsBuffer
@@ -84,7 +83,7 @@ pub enum BlockchainActorOutput {
     Ok(BlockchainActorOutputData)
 }
 pub enum BlockchainActorOutputData {
-    SubscribeFinalizedBlocks(Result<FinalizedBlocksSubscription, substrate_subxt::Error>, LastKnownBlock, SubscriptionBuffer, EventsBuffer),
+    SubscribeFinalizedBlocks(Result<FinalizedBlocksSubscription, substrate_subxt::Error>, super::LastKnownBlock, SubscriptionBuffer, EventsBuffer),
     SetClient,
     GetBlockEvents {
         maybe_events: BlockEvents,
@@ -184,24 +183,29 @@ for BlockchainActor
                 let (tx, rx) = mpsc::channel(1);
                 let replay_blocks_task = tokio::spawn(async move {
                     let client = client2;
-                    let LastKnownBlock { mut number, hash, parent_hash } = last_known_block;
-                    let known_hash = client.block_hash(Some(number.into())).await.unwrap().unwrap();
-                    let known = client.header(Some(known_hash)).await.unwrap().unwrap();
-                    if !(known.hash() == hash && known.parent_hash == parent_hash) {
-                        unimplemented!();
-                    }
                     
-                    // let head_hash = client.finalized_head().await.unwrap();
-                    let head_hash = head_block;
-                    let head = client.header(Some(head_hash)).await.unwrap().unwrap();
-                    if number > head.number {
-                        unimplemented!();
-                    }
+                    let head = client.header(Some(head_block)).await.unwrap().unwrap();
+                    
+                    let mut number = if let Some(BlockMetadata { number, hash, parent_hash }) = last_known_block
+                    {
+                        let known_hash = client.block_hash(Some(number.into())).await.unwrap().unwrap();
+                        let known = client.header(Some(known_hash)).await.unwrap().unwrap();
+                        if !(known.hash() == hash && known.parent_hash == parent_hash) {
+                            unimplemented!();
+                        }
+                        if number > head.number {
+                            unimplemented!();
+                        }
+                        number
+                    } else {
+                        0
+                    };
+                    
                     while number != head.number {
-                        number += 1;
                         let current_hash = client.block_hash(Some(number.into())).await.unwrap().unwrap();
                         let current = client.header(Some(current_hash)).await.unwrap().unwrap();
                         if tx.send(current).await.is_err() { break }
+                        number += 1;
                     }
                 });
                 BlockchainActorOutputData::ReplayBlocks((replay_blocks_task, rx, subscription_buffer, events_buffer))

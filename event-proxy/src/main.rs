@@ -28,15 +28,16 @@ use app::{
 };
 
 
-fn last_known_block() -> events::BlockMetadata<RuntimeT> {
-    let number = 203;
-    let hash = "24e1f2517d77bd828896cdc2d4710edd3d67b1ac26e883130a622ab5ff37fa1e";
-    let parent_hash = "cf17566ffcc74d240bbeb25be16a7ed4f773a571af1d0cb77b7239b96935f30f";
-    events::BlockMetadata {
-        number,
-        hash: sp_core::H256::from_slice(hex::decode(hash).unwrap().as_slice()),
-        parent_hash: sp_core::H256::from_slice(hex::decode(parent_hash).unwrap().as_slice()),
-    }
+fn last_known_block() -> app::LastKnownBlock {
+    None
+    // let number = 203;
+    // let hash = "24e1f2517d77bd828896cdc2d4710edd3d67b1ac26e883130a622ab5ff37fa1e";
+    // let parent_hash = "cf17566ffcc74d240bbeb25be16a7ed4f773a571af1d0cb77b7239b96935f30f";
+    // Ok(Some(events::BlockMetadata {
+    //     number,
+    //     hash: sp_core::H256::from_slice(hex::decode(hash).unwrap().as_slice()),
+    //     parent_hash: sp_core::H256::from_slice(hex::decode(parent_hash).unwrap().as_slice()),
+    // }))
 }
 
 macro_rules! reset {

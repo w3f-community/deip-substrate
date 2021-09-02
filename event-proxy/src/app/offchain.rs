@@ -5,16 +5,17 @@ use crate::RuntimeT;
 use crate::events::{BlockMetadata};
 
 
-pub type LastKnownBlock = Result<BlockMetadata<RuntimeT>, ()>; 
+pub type LastKnownBlock = Option<BlockMetadata<RuntimeT>>; 
+pub type MaybeLastKnownBlock = Result<LastKnownBlock, ()>; 
 
 pub struct OffchainClient {
-    mock: LastKnownBlock
+    mock: MaybeLastKnownBlock
 }
 impl OffchainClient {
-    pub fn mock(mock: LastKnownBlock) -> Self {
+    pub fn mock(mock: MaybeLastKnownBlock) -> Self {
         Self { mock }
     }
-    pub async fn get_last_known_block(&self) -> LastKnownBlock {
+    pub async fn get_last_known_block(&self) -> MaybeLastKnownBlock {
         self.mock.clone()
     }
 }
@@ -31,7 +32,7 @@ impl OffchainActor {
 pub enum OffchainActorInputData {
     SetClient(OffchainClient),
     GetLastKnownBlock,
-    BuildClient { mock: LastKnownBlock },
+    BuildClient { mock: MaybeLastKnownBlock },
 }
 pub type OffchainActorInput = ActorDirective<OffchainActorInputData>;
 impl OffchainActorInput {
@@ -41,7 +42,7 @@ impl OffchainActorInput {
     pub fn get_last_known_block() -> Self {
         Self::Input(OffchainActorInputData::GetLastKnownBlock)
     }
-    pub fn build_client(mock: LastKnownBlock) -> Self {
+    pub fn build_client(mock: MaybeLastKnownBlock) -> Self {
         Self::Input(OffchainActorInputData::BuildClient { mock })
     }
 }
@@ -51,7 +52,7 @@ pub enum OffchainActorOutput {
 }
 pub enum OffchainActorOutputData {
     SetClient,
-    GetLastKnownBlock(LastKnownBlock),
+    GetLastKnownBlock(MaybeLastKnownBlock),
     BuildClient(OffchainClient),
 }
 pub type OffchainActorIO = ActorJack<OffchainActorInput, OffchainActorOutput>;
