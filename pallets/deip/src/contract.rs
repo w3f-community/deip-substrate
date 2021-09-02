@@ -1,6 +1,8 @@
+use crate::traits::DeipAssetSystem;
 use crate::*;
 
-use sp_runtime::traits::Zero;
+use sp_runtime::{traits::Zero, Percent, SaturatedConversion};
+use sp_std::vec;
 
 pub type Id = H160;
 
@@ -203,7 +205,7 @@ impl<T: Config> Module<T> {
                 Self::accept_project_license_by_licenser(party, license)
             }
             TechnologyLicenseStatus::SignedByLicenser(license) => {
-                todo!();
+                Self::accept_project_license_by_licensee(party, license)
             }
             TechnologyLicenseStatus::Signed(_) => {
                 Err(Error::<T>::ContractAgreementLicenseAlreadyAccepted.into())
@@ -239,6 +241,100 @@ impl<T: Config> Module<T> {
         ContractAgreementMap::<T>::insert(id, ContractAgreement::TechnologyLicense(status));
 
         Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licenser));
+
+        Ok(())
+    }
+
+    fn accept_project_license_by_licensee(
+        licensee: AccountIdOf<T>,
+        license: TechnologyLicense<
+            AccountIdOf<T>,
+            HashOf<T>,
+            MomentOf<T>,
+            DeipAssetIdOf<T>,
+            DeipAssetBalanceOf<T>,
+        >,
+    ) -> DispatchResult {
+        ensure!(
+            licensee == license.licensee,
+            Error::<T>::ContractAgreementLicensePartyIsNotLicensee
+        );
+
+        let now = pallet_timestamp::Module::<T>::get();
+        match license.end_time {
+            Some(end_time) => {
+                ensure!(now <= end_time, Error::<T>::ContractAgreementLicenseExpired)
+            }
+            None => (),
+        }
+
+        // this percent should be specified in the corresponding revenue stream
+        let distribute_percent = Percent::from_percent(100);
+        Self::distribute_revenue(
+            &licensee,
+            &license.price.0,
+            &license.price.1,
+            distribute_percent,
+            &license.project_id,
+        )?;
+
+        let id = license.id;
+        let status = TechnologyLicenseStatus::Signed(license);
+        ContractAgreementMap::<T>::insert(id, ContractAgreement::TechnologyLicense(status));
+
+        Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licensee));
+
+        Ok(())
+    }
+
+    fn distribute_revenue(
+        from: &AccountIdOf<T>,
+        asset: &DeipAssetIdOf<T>,
+        fee: &DeipAssetBalanceOf<T>,
+        distribute_percent: Percent,
+        project_id: &ProjectId,
+    ) -> DispatchResult {
+        ensure!(
+            T::AssetSystem::account_balance(&from, &asset) >= *fee,
+            Error::<T>::ContractAgreementLicenseNotEnoughBalance
+        );
+
+        let fee_to_distribute = distribute_percent.mul_floor(*fee);
+
+        let mut total_revenue: DeipAssetBalanceOf<T> = Zero::zero();
+        let mut transfer_info = vec![];
+        let beneficiary_tokens = T::AssetSystem::get_security_tokens(project_id);
+        // simple model is used: if there are several security token classes then
+        // the whole amount is distributed uniformly among the classes
+        let token_count: u128 = beneficiary_tokens.len().saturated_into();
+        for token in &beneficiary_tokens {
+            let token_supply: u128 = T::AssetSystem::total_supply(token).saturated_into();
+            let token_balances = T::AssetSystem::get_security_token_balances(token);
+            for token_balance in &token_balances {
+                let balance = T::AssetSystem::account_balance(&token_balance, token);
+                let revenue: u128 = (fee_to_distribute * balance).saturated_into();
+                let revenue: DeipAssetBalanceOf<T> =
+                    (revenue / (token_supply * token_count)).saturated_into();
+                if revenue.is_zero() {
+                    continue;
+                }
+
+                transfer_info.push((revenue, token_balance.clone()));
+
+                total_revenue += revenue;
+            }
+        }
+
+        if total_revenue < *fee {
+            // transfer the rest to the project team
+            let project = ProjectMap::<T>::get(*project_id);
+            transfer_info.push((*fee - total_revenue, project.team_id.clone()));
+        }
+
+        ensure!(
+            T::AssetSystem::transactionally_transfer(from, *asset, &transfer_info).is_ok(),
+            Error::<T>::ContractAgreementLicenseFailedToChargeFee
+        );
 
         Ok(())
     }

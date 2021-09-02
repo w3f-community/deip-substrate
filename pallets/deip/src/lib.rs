@@ -445,7 +445,10 @@ decl_error! {
         ContractAgreementAcceptWrongAgreement,
         ContractAgreementLicenseAlreadyAccepted,
         ContractAgreementLicensePartyIsNotLicenser,
+        ContractAgreementLicensePartyIsNotLicensee,
         ContractAgreementLicenseExpired,
+        ContractAgreementLicenseNotEnoughBalance,
+        ContractAgreementLicenseFailedToChargeFee,
     }
 }
 
