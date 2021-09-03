@@ -30,7 +30,11 @@ impl Serialize for runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             | Call::Balances(_)
             | Call::Sudo(_)
             | Call::TemplateModule(_)
-            | Call::Multisig(_) => serializer.serialize_u8(0),
+            | Call::Multisig(_) => CallObject {
+                module: "unsupported_module",
+                call: "unsupported_call",
+                args: &UnsupportedCallArgs {},
+            }.serialize(serializer),
         }
     }
 }
@@ -451,6 +455,9 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
         }
     }
 }
+
+#[derive(Serialize)]
+struct UnsupportedCallArgs {}
 
 #[derive(Serialize)]
 struct DeipAssetsSetMetadataCallArgs<A, B, C, D> {
