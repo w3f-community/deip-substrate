@@ -9,22 +9,22 @@ pub fn load<Offchain: DeserializeOwned, P: AsRef<Path>>(path: P) -> io::Result<C
 
 #[derive(Deserialize)]
 pub struct Config<Offchain> {
-    pub blockchain: Blockchain,
-    pub kafka: Kafka,
+    pub blockchain: BlockchainConfig,
+    pub kafka: KafkaConfig,
     pub offchain: Offchain
 }
 
-#[derive(Deserialize)]
-pub struct Blockchain {
+#[derive(Deserialize, Clone)]
+pub struct BlockchainConfig {
     pub rpc: String
 }
 
-#[derive(Deserialize)]
-pub struct Kafka {
+#[derive(Deserialize, Clone)]
+pub struct KafkaConfig {
     pub bootstrap_servers: String,
 }
 
-#[derive(Deserialize)]
-pub struct Offchain<LastKnownBlock> {
+#[derive(Deserialize, Clone)]
+pub struct OffchainConfig<LastKnownBlock> {
     pub last_known_block: LastKnownBlock
 }

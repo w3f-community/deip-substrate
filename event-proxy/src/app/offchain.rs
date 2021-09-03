@@ -42,8 +42,8 @@ impl OffchainActorInput {
     pub fn get_last_known_block() -> Self {
         Self::Input(OffchainActorInputData::GetLastKnownBlock)
     }
-    pub fn build_client(mock: MaybeLastKnownBlock) -> Self {
-        Self::Input(OffchainActorInputData::BuildClient { mock })
+    pub fn build_client(config: super::OffchainConfig<LastKnownBlock>) -> Self {
+        Self::Input(OffchainActorInputData::BuildClient { mock: Ok(config.last_known_block) })
     }
 }
 pub enum OffchainActorOutput {

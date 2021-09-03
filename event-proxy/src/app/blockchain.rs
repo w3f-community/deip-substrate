@@ -44,6 +44,7 @@ pub type FinalizedBlocksSubscription = Subscription<<RuntimeT as System>::Header
 pub type FinalizedBlocksSubscriptionItem = Result<Option<<RuntimeT as System>::Header>, jsonrpsee_ws_client::Error>;
 
 pub enum BlockchainActorInputData {
+    BuildClient(super::BlockchainConfig),
     SubscribeFinalizedBlocks(super::LastKnownBlock),
     SetClient(Client<RuntimeT>),
     GetBlockEvents(<RuntimeT as System>::Hash, SubscriptionBuffer, EventsBuffer),
@@ -52,6 +53,9 @@ pub enum BlockchainActorInputData {
 }
 pub type BlockchainActorInput = ActorDirective<BlockchainActorInputData>;
 impl BlockchainActorInput {
+    pub fn build_client(config: super::BlockchainConfig) -> Self {
+        Self::Input(BlockchainActorInputData::BuildClient(config))
+    }
     pub fn subscribe_finalized_blocks(last_known_block: super::LastKnownBlock) -> Self {
         Self::Input(BlockchainActorInputData::SubscribeFinalizedBlocks(last_known_block))
     }
@@ -83,6 +87,7 @@ pub enum BlockchainActorOutput {
     Ok(BlockchainActorOutputData)
 }
 pub enum BlockchainActorOutputData {
+    BuildClient(Result<substrate_subxt::Client<RuntimeT>, substrate_subxt::Error>),
     SubscribeFinalizedBlocks(Result<FinalizedBlocksSubscription, substrate_subxt::Error>, super::LastKnownBlock, SubscriptionBuffer, EventsBuffer),
     SetClient,
     GetBlockEvents {
@@ -106,6 +111,21 @@ impl Actor
 for BlockchainActor
 {
     async fn on_input(&mut self, data: BlockchainActorInputData) -> BlockchainActorOutput {
+        //  If we receive the BuildClient directive we have only choose to build client:
+        if let BlockchainActorInputData::BuildClient(ref conf) = data {
+            use substrate_subxt::{ClientBuilder};
+            use crate::types::register_types;
+            let client = register_types(ClientBuilder::<RuntimeT>::new())
+                .set_url(&conf.rpc)
+                // We'll never to skip size checks, only for debug purposes:
+                // .skip_type_sizes_check()
+                .build()
+                .await
+                .map_err(|e| { log::error!("{:?}", &e); e });
+            return BlockchainActorOutput::Ok(BlockchainActorOutputData::BuildClient(client))
+        }
+        
+        // If client is not set we might only set client or raise an error:
         if self.client.is_none() {
             return if let BlockchainActorInputData::SetClient(c) = data {
                 let _ = self.client.replace(c);
@@ -114,8 +134,13 @@ for BlockchainActor
                 BlockchainActorOutput::NoClient(data)
             };
         }
+        
         let client = self.client.as_mut().unwrap();
+        
         let output = match data {
+            BlockchainActorInputData::BuildClient(..) => {
+                unreachable!();
+            },
             BlockchainActorInputData::SubscribeFinalizedBlocks(last_known_block) => {
                 BlockchainActorOutputData::SubscribeFinalizedBlocks(
                     client.subscribe_finalized_blocks().await, last_known_block, SubscriptionBuffer::new(), EventsBuffer::new())
