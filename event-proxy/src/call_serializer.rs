@@ -22,7 +22,15 @@ impl Serialize for runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
                 Self::serialize_deip_assets_call(deip_assets_call, serializer)
             }
 
-            _ => serializer.serialize_u8(0),
+            Call::System(_)
+            | Call::Utility(_)
+            | Call::RandomnessCollectiveFlip(_)
+            | Call::Timestamp(_)
+            | Call::Grandpa(_)
+            | Call::Balances(_)
+            | Call::Sudo(_)
+            | Call::TemplateModule(_)
+            | Call::Multisig(_) => serializer.serialize_u8(0),
         }
     }
 }
@@ -229,7 +237,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             }
             .serialize(serializer),
 
-            __PhantomItem(..) => serializer.serialize_u8(0),
+            __PhantomItem(..) => unreachable!(),
         }
     }
 
@@ -270,7 +278,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             }
             .serialize(serializer),
 
-            __Ignore(..) => serializer.serialize_u8(0),
+            __Ignore(..) => unreachable!(),
         }
     }
 
@@ -311,7 +319,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             }
             .serialize(serializer),
 
-            __Ignore(..) => serializer.serialize_u8(0),
+            __Ignore(..) => unreachable!(),
         }
     }
 
@@ -439,7 +447,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             }
             .serialize(serializer),
 
-            __Ignore(..) => serializer.serialize_u8(0),
+            __Ignore(..) => unreachable!(),
         }
     }
 }
