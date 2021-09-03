@@ -86,11 +86,11 @@ mod asset;
 pub use asset::Asset as DeipAsset;
 
 mod contract;
-use contract::{
+pub use contract::{
     Id as ContractAgreementId,
     Terms as ContractAgreementTerms,
-    Agreement as ContractAgreement,
 };
+use contract::Agreement as ContractAgreement;
 
 pub mod traits;
 
@@ -170,6 +170,7 @@ pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAsse
 pub type DeipAssetOf<T> = DeipAsset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
 type ContractAgreementOf<T> = ContractAgreement<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type ContractAgreementTermsOf<T> = ContractAgreementTerms<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
@@ -972,7 +973,7 @@ decl_module! {
             hash: HashOf<T>,
             start_time: Option<MomentOf<T>>,
             end_time: Option<MomentOf<T>>,
-            terms: ContractAgreementTerms<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>,
+            terms: ContractAgreementTermsOf<T>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::create_contract_agreement_impl(account, id, creator.into(), parties, hash, start_time, end_time, terms)

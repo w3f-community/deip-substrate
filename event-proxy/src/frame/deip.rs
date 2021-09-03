@@ -21,6 +21,8 @@ pub trait Deip: System {
     type ProjectContentId: Parameter + Member + Serialize;
     type InvestmentId: Parameter + Member + Serialize;
     type FundingModel: Parameter + Member + Serialize;
+    type ContractAgreementId: Parameter + Member + Serialize;
+    type ContractAgreementTerms: Parameter + Member + Serialize;
 }
 
 const ACCOUNT_ID_KEY: &str = "account_id";

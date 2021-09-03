@@ -25,6 +25,8 @@ pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
         .register_type_size::<<T as Deip>::ProjectContentId>("ProjectContentId")
         .register_type_size::<<T as Deip>::FundingModel>("FundingModel")
         .register_type_size::<<T as Deip>::InvestmentId>("InvestmentId")
+        .register_type_size::<<T as Deip>::ContractAgreementId>("ContractAgreementId")
+        .register_type_size::<<T as Deip>::ContractAgreementTerms>("ContractAgreementTerms")
         // DeipOrg:
         .register_type_size::<<T as DeipOrg>::Org>("OrgOf<T>")
 }
