@@ -74,7 +74,7 @@ macro_rules! blockchain_actor_SubscribeFinalizedBlocks {
 #[tokio::main]
 async fn main() {
     
-    flexi_logger::Logger::try_with_env().unwrap().start().unwrap();
+    // flexi_logger::Logger::try_with_env().unwrap().start().unwrap();
     
     let config_file = "/home/ymitrofanov/Documents/DEIP/project/deip-polkadot/event-proxy/src/default_config.toml";
     let config = config::load::<config::OffchainConfig<app::LastKnownBlock>, _>(config_file)
