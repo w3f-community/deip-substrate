@@ -115,6 +115,8 @@ impl<T: DeipProposal + Deip + DeipOrg + DeipAssets> Serialize for DomainEventDat
             SimpleCrowdfundingFinished(e) => e.serialize(serializer),
             SimpleCrowdfundingExpired(e) => e.serialize(serializer),
             Invested(e) => e.serialize(serializer),
+            ContractAgreementCreated(e) => e.serialize(serializer),
+            ContractAgreementAccepted(e) => e.serialize(serializer),
             // =============== DeipOrg:
             OrgCreate(e) => e.serialize(serializer),
             OrgTransferOwnership(e) => e.serialize(serializer),
@@ -165,6 +167,8 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg + DeipAssets> {
     SimpleCrowdfundingFinished(deip::SimpleCrowdfundingFinishedEvent<T>),
     SimpleCrowdfundingExpired(deip::SimpleCrowdfundingExpiredEvent<T>),
     Invested(deip::InvestedEvent<T>),
+    ContractAgreementCreated(deip::ContractAgreementCreatedEvent<T>),
+    ContractAgreementAccepted(deip::ContractAgreementAcceptedEvent<T>),
     // DeipOrg:
     OrgCreate(deip_org::OrgCreateEvent<T>),
     OrgTransferOwnership(deip_org::OrgTransferOwnershipEvent<T>),
@@ -366,6 +370,22 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + DeipAssets + Debug
         ) => DomainEvent {
             name: "project_tokenSaleContributed".to_string(),
             data: decode_event_data(raw).map(Invested)?,
+            meta,
+        },
+        (
+            deip::ContractAgreementCreatedEvent::<T>::MODULE,
+            deip::ContractAgreementCreatedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "deip_contractAgreementCreated".to_string(),
+            data: decode_event_data(raw).map(ContractAgreementCreated)?,
+            meta,
+        },
+        (
+            deip::ContractAgreementAcceptedEvent::<T>::MODULE,
+            deip::ContractAgreementAcceptedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "deip_contractAgreementAccepted".to_string(),
+            data: decode_event_data(raw).map(ContractAgreementAccepted)?,
             meta,
         },
         // =========== DeipOrg:
