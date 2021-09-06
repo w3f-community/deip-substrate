@@ -476,10 +476,10 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             }
             .serialize(serializer),
 
-            wipe_security_balance(asset, account) => CallObject {
+            wipe_zero_balance(asset, account) => CallObject {
                 module: "deip_assets",
-                call: "wipe_security_balance",
-                args: &DeipAssetsWipeSecurityBalanceCallArgs { asset, account },
+                call: "wipe_zero_balance",
+                args: &DeipAssetsWipeZeroBalanceCallArgs { asset, account },
             }
             .serialize(serializer),
 
@@ -500,7 +500,7 @@ struct DeipAssetsSetMetadataCallArgs<A, B, C, D> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsWipeSecurityBalanceCallArgs<A, B> {
+struct DeipAssetsWipeZeroBalanceCallArgs<A, B> {
     asset: A,
     account: B,
 }

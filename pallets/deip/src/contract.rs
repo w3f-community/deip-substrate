@@ -304,13 +304,13 @@ impl<T: Config> Module<T> {
 
         let mut total_revenue: DeipAssetBalanceOf<T> = Zero::zero();
         let mut transfer_info = vec![];
-        let beneficiary_tokens = T::AssetSystem::get_security_tokens(project_id);
-        // simple model is used: if there are several security token classes then
+        let beneficiary_tokens = T::AssetSystem::get_project_nfts(project_id);
+        // simple model is used: if there are several (F-)NFT classes then
         // the whole amount is distributed uniformly among the classes
         let token_count: u128 = beneficiary_tokens.len().saturated_into();
         for token in &beneficiary_tokens {
             let token_supply: u128 = T::AssetSystem::total_supply(token).saturated_into();
-            let token_balances = if let Some(balances) = T::AssetSystem::get_security_token_balances(token) {
+            let token_balances = if let Some(balances) = T::AssetSystem::get_nft_balances(token) {
                 balances
             } else {
                 continue

@@ -100,12 +100,12 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
         DeipAssets::total_supply(asset)
     }
 
-    fn get_security_tokens(id: &super::ProjectId) -> Vec<Self::AssetId> {
-        DeipAssets::get_security_tokens(id)
+    fn get_project_nfts(id: &super::ProjectId) -> Vec<Self::AssetId> {
+        DeipAssets::get_project_nfts(id)
     }
 
-    fn get_security_token_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
-        DeipAssets::get_security_token_balances(id)
+    fn get_nft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
+        DeipAssets::get_nft_balances(id)
     }
 
     fn transactionally_transfer(

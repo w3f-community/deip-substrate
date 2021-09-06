@@ -79,7 +79,7 @@ pub mod pallet {
         type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
         type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
 
-        /// Period of check for accounts with zero security tokens
+        /// Period of check for accounts with zero NFTs
         #[pallet::constant]
         type WipePeriod: Get<Self::BlockNumber>;
     }
@@ -101,13 +101,13 @@ pub mod pallet {
                 return;
             }
 
-            for (asset, balances) in SecurityBalanceMap::<T>::iter() {
+            for (asset, balances) in NftBalanceMap::<T>::iter() {
                 for balance in balances {
                     if !Self::account_balance(&balance, &asset).is_zero() {
                         continue;
                     }
 
-                    let call = Call::wipe_security_balance(asset, balance);
+                    let call = Call::wipe_zero_balance(asset, balance);
                     let _submit =
                         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
                 }
@@ -127,17 +127,17 @@ pub mod pallet {
                 return InvalidTransaction::Custom(super::NON_LOCAL).into();
             }
 
-            if let Call::wipe_security_balance(ref asset, ref account) = call {
+            if let Call::wipe_zero_balance(ref asset, ref account) = call {
                 if !Self::account_balance(account, asset).is_zero() {
                     return InvalidTransaction::Stale.into();
                 }
 
-                let security_balances = match SecurityBalanceMap::<T>::try_get(*asset) {
+                let balances = match NftBalanceMap::<T>::try_get(*asset) {
                     Err(_) => return InvalidTransaction::Stale.into(),
                     Ok(b) => b,
                 };
 
-                if let Err(_) = security_balances.binary_search_by_key(&account, |a| a) {
+                if let Err(_) = balances.binary_search_by_key(&account, |a| a) {
                     return InvalidTransaction::Stale.into();
                 }
 
@@ -162,8 +162,8 @@ pub mod pallet {
         ProjectSecurityTokenAccountCannotBeFreezed,
         ReservedAssetCannotBeFreezed,
         ReservedAssetAccountCannotBeFreezed,
-        SecurityTokenNotFound,
-        SecurityTokenBalanceNotFound,
+        NFTNotFound,
+        NFTBalanceNotFound,
     }
 
     #[pallet::storage]
@@ -198,7 +198,7 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
-    pub(super) type SecurityBalanceMap<T: Config> =
+    pub(super) type NftBalanceMap<T: Config> =
         StorageMap<_, Identity, AssetsAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
     #[pallet::genesis_config]
@@ -288,12 +288,12 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::total_supply(*asset)
         }
 
-        pub fn get_security_tokens(id: &DeipProjectIdOf<T>) -> Vec<T::AssetId> {
+        pub fn get_project_nfts(id: &DeipProjectIdOf<T>) -> Vec<T::AssetId> {
             AssetIdByProjectId::<T>::try_get(id.clone()).unwrap_or_default()
         }
 
-        pub fn get_security_token_balances(id: &T::AssetId) -> Option<Vec<AccountIdOf<T>>> {
-            SecurityBalanceMap::<T>::try_get(*id).ok()
+        pub fn get_nft_balances(id: &T::AssetId) -> Option<Vec<AccountIdOf<T>>> {
+            NftBalanceMap::<T>::try_get(*id).ok()
         }
 
         #[transactional]
@@ -321,7 +321,7 @@ pub mod pallet {
         pub fn transactionally_reserve(
             account: &T::AccountId,
             id: DeipInvestmentIdOf<T>,
-            security_tokens_on_sale: &[(T::AssetId, T::Balance)],
+            shares: &[(T::AssetId, T::Balance)],
             asset_to_raise: T::AssetId,
         ) -> Result<(), deip_assets_error::ReserveError<T::AssetId>> {
             use deip_assets_error::ReserveError;
@@ -345,9 +345,9 @@ pub mod pallet {
             T::Currency::resolve_creating(&id_account, reserved);
 
             let mut assets_to_reserve =
-                Vec::<T::AssetId>::with_capacity(security_tokens_on_sale.len());
+                Vec::<T::AssetId>::with_capacity(shares.len());
 
-            for (asset, amount) in security_tokens_on_sale {
+            for (asset, amount) in shares {
                 let call = pallet_assets::Call::<T>::transfer(*asset, id_source.clone(), *amount);
                 let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
                 if result.is_err() {
@@ -493,7 +493,7 @@ pub mod pallet {
             Ok(())
         }
 
-        // stores `to` in the map of security balances if the asset secures some active
+        // stores `to` in the map of NFT-balances if the asset tokenizes some active
         fn transfer_impl(
             from: OriginFor<T>,
             id: T::AssetId,
@@ -505,7 +505,7 @@ pub mod pallet {
             let ok = call.dispatch_bypass_filter(from)?;
 
             if let Some(_) = Self::try_get_tokenized_project(&id) {
-                SecurityBalanceMap::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
+                NftBalanceMap::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
                     None => {
                         // this cannot happen but for any case
                         *maybe = Some(vec![to]);
@@ -552,9 +552,9 @@ pub mod pallet {
 
             if let Some(project_id) = project_id {
                 ProjectIdByAssetId::<T>::insert(id, project_id.clone());
-                AssetIdByProjectId::<T>::mutate_exists(project_id, |security_tokens| {
-                    match security_tokens.as_mut() {
-                        None => *security_tokens = Some(vec![id]),
+                AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
+                    match tokens.as_mut() {
+                        None => *tokens = Some(vec![id]),
                         Some(c) => c.push(id),
                     };
                 });
@@ -591,7 +591,7 @@ pub mod pallet {
             let result = call.dispatch_bypass_filter(origin)?;
 
             if let Some(_) = Self::try_get_tokenized_project(&id) {
-                SecurityBalanceMap::<T>::mutate_exists(id, |maybe| {
+                NftBalanceMap::<T>::mutate_exists(id, |maybe| {
                     let balances = match maybe.as_mut() {
                         None => {
                             *maybe = Some(vec![beneficiary.into()]);
@@ -748,17 +748,17 @@ pub mod pallet {
         }
 
         #[pallet::weight(10_000)]
-        pub(super) fn wipe_security_balance(
+        pub(super) fn wipe_zero_balance(
             origin: OriginFor<T>,
             asset: AssetsAssetIdOf<T>,
             account: AccountIdOf<T>,
         ) -> DispatchResultWithPostInfo {
             ensure_none(origin)?;
 
-            SecurityBalanceMap::<T>::mutate_exists(asset, |maybe| match maybe.as_mut() {
-                None => Err(Error::<T>::SecurityTokenNotFound.into()),
+            NftBalanceMap::<T>::mutate_exists(asset, |maybe| match maybe.as_mut() {
+                None => Err(Error::<T>::NFTNotFound.into()),
                 Some(b) => match b.binary_search_by_key(&&account, |a| a) {
-                    Err(_) => Err(Error::<T>::SecurityTokenBalanceNotFound.into()),
+                    Err(_) => Err(Error::<T>::NFTBalanceNotFound.into()),
                     Ok(i) => {
                         b.remove(i);
                         if b.is_empty() {
