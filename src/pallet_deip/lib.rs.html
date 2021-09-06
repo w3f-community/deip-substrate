@@ -1044,6 +1044,12 @@
 <span id="1042">1042</span>
 <span id="1043">1043</span>
 <span id="1044">1044</span>
+<span id="1045">1045</span>
+<span id="1046">1046</span>
+<span id="1047">1047</span>
+<span id="1048">1048</span>
+<span id="1049">1049</span>
+<span id="1050">1050</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -1127,6 +1133,9 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">review</span>::{<span class="ident">Id</span> <span class="kw">as</span> <span class="ident">ReviewId</span>, <span class="ident">Review</span> <span class="kw">as</span> <span class="ident">Review</span>};
 <span class="kw">use</span> <span class="ident">review::Vote</span> <span class="kw">as</span> <span class="ident">DeipReviewVote</span>;
 
+<span class="kw">mod</span> <span class="ident">asset</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">asset::Asset</span> <span class="kw">as</span> <span class="ident">DeipAsset</span>;
+
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">traits</span>;
 
 <span class="doccomment">/// A maximum number of Domains. When domains reaches this number, no new domains can be added.</span>
@@ -1201,6 +1210,7 @@
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InvestmentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Investment</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::AssetSystem</span> <span class="kw">as</span> <span class="ident">traits::DeipAssetSystem</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::AssetId</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::AssetSystem</span> <span class="kw">as</span> <span class="ident">traits::DeipAssetSystem</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Balance</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">DeipAssetOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">DeipAsset</span><span class="op">&lt;</span><span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 <span class="kw">type</span> <span class="ident">DeipReviewVoteOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">DeipReviewVote</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
 <span class="doccomment">/// PPossible project domains</span>
@@ -1454,11 +1464,13 @@
         <span class="ident">InvestmentOpportunityShouldBeActive</span>,
         <span class="ident">InvestmentOpportunityExpirationWrongState</span>,
         <span class="ident">InvestmentOpportunityWrongAssetId</span>,
+        <span class="ident">InvestmentOpportunityCapDifferentAssets</span>,
 
         <span class="comment">// Possible errors when DAO tries to invest to an opportunity</span>
         <span class="ident">InvestingNotFound</span>,
         <span class="ident">InvestingNotActive</span>,
         <span class="ident">InvestingNotEnoughFunds</span>,
+        <span class="ident">InvestingWrongAsset</span>,
     }
 }
 
@@ -1582,7 +1594,7 @@
         <span class="kw">fn</span> <span class="ident">create_investment_opportunity</span>(<span class="ident">origin</span>,
             <span class="ident">external_id</span>: <span class="ident">InvestmentId</span>,
             <span class="ident">creator</span>: <span class="ident">T::DeipAccountId</span>,
-            <span class="ident">shares</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
+            <span class="ident">shares</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DeipAssetOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
             <span class="ident">funding_model</span>: <span class="ident">FundingModelOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
@@ -1617,10 +1629,10 @@
         <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
         <span class="kw">fn</span> <span class="ident">invest</span>(<span class="ident">origin</span>,
             <span class="ident">id</span>: <span class="ident">InvestmentId</span>,
-            <span class="ident">amount</span>: <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+            <span class="ident">asset</span>: <span class="ident">DeipAssetOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
         ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-            <span class="self">Self</span><span class="ident">::invest_to_crowdfunding_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">amount</span>)
+            <span class="self">Self</span><span class="ident">::invest_to_crowdfunding_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">asset</span>)
         }
 
         <span class="doccomment">/// Allow a user to update project.</span>
