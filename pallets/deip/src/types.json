@@ -254,5 +254,49 @@
     "weight": "Vec<u8>",
     "project_content_external_id": "ProjectContentId"
   },
-  "ReviewOf": "Review"
+  "ReviewOf": "Review",
+  "HashOf": "Hash",
+  "ContractAgreementId": "H160",
+  "ContractAgreementTerms": {
+    "_enum": {
+      "TechnologyLicenseAgreementTerms": {
+        "source": "ProjectId",
+        "price": "DeipAsset"
+      }
+    }
+  },
+  "ContractAgreementTermsOf": "ContractAgreementTerms",
+  "TechnologyLicense": {
+    "id": "ContractAgreementId",
+    "licenser": "AccountId",
+    "licensee": "AccountId",
+    "hash": "Hash",
+    "start_time": "Option<Moment>",
+    "end_time": "Option<Moment>",
+    "project_id": "ProjectId",
+    "price": "DeipAsset"
+  },
+  "TechnologyLicenseStatus": {
+    "_enum": {
+      "Unsigned": {
+        "0": "TechnologyLicense"
+      },
+      "SignedByLicenser": {
+        "0": "TechnologyLicense"
+      },
+      "Signed": {
+        "0": "TechnologyLicense"
+      }
+    }
+  },
+  "ContractAgreement": {
+    "_enum": {
+      "None": {
+      },
+      "TechnologyLicense": {
+        "0": "TechnologyLicenseStatus"
+      }
+    }
+  },
+  "ContractAgreementOf": "ContractAgreement"
 }
