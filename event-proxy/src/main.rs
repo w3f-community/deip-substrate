@@ -362,29 +362,49 @@ async fn main() {
             let output = if maybe_output.is_some() { maybe_output.unwrap() } else { unreachable!(); };
             release_actor(io, &mut released_message_broker_actor_queue).await;
             let delivery_status = match output {
-                MessageBrokerActorOutput::Err(e) => { log::error!("{}", e); continue; },
-                MessageBrokerActorOutput::Ok(MessageBrokerActorOutputData::SendReplayedBlockEvent { delivery, remaining, replay }) => {
-                    if remaining > 0 {
-                        println!("replayed_block_events_buffer_task AGAIN: remaining={:?}", remaining);
+                MessageBrokerActorOutput::NotConfigured => {
+                    message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
+                        MessageBrokerActorInput::configure(config.kafka.clone()),
+                        &mut released_message_broker_actor_queue
+                    ).await);
+                    continue;
+                },
+                MessageBrokerActorOutput::Result(MessageBrokerActorOutputData::Configure(maybe_error)) => {
+                    match maybe_error {
+                        None => {},
+                        Some(e) => {
+                            log::error!("{}", e);
+                            tokio::time::sleep(Duration::from_secs(5)).await;
+                            message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
+                                MessageBrokerActorInput::configure(config.kafka.clone()),
+                                &mut released_message_broker_actor_queue
+                            ).await);
+                        },
+                    }
+                    continue;
+                },
+                MessageBrokerActorOutput::Result(MessageBrokerActorOutputData::SendReplayedBlockEvent(app::SendEventResult { delivery, ctx })) => {
+                    if ctx.remaining > 0 {
+                        println!("replayed_block_events_buffer_task AGAIN: remaining={:?}", ctx.remaining);
                         replayed_block_events_buffer_task_queue.push(
-                            replayed_block_events_buffer_task(remaining, replay));
+                            replayed_block_events_buffer_task(ctx.remaining, ctx.replay));
                     } else {
                         println!("PUSH BLOCK REPLAY TASK");
                         // Replay next block:
-                        blocks_replay_task_queue.push(blocks_replay_task(replay));
+                        blocks_replay_task_queue.push(blocks_replay_task(ctx.replay));
                     }
                     delivery
                 },
-                MessageBrokerActorOutput::Ok(MessageBrokerActorOutputData::SendBlockEvent { delivery, events_buffer, remaining, subscription_buffer }) => {
-                    if remaining > 0 {
-                        println!("events_buffer_task_queue AGAIN: remaining={:?}", remaining);
+                MessageBrokerActorOutput::Result(MessageBrokerActorOutputData::SendBlockEvent(app::SendEventResult { delivery, ctx })) => {
+                    if ctx.remaining > 0 {
+                        println!("events_buffer_task_queue AGAIN: remaining={:?}", ctx.remaining);
                         events_buffer_task_queue.push(
-                            events_buffer_task(events_buffer, remaining, subscription_buffer));
+                            events_buffer_task(ctx.events_buffer, ctx.remaining, ctx.subscription_buffer));
                     } else {
                         // Process the next finalized block:
                         println!("SEND NEXT SUBSCRIPTION TASK");
                         subscription_buffer_task_queue.push(
-                        subscription_buffer_task(subscription_buffer, events_buffer));
+                        subscription_buffer_task(ctx.subscription_buffer, ctx.events_buffer));
                     }
                     delivery
                 },

@@ -2,11 +2,9 @@ use crate::actor::*;
 use super::actor_io::*;
 
 use rdkafka::producer::{FutureRecord, FutureProducer, future_producer::OwnedDeliveryResult};
-use rdkafka::util::{Timeout, TokioRuntime};
-use rdkafka::client::DefaultClientContext;
+use rdkafka::util::{Timeout};
 
 
-pub const BOOTSTRAP_SERVERS: &str = "127.0.0.1:9092";
 pub const TOPIC: &str = "blockchain";
 pub const EVENTS_KEY: &str = "events";
 
@@ -62,22 +60,22 @@ impl MessageBrokerActorInput {
 pub type Delivery = Result<OwnedDeliveryResult, codec::Error>;
 
 pub struct SendEvent<Ctx> {
-    event: super::MaybeBlockEvent,
-    ctx: Ctx 
+    pub event: super::MaybeBlockEvent,
+    pub ctx: Ctx 
 }
 pub struct SendEventResult<Ctx> {
-    delivery: Result<Delivery, serde_json::Error>,
-    ctx: Ctx
+    pub delivery: Result<Delivery, serde_json::Error>,
+    pub ctx: Ctx
 }
 
 pub struct SendReplayedBlockEventCtx {
-    remaining: usize,
-    replay: super::BlocksReplay,
+    pub remaining: usize,
+    pub replay: super::BlocksReplay,
 }
 pub struct SendBlockEventCtx {
-    events_buffer: super::EventsBuffer,
-    remaining: usize,
-    subscription_buffer: super::SubscriptionBuffer,
+    pub events_buffer: super::EventsBuffer,
+    pub remaining: usize,
+    pub subscription_buffer: super::SubscriptionBuffer,
 }
 
 pub enum MessageBrokerActorInputData {
@@ -91,7 +89,7 @@ pub enum MessageBrokerActorOutput {
     Result(MessageBrokerActorOutputData)
 }
 
-pub enum  MessageBrokerActorOutputData {
+pub enum MessageBrokerActorOutputData {
     Configure(Option<rdkafka::error::KafkaError>),
     SendReplayedBlockEvent(SendEventResult<SendReplayedBlockEventCtx>),
     SendBlockEvent(SendEventResult<SendBlockEventCtx>),
@@ -155,15 +153,13 @@ for MessageBrokerActor
             MessageBrokerActorInputData::SendReplayedBlockEvent(SendEvent { event, ctx }) => {
                 if event.is_err() {
                     return MessageBrokerActorOutputData::SendReplayedBlockEvent(
-                        SendEventResult { delivery: Ok(Err(event.err().unwrap())), ctx }
-                    ).into();
+                        SendEventResult { delivery: Ok(Err(event.err().unwrap())), ctx }).into();
                 }
-                let payload = serde_json::to_string_pretty(&event.unwrap());
-                if payload.is_err() {
-                    return MessageBrokerActorOutputData::SendReplayedBlockEvent(
-                        SendEventResult { delivery: Err(payload.err().unwrap()), ctx }
-                    ).into();
-                }
+                let payload = match serde_json::to_string_pretty(&event.unwrap()) {
+                    Ok(payload) => payload,
+                    Err(e) => return MessageBrokerActorOutputData::SendReplayedBlockEvent(
+                        SendEventResult { delivery: Err(e), ctx }).into(),
+                };
                 let record = FutureRecord::to(TOPIC)
                     .key(EVENTS_KEY)
                     .payload(&payload);
@@ -171,31 +167,26 @@ for MessageBrokerActor
                     .send(record, Timeout::After(std::time::Duration::from_secs(5)))
                     .await;
                 MessageBrokerActorOutputData::SendReplayedBlockEvent(
-                    SendEventResult { delivery: Ok(Ok(delivery_result)), ctx }
-                ).into()
+                    SendEventResult { delivery: Ok(Ok(delivery_result)), ctx }).into()
             },
-            MessageBrokerActorInputData::SendBlockEvent { event, events_buffer, remaining, subscription_buffer } => {
+            MessageBrokerActorInputData::SendBlockEvent(SendEvent { event, ctx }) => {
                 if event.is_err() {
-                    return Ok(MessageBrokerActorOutputData::SendBlockEvent {
-                        delivery: Err(event.err().unwrap()),
-                        events_buffer,
-                        remaining,
-                        subscription_buffer
-                    })
+                    return MessageBrokerActorOutputData::SendBlockEvent(SendEventResult {
+                        delivery: Ok(Err(event.err().unwrap())), ctx }).into();
                 }
-                let payload = serde_json::to_string_pretty(&event.unwrap())?;
+                let payload = match serde_json::to_string_pretty(&event.unwrap()) {
+                    Ok(payload) => payload,
+                    Err(e) => return MessageBrokerActorOutputData::SendBlockEvent(
+                        SendEventResult { delivery: Err(e), ctx }).into(),
+                };
                 let record = FutureRecord::to(TOPIC)
                     .key(EVENTS_KEY)
                     .payload(&payload);
-                let delivery_result = self.producer
+                let delivery_result = producer
                     .send(record, Timeout::After(std::time::Duration::from_secs(5)))
                     .await;
-                Ok(MessageBrokerActorOutputData::SendBlockEvent {
-                    delivery: Ok(delivery_result),
-                    events_buffer,
-                    remaining,
-                    subscription_buffer
-                })
+                MessageBrokerActorOutputData::SendBlockEvent(SendEventResult {
+                    delivery: Ok(Ok(delivery_result)), ctx }).into()
             },
         }
     }
