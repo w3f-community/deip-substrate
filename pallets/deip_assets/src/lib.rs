@@ -41,6 +41,8 @@ pub use serializable::{AssetBalance as SerializableAssetBalance, AssetId as Seri
 #[doc(inline)]
 pub use pallet::*;
 
+const NON_LOCAL: u8 = 101;
+
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
@@ -49,6 +51,7 @@ pub mod pallet {
         traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
         transactional,
     };
+    use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
     use frame_system::{pallet_prelude::*, RawOrigin};
     use sp_runtime::traits::{One, StaticLookup, Zero};
     use sp_std::{prelude::*, vec};
@@ -70,9 +73,15 @@ pub mod pallet {
     type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
 
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_assets::Config {
+    pub trait Config:
+        frame_system::Config + pallet_assets::Config + SendTransactionTypes<Call<Self>>
+    {
         type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
         type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
+
+        /// Period of check for accounts with zero NFTs
+        #[pallet::constant]
+        type WipePeriod: Get<Self::BlockNumber>;
     }
 
     #[doc(hidden)]
@@ -82,7 +91,66 @@ pub mod pallet {
 
     #[doc(hidden)]
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(n: T::BlockNumber) {
+            if !sp_io::offchain::is_validator() {
+                return;
+            }
+
+            if n % T::WipePeriod::get() != Zero::zero() {
+                return;
+            }
+
+            for (asset, balances) in NftBalanceMap::<T>::iter() {
+                for balance in balances {
+                    if !Self::account_balance(&balance, &asset).is_zero() {
+                        continue;
+                    }
+
+                    let call = Call::wipe_zero_balance(asset, balance);
+                    let _submit =
+                        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+                }
+            }
+        }
+    }
+
+    #[pallet::validate_unsigned]
+    impl<T: Config> ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
+
+        fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+            if !matches!(
+                source,
+                TransactionSource::Local | TransactionSource::InBlock
+            ) {
+                return InvalidTransaction::Custom(super::NON_LOCAL).into();
+            }
+
+            if let Call::wipe_zero_balance(ref asset, ref account) = call {
+                if !Self::account_balance(account, asset).is_zero() {
+                    return InvalidTransaction::Stale.into();
+                }
+
+                let balances = match NftBalanceMap::<T>::try_get(*asset) {
+                    Err(_) => return InvalidTransaction::Stale.into(),
+                    Ok(b) => b,
+                };
+
+                if let Err(_) = balances.binary_search_by_key(&account, |a| a) {
+                    return InvalidTransaction::Stale.into();
+                }
+
+                ValidTransaction::with_tag_prefix("DeipAssetsOffchainWorker")
+                    .propagate(false)
+                    .longevity(5)
+                    .and_provides((*asset, account.clone()))
+                    .build()
+            } else {
+                InvalidTransaction::Call.into()
+            }
+        }
+    }
 
     #[pallet::error]
     pub enum Error<T> {
@@ -94,6 +162,8 @@ pub mod pallet {
         ProjectSecurityTokenAccountCannotBeFreezed,
         ReservedAssetCannotBeFreezed,
         ReservedAssetAccountCannotBeFreezed,
+        NFTNotFound,
+        NFTBalanceNotFound,
     }
 
     #[pallet::storage]
@@ -126,6 +196,10 @@ pub mod pallet {
         Investment<AccountIdOf<T>, AssetsAssetIdOf<T>>,
         OptionQuery,
     >;
+
+    #[pallet::storage]
+    pub(super) type NftBalanceMap<T: Config> =
+        StorageMap<_, Identity, AssetsAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
@@ -199,11 +273,55 @@ pub mod pallet {
             T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
         }
 
+        pub fn try_get_tokenized_project(id: &T::AssetId) -> Option<DeipProjectIdOf<T>> {
+            match ProjectIdByAssetId::<T>::try_get(*id) {
+                Ok(project_id) => Some(project_id),
+                Err(_) => None,
+            }
+        }
+
+        pub fn account_balance(account: &AccountIdOf<T>, asset: &T::AssetId) -> T::Balance {
+            pallet_assets::Pallet::<T>::balance(*asset, account.clone())
+        }
+
+        pub fn total_supply(asset: &T::AssetId) -> T::Balance {
+            pallet_assets::Pallet::<T>::total_supply(*asset)
+        }
+
+        pub fn get_project_nfts(id: &DeipProjectIdOf<T>) -> Vec<T::AssetId> {
+            AssetIdByProjectId::<T>::try_get(id.clone()).unwrap_or_default()
+        }
+
+        pub fn get_nft_balances(id: &T::AssetId) -> Option<Vec<AccountIdOf<T>>> {
+            NftBalanceMap::<T>::try_get(*id).ok()
+        }
+
+        #[transactional]
+        pub fn transactionally_transfer(
+            from: &AccountIdOf<T>,
+            asset: T::AssetId,
+            transfers: &[(T::Balance, AccountIdOf<T>)],
+        ) -> Result<(), ()> {
+            for (amount, to) in transfers {
+                let result = Self::transfer_impl(
+                    RawOrigin::Signed(from.clone()).into(),
+                    asset,
+                    to.clone(),
+                    *amount,
+                );
+                if result.is_err() {
+                    return Err(());
+                }
+            }
+
+            Ok(())
+        }
+
         #[transactional]
         pub fn transactionally_reserve(
             account: &T::AccountId,
             id: DeipInvestmentIdOf<T>,
-            security_tokens_on_sale: &[(T::AssetId, T::Balance)],
+            shares: &[(T::AssetId, T::Balance)],
             asset_to_raise: T::AssetId,
         ) -> Result<(), deip_assets_error::ReserveError<T::AssetId>> {
             use deip_assets_error::ReserveError;
@@ -227,9 +345,9 @@ pub mod pallet {
             T::Currency::resolve_creating(&id_account, reserved);
 
             let mut assets_to_reserve =
-                Vec::<T::AssetId>::with_capacity(security_tokens_on_sale.len());
+                Vec::<T::AssetId>::with_capacity(shares.len());
 
-            for (asset, amount) in security_tokens_on_sale {
+            for (asset, amount) in shares {
                 let call = pallet_assets::Call::<T>::transfer(*asset, id_source.clone(), *amount);
                 let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
                 if result.is_err() {
@@ -280,7 +398,6 @@ pub mod pallet {
                 T::Currency::deposit_creating(&info.creator, T::Currency::minimum_balance());
 
             let id_account = Self::investment_key(&id);
-            let creator_source = <T::Lookup as StaticLookup>::unlookup(info.creator.clone());
 
             for asset_id in info.assets.iter().chain(&[info.asset_id]) {
                 InvestmentByAssetId::<T>::mutate_exists(*asset_id, |maybe_investments| {
@@ -302,10 +419,12 @@ pub mod pallet {
                     continue;
                 }
 
-                let call =
-                    pallet_assets::Call::<T>::transfer(*asset_id, creator_source.clone(), amount);
-                let result =
-                    call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
+                let result = Self::transfer_impl(
+                    RawOrigin::Signed(id_account.clone()).into(),
+                    *asset_id,
+                    info.creator.clone(),
+                    amount,
+                );
                 if result.is_err() {
                     return Err(UnreserveError::AssetTransferFailed(*asset_id));
                 }
@@ -336,10 +455,13 @@ pub mod pallet {
             );
 
             let id_account = Self::investment_key(&id);
-            let who_source = <T::Lookup as StaticLookup>::unlookup(who.clone());
 
-            let call = pallet_assets::Call::<T>::transfer(asset, who_source, amount);
-            let result = call.dispatch_bypass_filter(RawOrigin::Signed(id_account.clone()).into());
+            let result = Self::transfer_impl(
+                RawOrigin::Signed(id_account.clone()).into(),
+                asset,
+                who.clone(),
+                amount,
+            );
             if result.is_err() {
                 return Err(UnreserveError::AssetTransferFailed(asset));
             }
@@ -369,6 +491,34 @@ pub mod pallet {
             }
 
             Ok(())
+        }
+
+        // stores `to` in the map of NFT-balances if the asset tokenizes some active
+        fn transfer_impl(
+            from: OriginFor<T>,
+            id: T::AssetId,
+            to: AccountIdOf<T>,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let target_source = <T::Lookup as StaticLookup>::unlookup(to.clone());
+            let call = pallet_assets::Call::<T>::transfer(id, target_source, amount);
+            let ok = call.dispatch_bypass_filter(from)?;
+
+            if let Some(_) = Self::try_get_tokenized_project(&id) {
+                NftBalanceMap::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
+                    None => {
+                        // this cannot happen but for any case
+                        *maybe = Some(vec![to]);
+                        return;
+                    }
+                    Some(b) => match b.binary_search_by_key(&&to, |a| a) {
+                        Ok(_) => (),
+                        Err(i) => b.insert(i, to),
+                    },
+                });
+            }
+
+            Ok(ok)
         }
     }
 
@@ -402,9 +552,9 @@ pub mod pallet {
 
             if let Some(project_id) = project_id {
                 ProjectIdByAssetId::<T>::insert(id, project_id.clone());
-                AssetIdByProjectId::<T>::mutate_exists(project_id, |security_tokens| {
-                    match security_tokens.as_mut() {
-                        None => *security_tokens = Some(vec![id]),
+                AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
+                    match tokens.as_mut() {
+                        None => *tokens = Some(vec![id]),
                         Some(c) => c.push(id),
                     };
                 });
@@ -435,9 +585,30 @@ pub mod pallet {
             beneficiary: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let beneficiary_source = <T::Lookup as StaticLookup>::unlookup(beneficiary.into());
+            let beneficiary_source =
+                <T::Lookup as StaticLookup>::unlookup(beneficiary.clone().into());
             let call = pallet_assets::Call::<T>::mint(id, beneficiary_source, amount);
-            call.dispatch_bypass_filter(origin)
+            let result = call.dispatch_bypass_filter(origin)?;
+
+            if let Some(_) = Self::try_get_tokenized_project(&id) {
+                NftBalanceMap::<T>::mutate_exists(id, |maybe| {
+                    let balances = match maybe.as_mut() {
+                        None => {
+                            *maybe = Some(vec![beneficiary.into()]);
+                            return;
+                        }
+                        Some(b) => b,
+                    };
+
+                    let account = beneficiary.into();
+                    match balances.binary_search_by_key(&&account, |a| a) {
+                        Ok(_) => (),
+                        Err(i) => balances.insert(i, account),
+                    };
+                });
+            }
+
+            Ok(result)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
@@ -464,9 +635,7 @@ pub mod pallet {
             target: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let target_source = <T::Lookup as StaticLookup>::unlookup(target.into());
-            let call = pallet_assets::Call::<T>::transfer(id, target_source, amount);
-            call.dispatch_bypass_filter(origin)
+            Self::transfer_impl(origin, id, target.into(), amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]
@@ -576,6 +745,29 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let call = pallet_assets::Call::<T>::set_metadata(id, name, symbol, decimals);
             call.dispatch_bypass_filter(origin)
+        }
+
+        #[pallet::weight(10_000)]
+        pub(super) fn wipe_zero_balance(
+            origin: OriginFor<T>,
+            asset: AssetsAssetIdOf<T>,
+            account: AccountIdOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_none(origin)?;
+
+            NftBalanceMap::<T>::mutate_exists(asset, |maybe| match maybe.as_mut() {
+                None => Err(Error::<T>::NFTNotFound.into()),
+                Some(b) => match b.binary_search_by_key(&&account, |a| a) {
+                    Err(_) => Err(Error::<T>::NFTBalanceNotFound.into()),
+                    Ok(i) => {
+                        b.remove(i);
+                        if b.is_empty() {
+                            *maybe = None;
+                        }
+                        Ok(Some(0).into())
+                    }
+                },
+            })
         }
     }
 }

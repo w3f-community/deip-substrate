@@ -56,6 +56,8 @@ impl frame::deip::Deip for RuntimeT {
     type ProjectContentId = pallet_deip::ProjectContentId;
     type InvestmentId = pallet_deip::InvestmentId;
     type FundingModel = pallet_deip::FundingModelOf<RealRuntime>;
+    type ContractAgreementId = pallet_deip::ContractAgreementId;
+    type ContractAgreementTerms = pallet_deip::ContractAgreementTermsOf<RealRuntime>;
 }
 
 impl frame::deip_org::DeipOrg for RuntimeT {

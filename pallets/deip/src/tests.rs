@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use sp_io::TestExternalities;
 use sp_std::sync::Arc;
 use parking_lot::RwLock;
+use sp_runtime::traits::{Zero, One};
 
 const DAY_IN_MILLIS: u64 = 86400000;
 
@@ -1286,6 +1287,110 @@ fn two_simultaneous_crowdfundings_expired() {
         assert_eq!(Assets::balance(usd_id, ALICE_ACCOUNT_ID), alice_usd_balance_before);
 
         assert_eq!(Assets::balance(eur_id, BOB_ACCOUNT_ID), bob_eur_balance_before);
+    })
+}
+
+#[test]
+fn create_license_agreement_well_known_cases() {
+    new_test_ext2().execute_with(|| {
+        assert_noop!(Deip::create_contract_agreement_impl(
+            BOB_ACCOUNT_ID,
+            ContractAgreementId::random(),
+            BOB_ACCOUNT_ID,
+            vec![BOB_ACCOUNT_ID.into()],
+            HashOf::<Test>::random(),
+            None,
+            None,
+            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+                source: ProjectId::random(),
+                price: DeipAsset::new(Default::default(), One::one()),
+            }),
+            Error::<Test>::NoSuchProject);
+
+        let (ref project_id, .., ref account_id) = create_ok_project(Some(ALICE_ACCOUNT_ID));
+        assert_noop!(Deip::create_contract_agreement_impl(
+            BOB_ACCOUNT_ID,
+            ContractAgreementId::random(),
+            BOB_ACCOUNT_ID,
+            vec![BOB_ACCOUNT_ID.into()],
+            HashOf::<Test>::random(),
+            None,
+            None,
+            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+                source: *project_id,
+                price: DeipAsset::new(Default::default(), One::one()),
+            }),
+            Error::<Test>::ProjectNotBelongToTeam);
+
+        assert_noop!(Deip::create_contract_agreement_impl(
+            *account_id,
+            ContractAgreementId::random(),
+            *account_id,
+            vec![BOB_ACCOUNT_ID.into()],
+            HashOf::<Test>::random(),
+            None,
+            None,
+            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+                source: *project_id,
+                price: DeipAsset::new(Default::default(), Zero::zero()),
+            }),
+            Error::<Test>::ContractAgreementFeeMustBePositive);
+
+        assert_noop!(Deip::create_contract_agreement_impl(
+            *account_id,
+            ContractAgreementId::random(),
+            *account_id,
+            vec![BOB_ACCOUNT_ID.into()],
+            HashOf::<Test>::random(),
+            Some(pallet_timestamp::Module::<Test>::get()),
+            Some(pallet_timestamp::Module::<Test>::get()),
+            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+                source: *project_id,
+                price: DeipAsset::new(Default::default(), Zero::zero()),
+            }),
+            Error::<Test>::ContractAgreementEndTimeMustBeLaterStartTime);
+
+        assert_noop!(Deip::create_contract_agreement_impl(
+            *account_id,
+            ContractAgreementId::random(),
+            *account_id,
+            vec![BOB_ACCOUNT_ID.into()],
+            HashOf::<Test>::random(),
+            None,
+            Some(pallet_timestamp::Module::<Test>::get()),
+            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+                source: *project_id,
+                price: DeipAsset::new(Default::default(), Zero::zero()),
+            }),
+            Error::<Test>::ContractAgreementEndTimeMustBeLaterStartTime);
+
+        let license_id = ContractAgreementId::random();
+        assert!(Deip::create_contract_agreement_impl(
+            *account_id,
+            license_id,
+            *account_id,
+            vec![BOB_ACCOUNT_ID.into(), account_id.clone().into()],
+            HashOf::<Test>::random(),
+            None,
+            None,
+            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+                source: *project_id,
+                price: DeipAsset::new(Default::default(), One::one()),
+            }).is_ok());
+
+        assert_noop!(Deip::create_contract_agreement_impl(
+            *account_id,
+            license_id,
+            *account_id,
+            vec![BOB_ACCOUNT_ID.into(), account_id.clone().into()],
+            HashOf::<Test>::random(),
+            None,
+            None,
+            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+                source: *project_id,
+                price: DeipAsset::new(Default::default(), One::one()),
+            }),
+            Error::<Test>::ContractAgreementAlreadyExists);
     })
 }
 

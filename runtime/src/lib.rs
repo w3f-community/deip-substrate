@@ -285,6 +285,34 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
     type Balance = u64;
     type AssetId = AssetId;
 
+    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
+        DeipAssets::try_get_tokenized_project(id)
+    }
+
+    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::account_balance(account, asset)
+    }
+
+    fn total_supply(asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::total_supply(asset)
+    }
+
+    fn get_project_nfts(id: &ProjectId) -> Vec<Self::AssetId> {
+        DeipAssets::get_project_nfts(id)
+    }
+
+    fn get_nft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
+        DeipAssets::get_nft_balances(id)
+    }
+
+    fn transactionally_transfer(
+        from: &AccountId,
+        asset: Self::AssetId,
+        transfers: &[(Self::Balance, AccountId)],
+    ) -> Result<(), ()> {
+        DeipAssets::transactionally_transfer(from, asset, transfers)
+    }
+
     fn transactionally_reserve(
         account: &AccountId,
         id: InvestmentId,
@@ -404,9 +432,14 @@ impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Runtime {
     }
 }
 
+parameter_types! {
+	pub const WipePeriod: BlockNumber = DAYS;
+}
+
 impl pallet_deip_assets::Config for Runtime {
     type ProjectsInfo = Self;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
+    type WipePeriod = WipePeriod;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -432,7 +465,7 @@ construct_runtime!(
         DeipOrg: pallet_deip_org::{Module, Call, Storage, Event<T>, Config},
         Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
         Assets: pallet_assets::{Module, Storage, Event<T>},
-        DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>},
+        DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>, ValidateUnsigned},
     }
 );
 

@@ -88,6 +88,34 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
     type Balance = u64;
     type AssetId = u32;
 
+    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<super::ProjectId> {
+        DeipAssets::try_get_tokenized_project(id)
+    }
+
+    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::account_balance(account, asset)
+    }
+
+    fn total_supply(asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::total_supply(asset)
+    }
+
+    fn get_project_nfts(id: &super::ProjectId) -> Vec<Self::AssetId> {
+        DeipAssets::get_project_nfts(id)
+    }
+
+    fn get_nft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
+        DeipAssets::get_nft_balances(id)
+    }
+
+    fn transactionally_transfer(
+        from: &AccountId,
+        asset: Self::AssetId,
+        transfers: &[(Self::Balance, AccountId)],
+    ) -> Result<(), ()> {
+        DeipAssets::transactionally_transfer(from, asset, transfers)
+    }
+
     fn transactionally_reserve(
         account: &u64,
         id: super::InvestmentId,
@@ -160,6 +188,10 @@ impl pallet_assets::Config for Test {
     type WeightInfo = pallet_assets::weights::SubstrateWeight<Test>;
 }
 
+parameter_types! {
+	pub const WipePeriod: u64 = 10;
+}
+
 impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
     type ProjectId = pallet_deip::ProjectId;
     type InvestmentId = pallet_deip::InvestmentId;
@@ -172,6 +204,7 @@ impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
 impl pallet_deip_assets::Config for Test {
     type ProjectsInfo = Self;
     type DeipAccountId = Self::AccountId;
+    type WipePeriod = WipePeriod;
 }
 
 impl<LocalCall> system::offchain::SendTransactionTypes<LocalCall> for Test

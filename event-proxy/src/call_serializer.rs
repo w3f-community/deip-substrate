@@ -34,7 +34,8 @@ impl Serialize for runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
                 module: "unsupported_module",
                 call: "unsupported_call",
                 args: &UnsupportedCallArgs {},
-            }.serialize(serializer),
+            }
+            .serialize(serializer),
         }
     }
 }
@@ -238,6 +239,30 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
                 module: "deip",
                 call: "add_domain",
                 args: &DeipAddDomainCallArgs { domain },
+            }
+            .serialize(serializer),
+
+            create_contract_agreement(id, creator, parties, hash, start_time, end_time, terms) => {
+                CallObject {
+                    module: "deip",
+                    call: "create_contract_agreement",
+                    args: &DeipCreateContractAgreementCallArgs {
+                        id,
+                        creator,
+                        parties,
+                        hash,
+                        start_time,
+                        end_time,
+                        terms,
+                    },
+                }
+                .serialize(serializer)
+            }
+
+            accept_contract_agreement(id, party) => CallObject {
+                module: "deip",
+                call: "accept_contract_agreement",
+                args: &DeipAcceptContractAgreementCallArgs { id, party },
             }
             .serialize(serializer),
 
@@ -451,6 +476,13 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             }
             .serialize(serializer),
 
+            wipe_zero_balance(asset, account) => CallObject {
+                module: "deip_assets",
+                call: "wipe_zero_balance",
+                args: &DeipAssetsWipeZeroBalanceCallArgs { asset, account },
+            }
+            .serialize(serializer),
+
             __Ignore(..) => unreachable!(),
         }
     }
@@ -465,6 +497,12 @@ struct DeipAssetsSetMetadataCallArgs<A, B, C, D> {
     name: B,
     symbol: C,
     decimals: D,
+}
+
+#[derive(Serialize)]
+struct DeipAssetsWipeZeroBalanceCallArgs<A, B> {
+    asset: A,
+    account: B,
 }
 
 #[derive(Serialize)]
@@ -583,6 +621,23 @@ struct DeipProposalProposeCallArgs<A, B> {
 #[derive(Serialize)]
 struct DeipAddDomainCallArgs<A> {
     domain: A,
+}
+
+#[derive(Serialize)]
+struct DeipCreateContractAgreementCallArgs<A, B, C, D, E, F, G> {
+    id: A,
+    creator: B,
+    parties: C,
+    hash: D,
+    start_time: E,
+    end_time: F,
+    terms: G
+}
+
+#[derive(Serialize)]
+struct DeipAcceptContractAgreementCallArgs<A, B> {
+    id: A,
+    party: B,
 }
 
 #[derive(Serialize)]

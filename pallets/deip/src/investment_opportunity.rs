@@ -133,18 +133,18 @@ impl<T: Config> Module<T> {
             Error::<T>::InvestmentOpportunitySecurityTokenNotSpecified
         );
         let mut shares_to_reserve = Vec::with_capacity(shares.len());
-        for security_token in &shares {
+        for token in &shares {
             ensure!(
-                security_token.id != asset_id,
+                token.id != asset_id,
                 Error::<T>::InvestmentOpportunityWrongAssetId
             );
 
             ensure!(
-                security_token.amount > Zero::zero(),
+                token.amount > Zero::zero(),
                 Error::<T>::InvestmentOpportunityAssetAmountMustBePositive
             );
 
-            shares_to_reserve.push((security_token.id, security_token.amount));
+            shares_to_reserve.push((token.id, token.amount));
         }
 
         ensure!(

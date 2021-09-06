@@ -1,8 +1,8 @@
 use crate::*;
 
 use codec::HasCompact;
-use sp_runtime::traits::AtLeast32BitUnsigned;
 use deip_assets_error::*;
+use sp_runtime::traits::AtLeast32BitUnsigned;
 
 pub trait DeipAssetSystem<AccountId> {
     /// The units in which asset balances are recorded.
@@ -10,6 +10,22 @@ pub trait DeipAssetSystem<AccountId> {
 
     /// The arithmetic type of asset identifier.
     type AssetId: Member + Parameter + Default + Copy + HasCompact;
+
+    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId>;
+
+    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance;
+
+    fn total_supply(asset: &Self::AssetId) -> Self::Balance;
+
+    fn get_project_nfts(id: &ProjectId) -> Vec<Self::AssetId>;
+
+    fn get_nft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>>;
+
+    fn transactionally_transfer(
+        from: &AccountId,
+        asset: Self::AssetId,
+        transfers: &[(Self::Balance, AccountId)],
+    ) -> Result<(), ()>;
 
     /// Tries to transfer assets specified by `shares` from
     /// `account` to a specific balance identified by `id`.
