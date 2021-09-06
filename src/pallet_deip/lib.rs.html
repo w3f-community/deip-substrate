@@ -1050,6 +1050,76 @@
 <span id="1048">1048</span>
 <span id="1049">1049</span>
 <span id="1050">1050</span>
+<span id="1051">1051</span>
+<span id="1052">1052</span>
+<span id="1053">1053</span>
+<span id="1054">1054</span>
+<span id="1055">1055</span>
+<span id="1056">1056</span>
+<span id="1057">1057</span>
+<span id="1058">1058</span>
+<span id="1059">1059</span>
+<span id="1060">1060</span>
+<span id="1061">1061</span>
+<span id="1062">1062</span>
+<span id="1063">1063</span>
+<span id="1064">1064</span>
+<span id="1065">1065</span>
+<span id="1066">1066</span>
+<span id="1067">1067</span>
+<span id="1068">1068</span>
+<span id="1069">1069</span>
+<span id="1070">1070</span>
+<span id="1071">1071</span>
+<span id="1072">1072</span>
+<span id="1073">1073</span>
+<span id="1074">1074</span>
+<span id="1075">1075</span>
+<span id="1076">1076</span>
+<span id="1077">1077</span>
+<span id="1078">1078</span>
+<span id="1079">1079</span>
+<span id="1080">1080</span>
+<span id="1081">1081</span>
+<span id="1082">1082</span>
+<span id="1083">1083</span>
+<span id="1084">1084</span>
+<span id="1085">1085</span>
+<span id="1086">1086</span>
+<span id="1087">1087</span>
+<span id="1088">1088</span>
+<span id="1089">1089</span>
+<span id="1090">1090</span>
+<span id="1091">1091</span>
+<span id="1092">1092</span>
+<span id="1093">1093</span>
+<span id="1094">1094</span>
+<span id="1095">1095</span>
+<span id="1096">1096</span>
+<span id="1097">1097</span>
+<span id="1098">1098</span>
+<span id="1099">1099</span>
+<span id="1100">1100</span>
+<span id="1101">1101</span>
+<span id="1102">1102</span>
+<span id="1103">1103</span>
+<span id="1104">1104</span>
+<span id="1105">1105</span>
+<span id="1106">1106</span>
+<span id="1107">1107</span>
+<span id="1108">1108</span>
+<span id="1109">1109</span>
+<span id="1110">1110</span>
+<span id="1111">1111</span>
+<span id="1112">1112</span>
+<span id="1113">1113</span>
+<span id="1114">1114</span>
+<span id="1115">1115</span>
+<span id="1116">1116</span>
+<span id="1117">1117</span>
+<span id="1118">1118</span>
+<span id="1119">1119</span>
+<span id="1120">1120</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -1085,6 +1155,8 @@
 <span class="doccomment">//! * `reject_nda_content_access_request` - Granter reject access request to the data</span>
 <span class="doccomment">//! * [`create_review`](./enum.Call.html#variant.create_review)</span>
 <span class="doccomment">//! * [`upvote_review`](./enum.Call.html#variant.upvote_review)</span>
+<span class="doccomment">//! * [`create_contract_agreement`](./enum.Call.html#variant.create_contract_agreement)</span>
+<span class="doccomment">//! * [`accept_contract_agreement`](./enum.Call.html#variant.accept_contract_agreement)</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [`Call`]: ./enum.Call.html</span>
 <span class="doccomment">//! [`Config`]: ./trait.Config.html</span>
@@ -1135,6 +1207,13 @@
 
 <span class="kw">mod</span> <span class="ident">asset</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">asset::Asset</span> <span class="kw">as</span> <span class="ident">DeipAsset</span>;
+
+<span class="kw">mod</span> <span class="ident">contract</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">contract</span>::{
+    <span class="ident">Id</span> <span class="kw">as</span> <span class="ident">ContractAgreementId</span>,
+    <span class="ident">TermsOf</span> <span class="kw">as</span> <span class="ident">ContractAgreementTermsOf</span>,
+};
+<span class="kw">use</span> <span class="ident">contract::AgreementOf</span> <span class="kw">as</span> <span class="ident">ContractAgreementOf</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">traits</span>;
 
@@ -1200,11 +1279,12 @@
 
 <span class="kw">type</span> <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::AccountId</span>;
 <span class="kw">type</span> <span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">pallet_timestamp::Config</span><span class="op">&gt;</span><span class="ident">::Moment</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Project</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Review</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Nda</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">NdaAccessRequestOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">NdaAccessRequest</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">ProjectContent</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">system::Config</span><span class="op">&gt;</span><span class="ident">::Hash</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Project</span><span class="op">&lt;</span><span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Review</span><span class="op">&lt;</span><span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Nda</span><span class="op">&lt;</span><span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">NdaAccessRequestOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">NdaAccessRequest</span><span class="op">&lt;</span><span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">ProjectContent</span><span class="op">&lt;</span><span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">SimpleCrowdfundingOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">SimpleCrowdfunding</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">BalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Config</span><span class="op">&gt;</span><span class="ident">::Currency</span> <span class="kw">as</span> <span class="ident">Currency</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Balance</span>;
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InvestmentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Investment</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DeipAssetBalanceOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
@@ -1373,6 +1453,9 @@
         <span class="ident">SimpleCrowdfundingExpired</span>(<span class="ident">InvestmentId</span>),
         <span class="doccomment">/// Event emitted when DAO invested to an opportunity</span>
         <span class="ident">Invested</span>(<span class="ident">InvestmentId</span>, <span class="ident">AccountId</span>),
+
+        <span class="ident">ContractAgreementCreated</span>(<span class="ident">ContractAgreementId</span>),
+        <span class="ident">ContractAgreementAccepted</span>(<span class="ident">ContractAgreementId</span>, <span class="ident">AccountId</span>),
     }
 }
 
@@ -1471,6 +1554,23 @@
         <span class="ident">InvestingNotActive</span>,
         <span class="ident">InvestingNotEnoughFunds</span>,
         <span class="ident">InvestingWrongAsset</span>,
+
+        <span class="ident">ContractAgreementNoParties</span>,
+        <span class="ident">ContractAgreementDuplicateParties</span>,
+        <span class="ident">ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment</span>,
+        <span class="ident">ContractAgreementEndTimeMustBeLaterStartTime</span>,
+        <span class="ident">ContractAgreementAlreadyExists</span>,
+        <span class="ident">ContractAgreementFeeMustBePositive</span>,
+        <span class="ident">ContractAgreementLicenseTwoPartiesRequired</span>,
+        <span class="ident">ContractAgreementLicenseNoLicenser</span>,
+        <span class="ident">ContractAgreementNotFound</span>,
+        <span class="ident">ContractAgreementAcceptWrongAgreement</span>,
+        <span class="ident">ContractAgreementLicenseAlreadyAccepted</span>,
+        <span class="ident">ContractAgreementLicensePartyIsNotLicenser</span>,
+        <span class="ident">ContractAgreementLicensePartyIsNotLicensee</span>,
+        <span class="ident">ContractAgreementLicenseExpired</span>,
+        <span class="ident">ContractAgreementLicenseNotEnoughBalance</span>,
+        <span class="ident">ContractAgreementLicenseFailedToChargeFee</span>,
     }
 }
 
@@ -1513,6 +1613,8 @@
         <span class="comment">// The total number of domains stored in the map.</span>
         <span class="comment">// Because the map does not store its size, we must store it separately</span>
         <span class="ident">DomainCount</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">domain_count</span>) <span class="ident">config</span>(): <span class="ident">u32</span>;
+
+        <span class="ident">ContractAgreementMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ContractAgreementId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ContractAgreementOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
     }
 }
 
@@ -1972,6 +2074,44 @@
             <span class="ident">DomainCount::put</span>(<span class="ident">domain_count</span> <span class="op">+</span> <span class="number">1</span>); <span class="comment">// overflow check not necessary because of maximum</span>
             
             <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::DomainAdded</span>(<span class="ident">account</span>, <span class="ident">external_id</span>));
+        }
+
+        <span class="doccomment">/// Allows DAO to create a contract agreement between parties.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// The origin for this call must be _Signed_.</span>
+        <span class="doccomment">/// - `creator` - creator of the contract agreement. A contract can be created by</span>
+        <span class="doccomment">///     a thirdparty</span>
+        <span class="doccomment">/// - `parties` - signatures from all parties must be collected in order</span>
+        <span class="doccomment">///     to consider the contract as approved</span>
+        <span class="doccomment">/// - `hash` - hash of contract agreement offchain metadata</span>
+        <span class="doccomment">/// - `start_time`/`end_time`</span>
+        <span class="doccomment">/// - `terms` - specifies type of the contract agreement. For details see [`ContractAgreementTerms`].</span>
+        <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
+        <span class="kw">fn</span> <span class="ident">create_contract_agreement</span>(<span class="ident">origin</span>,
+            <span class="ident">id</span>: <span class="ident">ContractAgreementId</span>,
+            <span class="ident">creator</span>: <span class="ident">T::DeipAccountId</span>,
+            <span class="ident">parties</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T::DeipAccountId</span><span class="op">&gt;</span>,
+            <span class="ident">hash</span>: <span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+            <span class="ident">start_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+            <span class="ident">end_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+            <span class="ident">terms</span>: <span class="ident">ContractAgreementTermsOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
+            <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
+            <span class="self">Self</span><span class="ident">::create_contract_agreement_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">creator</span>.<span class="ident">into</span>(), <span class="ident">parties</span>, <span class="ident">hash</span>, <span class="ident">start_time</span>, <span class="ident">end_time</span>, <span class="ident">terms</span>)
+        }
+
+        <span class="doccomment">/// Allows a party to sign the contract agreement created earlier.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// The origin for this call must be _Signed_.</span>
+        <span class="doccomment">/// - `id` - identifies the contract to accept. Check [`ContractAgreementTerms`] for</span>
+        <span class="doccomment">///     supported types</span>
+        <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
+        <span class="kw">fn</span> <span class="ident">accept_contract_agreement</span>(<span class="ident">origin</span>,
+            <span class="ident">id</span>: <span class="ident">ContractAgreementId</span>,
+            <span class="ident">party</span>: <span class="ident">T::DeipAccountId</span>,
+        ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
+            <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
+            <span class="self">Self</span><span class="ident">::accept_contract_agreement_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">party</span>.<span class="ident">into</span>())
         }
 
         <span class="kw">fn</span> <span class="ident">offchain_worker</span>(<span class="ident">_n</span>: <span class="ident">T::BlockNumber</span>) {

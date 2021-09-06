@@ -520,18 +520,18 @@
             <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::InvestmentOpportunitySecurityTokenNotSpecified</span>
         );
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">shares_to_reserve</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">shares</span>.<span class="ident">len</span>());
-        <span class="kw">for</span> <span class="ident">security_token</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">shares</span> {
+        <span class="kw">for</span> <span class="ident">token</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">shares</span> {
             <span class="macro">ensure!</span>(
-                <span class="ident">security_token</span>.<span class="ident">id</span> <span class="op">!</span><span class="op">=</span> <span class="ident">asset_id</span>,
+                <span class="ident">token</span>.<span class="ident">id</span> <span class="op">!</span><span class="op">=</span> <span class="ident">asset_id</span>,
                 <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::InvestmentOpportunityWrongAssetId</span>
             );
 
             <span class="macro">ensure!</span>(
-                <span class="ident">security_token</span>.<span class="ident">amount</span> <span class="op">&gt;</span> <span class="ident">Zero::zero</span>(),
+                <span class="ident">token</span>.<span class="ident">amount</span> <span class="op">&gt;</span> <span class="ident">Zero::zero</span>(),
                 <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::InvestmentOpportunityAssetAmountMustBePositive</span>
             );
 
-            <span class="ident">shares_to_reserve</span>.<span class="ident">push</span>((<span class="ident">security_token</span>.<span class="ident">id</span>, <span class="ident">security_token</span>.<span class="ident">amount</span>));
+            <span class="ident">shares_to_reserve</span>.<span class="ident">push</span>((<span class="ident">token</span>.<span class="ident">id</span>, <span class="ident">token</span>.<span class="ident">amount</span>));
         }
 
         <span class="macro">ensure!</span>(
