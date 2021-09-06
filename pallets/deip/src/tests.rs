@@ -934,10 +934,9 @@ fn simple_crowdfunding_create_should_fail() {
             H160::random(),
             start_time,
             start_time + 1,
-            0u32,
-            100u32.into(),
-            120u32.into(),
-            vec![(0u32.into(), 100u32.into()), (14u32.into(), 200u32.into())]
+            DeipAsset::new(0u32, 100u32.into()),
+            DeipAsset::new(0u32, 120u32.into()),
+            vec![DeipAsset::new(0u32.into(), 100u32.into()), DeipAsset::new(14u32.into(), 200u32.into())]
         ),
         Error::<Test>::InvestmentOpportunityWrongAssetId);
 
@@ -945,9 +944,8 @@ fn simple_crowdfunding_create_should_fail() {
             H160::random(),
             start_time,
             start_time + 1,
-            0u32,
-            100u32.into(),
-            120u32.into(),
+            DeipAsset::new(0u32, 100u32.into()),
+            DeipAsset::new(0u32, 120u32.into()),
             vec![]
         ),
         Error::<Test>::InvestmentOpportunitySecurityTokenNotSpecified);
@@ -990,10 +988,9 @@ fn simple_crowdfunding_hard_cap_reached() {
             sale_id,
             start_time,
             start_time + 100,
-            base_asset_id,
-            soft_cap,
-            hard_cap,
-            vec![(usd_id, usd_to_sale), (eur_id, eur_to_sale)]
+            DeipAsset::new(base_asset_id, soft_cap),
+            DeipAsset::new(base_asset_id, hard_cap),
+            vec![DeipAsset::new(usd_id, usd_to_sale), DeipAsset::new(eur_id, eur_to_sale)]
         ));
 
         Deip::offchain_worker(System::block_number());
@@ -1008,7 +1005,7 @@ fn simple_crowdfunding_hard_cap_reached() {
         assert_ok!(Deip::invest_to_crowdfunding_impl(
             BOB_ACCOUNT_ID,
             sale_id,
-            hard_cap / 2,
+            DeipAsset::new(base_asset_id, hard_cap / 2),
         ));
 
         // investors should get their tokens in any case
@@ -1021,7 +1018,7 @@ fn simple_crowdfunding_hard_cap_reached() {
         assert_ok!(Deip::invest_to_crowdfunding_impl(
             ALICE_ACCOUNT_ID,
             sale_id,
-            hard_cap / 2,
+            DeipAsset::new(base_asset_id, hard_cap / 2),
         ));
 
         assert_eq!(Assets::balance(usd_id, BOB_ACCOUNT_ID), usd_to_sale / 2);
@@ -1080,10 +1077,9 @@ fn simple_crowdfunding_expired() {
             sale_id,
             start_time,
             start_time + duration_in_blocks * BLOCK_TIME,
-            base_asset_id,
-            soft_cap,
-            hard_cap,
-            vec![(usd_id, usd_to_sale), (eur_id, eur_to_sale)]
+            DeipAsset::new(base_asset_id, soft_cap),
+            DeipAsset::new(base_asset_id, hard_cap),
+            vec![DeipAsset::new(usd_id, usd_to_sale), DeipAsset::new(eur_id, eur_to_sale)]
         ));
 
         let start_block = System::block_number() + start_time_in_blocks + 1;
@@ -1109,13 +1105,13 @@ fn simple_crowdfunding_expired() {
         assert_ok!(Deip::invest_to_crowdfunding_impl(
             BOB_ACCOUNT_ID,
             sale_id,
-            soft_cap / 4,
+            DeipAsset::new(base_asset_id, soft_cap / 4),
         ));
 
         assert_ok!(Deip::invest_to_crowdfunding_impl(
             ALICE_ACCOUNT_ID,
             sale_id,
-            soft_cap / 2,
+            DeipAsset::new(base_asset_id, soft_cap / 2),
         ));
 
         // since the sale expired the tokens should be transfered back to
@@ -1201,10 +1197,9 @@ fn two_simultaneous_crowdfundings_expired() {
             eur_sale_id,
             start_time,
             start_time + duration_in_blocks * BLOCK_TIME,
-            usd_id,
-            soft_cap,
-            hard_cap,
-            vec![(eur_id, eur_to_sale)]
+            DeipAsset::new(usd_id, soft_cap),
+            DeipAsset::new(usd_id, hard_cap),
+            vec![DeipAsset::new(eur_id, eur_to_sale)]
         ));
 
         assert_ok!(Deip::create_simple_crowdfunding(
@@ -1212,10 +1207,9 @@ fn two_simultaneous_crowdfundings_expired() {
             usd_sale_id,
             start_time,
             start_time + duration_in_blocks * BLOCK_TIME,
-            base_asset_id,
-            soft_cap,
-            hard_cap,
-            vec![(usd_id, usd_to_sale)]
+            DeipAsset::new(base_asset_id, soft_cap),
+            DeipAsset::new(base_asset_id, hard_cap),
+            vec![DeipAsset::new(usd_id, usd_to_sale)]
         ));
 
         let start_block = System::block_number() + start_time_in_blocks + 1;
@@ -1247,13 +1241,13 @@ fn two_simultaneous_crowdfundings_expired() {
         assert_ok!(Deip::invest_to_crowdfunding_impl(
             BOB_ACCOUNT_ID,
             usd_sale_id,
-            soft_cap / 4,
+            DeipAsset::new(base_asset_id, soft_cap / 4),
         ));
 
         assert_ok!(Deip::invest_to_crowdfunding_impl(
             ALICE_ACCOUNT_ID,
             eur_sale_id,
-            soft_cap / 2,
+            DeipAsset::new(usd_id, soft_cap / 2),
         ));
 
         // since the sale expired the tokens should be transfered back to
@@ -1294,3 +1288,4 @@ fn two_simultaneous_crowdfundings_expired() {
         assert_eq!(Assets::balance(eur_id, BOB_ACCOUNT_ID), bob_eur_balance_before);
     })
 }
+

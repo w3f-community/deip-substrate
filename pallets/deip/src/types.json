@@ -169,10 +169,11 @@
       "Inactive"
     ]
   },
-  "TokenSaleAssetPair": {
+  "DeipAsset": {
     "id": "AssetId",
     "amount": "AssetsBalanceOf"
   },
+  "DeipAssetOf": "DeipAsset",
   "SimpleCrowdfunding": {
     "external_id": "InvestmentId",
     "project_id": "ProjectId",
@@ -183,7 +184,7 @@
     "total_amount": "AssetsBalanceOf",
     "soft_cap": "AssetsBalanceOf",
     "hard_cap": "AssetsBalanceOf",
-    "shares": "Vec<TokenSaleAssetPair>"
+    "shares": "Vec<DeipAsset>"
   },
   "Investment": {
     "sale_id": "InvestmentId",
@@ -196,9 +197,8 @@
       "SimpleCrowdfunding": {
         "start_time": "Moment",
         "end_time": "Moment",
-        "asset_id": "AssetId",
-        "soft_cap": "AssetsBalanceOf",
-        "hard_cap": "AssetsBalanceOf"
+        "soft_cap": "DeipAsset",
+        "hard_cap": "DeipAsset"
       }
     }
   },

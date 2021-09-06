@@ -80,6 +80,9 @@ mod review;
 pub use review::{Id as ReviewId, Review as Review};
 use review::Vote as DeipReviewVote;
 
+mod asset;
+pub use asset::Asset as DeipAsset;
+
 pub mod traits;
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
@@ -154,6 +157,7 @@ pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::B
 pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, MomentOf<T>>;
 pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
 pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
+pub type DeipAssetOf<T> = DeipAsset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
 
 /// PPossible project domains
@@ -407,11 +411,13 @@ decl_error! {
         InvestmentOpportunityShouldBeActive,
         InvestmentOpportunityExpirationWrongState,
         InvestmentOpportunityWrongAssetId,
+        InvestmentOpportunityCapDifferentAssets,
 
         // Possible errors when DAO tries to invest to an opportunity
         InvestingNotFound,
         InvestingNotActive,
         InvestingNotEnoughFunds,
+        InvestingWrongAsset,
     }
 }
 
@@ -535,7 +541,7 @@ decl_module! {
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
             creator: T::DeipAccountId,
-            shares: Vec<(DeipAssetIdOf<T>, DeipAssetBalanceOf<T>)>,
+            shares: Vec<DeipAssetOf<T>>,
             funding_model: FundingModelOf<T>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
@@ -570,10 +576,10 @@ decl_module! {
         #[weight = 10_000]
         fn invest(origin,
             id: InvestmentId,
-            amount: DeipAssetBalanceOf<T>
+            asset: DeipAssetOf<T>
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::invest_to_crowdfunding_impl(account, id, amount)
+            Self::invest_to_crowdfunding_impl(account, id, asset)
         }
 
         /// Allow a user to update project.
