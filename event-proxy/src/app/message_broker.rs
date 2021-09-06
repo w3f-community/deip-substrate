@@ -19,8 +19,8 @@ impl MessageBrokerActor {
 
 pub type MessageBrokerActorInput = ActorDirective<MessageBrokerActorInputData>;
 impl MessageBrokerActorInput {
-    pub fn configure(config: super::KafkaConfig) -> Self {
-        Self::Input(MessageBrokerActorInputData::Configure(config))
+    pub fn configure(config: super::KafkaConfig, ctx: MessageBrokerConfigureCtx) -> Self {
+        MessageBrokerActorInputData::Configure(MessageBrokerConfigure { config, ctx }).into()
     }
     
     pub fn send_replayed_block_event(
@@ -30,13 +30,13 @@ impl MessageBrokerActorInput {
     )
         -> Self
     {
-        Self::Input(MessageBrokerActorInputData::SendReplayedBlockEvent(SendEvent {
+        MessageBrokerActorInputData::SendReplayedBlockEvent(SendEvent {
             event,
             ctx: SendReplayedBlockEventCtx {
                 remaining,
                 replay,
             },
-        }))
+        }).into()
     }
     pub fn send_block_event(
         event: super::MaybeBlockEvent,
@@ -46,14 +46,14 @@ impl MessageBrokerActorInput {
     )
         -> Self
     {
-        Self::Input(MessageBrokerActorInputData::SendBlockEvent(SendEvent {
+        MessageBrokerActorInputData::SendBlockEvent(SendEvent {
             event,
             ctx: SendBlockEventCtx {
                 events_buffer,
                 remaining,
                 subscription_buffer,
             },
-        }))
+        }).into()
     }
 }
 
@@ -78,19 +78,44 @@ pub struct SendBlockEventCtx {
     pub subscription_buffer: super::SubscriptionBuffer,
 }
 
+pub struct MessageBrokerConfigure<Ctx> {
+    config: super::KafkaConfig,
+    ctx: Ctx
+}
+pub struct MessageBrokerConfigureCtx {
+    pub maybe_input: Box<Option<MessageBrokerActorInput>>,
+}
+impl Default for MessageBrokerConfigureCtx {
+    fn default() -> Self { Self { maybe_input: Box::new(None) } }
+}
+impl From<MessageBrokerConfigureCtx> for MessageBrokerActorOutput {
+    fn from(ctx: MessageBrokerConfigureCtx) -> Self {
+        MessageBrokerActorOutput::NotConfigured(ctx)
+    }
+}
+pub struct MessageBrokerConfigureResult<Ctx> {
+    pub maybe_error: Option<rdkafka::error::KafkaError>,
+    pub ctx: Ctx
+}
+
 pub enum MessageBrokerActorInputData {
-    Configure(super::KafkaConfig),
+    Configure(MessageBrokerConfigure<MessageBrokerConfigureCtx>),
     SendReplayedBlockEvent(SendEvent<SendReplayedBlockEventCtx>),
     SendBlockEvent(SendEvent<SendBlockEventCtx>),
 }
+impl From<MessageBrokerActorInputData> for MessageBrokerActorInput {
+    fn from(data: MessageBrokerActorInputData) -> Self {
+        Self::Input(data)
+    }
+}
 
 pub enum MessageBrokerActorOutput {
-    NotConfigured,
+    NotConfigured(MessageBrokerConfigureCtx),
     Result(MessageBrokerActorOutputData)
 }
 
 pub enum MessageBrokerActorOutputData {
-    Configure(Option<rdkafka::error::KafkaError>),
+    Configure(MessageBrokerConfigureResult<MessageBrokerConfigureCtx>),
     SendReplayedBlockEvent(SendEventResult<SendReplayedBlockEventCtx>),
     SendBlockEvent(SendEventResult<SendBlockEventCtx>),
 }
@@ -102,21 +127,22 @@ impl From<MessageBrokerActorOutputData> for MessageBrokerActorOutput {
 
 pub type MessageBrokerActorIO = ActorJack<MessageBrokerActorInput, MessageBrokerActorOutput>;
 
-fn configure(c: super::KafkaConfig) -> (Option<FutureProducer>, MessageBrokerActorOutput)
+fn configure(c: MessageBrokerConfigure<MessageBrokerConfigureCtx>) -> (Option<FutureProducer>, MessageBrokerActorOutput)
 {
+    let MessageBrokerConfigure { config: c, ctx } = c;
     let mut config = rdkafka::ClientConfig::new();
     config.set("bootstrap.servers", &c.bootstrap_servers);
 
     match config.create::<FutureProducer>() {
         Ok(producer) => {
             let output = MessageBrokerActorOutput::Result(
-                MessageBrokerActorOutputData::Configure(None)
+                MessageBrokerActorOutputData::Configure(MessageBrokerConfigureResult { maybe_error: None, ctx })
             );
             (Some(producer), output)
         },
         Err(e) => {
             let output = MessageBrokerActorOutput::Result(
-                MessageBrokerActorOutputData::Configure(Some(e))
+                MessageBrokerActorOutputData::Configure(MessageBrokerConfigureResult { maybe_error: Some(e), ctx })
             );
             (None, output)
         },
@@ -142,7 +168,7 @@ for MessageBrokerActor
         }
         
         if self.producer.is_none() {
-            return MessageBrokerActorOutput::NotConfigured
+            return MessageBrokerConfigureCtx { maybe_input: Box::new(Some(data.into())) }.into();
         }
         
         let producer = self.producer.as_ref().unwrap();

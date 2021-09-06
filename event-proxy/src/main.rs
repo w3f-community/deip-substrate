@@ -362,21 +362,26 @@ async fn main() {
             let output = if maybe_output.is_some() { maybe_output.unwrap() } else { unreachable!(); };
             release_actor(io, &mut released_message_broker_actor_queue).await;
             let delivery_status = match output {
-                MessageBrokerActorOutput::NotConfigured => {
+                MessageBrokerActorOutput::NotConfigured(ctx) => {
                     message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
-                        MessageBrokerActorInput::configure(config.kafka.clone()),
+                        MessageBrokerActorInput::configure(config.kafka.clone(), ctx),
                         &mut released_message_broker_actor_queue
                     ).await);
                     continue;
                 },
-                MessageBrokerActorOutput::Result(MessageBrokerActorOutputData::Configure(maybe_error)) => {
+                MessageBrokerActorOutput::Result(MessageBrokerActorOutputData::Configure(app::MessageBrokerConfigureResult { maybe_error, ctx })) => {
                     match maybe_error {
-                        None => {},
+                        None => if ctx.maybe_input.is_some() {
+                            message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
+                                ctx.maybe_input.unwrap(),
+                                &mut released_message_broker_actor_queue
+                            ).await);
+                        },
                         Some(e) => {
                             log::error!("{}", e);
                             tokio::time::sleep(Duration::from_secs(5)).await;
                             message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
-                                MessageBrokerActorInput::configure(config.kafka.clone()),
+                                MessageBrokerActorInput::configure(config.kafka.clone(), ctx),
                                 &mut released_message_broker_actor_queue
                             ).await);
                         },
