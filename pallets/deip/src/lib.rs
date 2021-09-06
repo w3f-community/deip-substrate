@@ -88,9 +88,9 @@ pub use asset::Asset as DeipAsset;
 mod contract;
 pub use contract::{
     Id as ContractAgreementId,
-    Terms as ContractAgreementTerms,
+    TermsOf as ContractAgreementTermsOf,
 };
-use contract::Agreement as ContractAgreement;
+use contract::AgreementOf as ContractAgreementOf;
 
 pub mod traits;
 
@@ -169,8 +169,6 @@ pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSyst
 pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
 pub type DeipAssetOf<T> = DeipAsset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
-type ContractAgreementOf<T> = ContractAgreement<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
-pub type ContractAgreementTermsOf<T> = ContractAgreementTerms<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
