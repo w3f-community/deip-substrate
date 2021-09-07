@@ -66,6 +66,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod api;
+
 mod investment_opportunity;
 use investment_opportunity::{
     Status as SimpleCrowdfundingStatus,

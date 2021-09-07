@@ -26,9 +26,8 @@ structopt = '0.3.8'
 node-template-runtime = { path = '../runtime', version = '3.0.0' }
 pallet-deip = { path = "../pallets/deip" }
 pallet-deip-assets = { path = "../pallets/deip_assets" }
-pallet-deip-org-rpc = { path = "../pallets/deip_org_rpc" }
-deip-rpc = { path = "../pallets/deip/rpc" }
-deip-runtime-api = { path = "../pallets/deip/runtime-api" }
+deip-org-rpc = { path = "../rpc/deip_org_rpc" }
+deip-rpc = { path = "../rpc/deip_rpc" }
 
 # Substrate dependencies
 frame-benchmarking = '3.0.0'

@@ -1214,13 +1214,31 @@ name = "deip-assets-error"
 version = "0.1.0"
 
 [[package]]
-name = "deip-rpc"
-version = "1.0.0"
+name = "deip-org-rpc"
+version = "3.0.0"
 dependencies = [
- "deip-runtime-api",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
+ "pallet-deip-org",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "deip-rpc"
+version = "1.0.0"
+dependencies = [
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip",
  "parity-scale-codec",
  "serde",
  "serde_json",
@@ -1228,17 +1246,6 @@ dependencies = [
  "sp-blockchain",
  "sp-rpc",
  "sp-runtime",
-]
-
-[[package]]
-name = "deip-runtime-api"
-version = "2.0.0"
-dependencies = [
- "pallet-deip",
- "parity-scale-codec",
- "serde_json",
- "sp-api",
- "sp-std",
 ]
 
 [[package]]
@@ -3623,15 +3630,14 @@ dependencies = [
 name = "node-template"
 version = "3.0.0"
 dependencies = [
+ "deip-org-rpc",
  "deip-rpc",
- "deip-runtime-api",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
  "node-template-runtime",
  "pallet-deip",
  "pallet-deip-assets",
- "pallet-deip-org-rpc",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
  "sc-cli",
@@ -3665,7 +3671,6 @@ name = "node-template-runtime"
 version = "3.0.0"
 dependencies = [
  "deip-assets-error",
- "deip-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -3936,6 +3941,7 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.11.1",
  "serde",
+ "sp-api",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -3967,24 +3973,6 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-api",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-deip-org-rpc"
-version = "3.0.0"
-dependencies = [
- "jsonrpc-core",
- "jsonrpc-core-client",
- "jsonrpc-derive",
- "pallet-deip-org",
- "parity-scale-codec",
- "serde",
- "sp-api",
- "sp-blockchain",
  "sp-core",
  "sp-io",
  "sp-runtime",

@@ -6,7 +6,8 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use std::sync::Arc;
-use deip_runtime_api::{DeipApi as DeipStorageRuntimeApi, * };
+pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
+use pallet_deip::*;
 use codec::{Codec};
 
 

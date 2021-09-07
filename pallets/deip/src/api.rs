@@ -2,12 +2,9 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::unnecessary_mut_passed)]
 
-pub use pallet_deip::*;
+use super::*;
+use codec::Codec;
 use sp_std::vec::Vec;
-use codec::{Codec};
-
-
-
 
 // Here we declare the runtime API. It is implemented it the `impl` block in
 // runtime amalgamator file (the `runtime/src/lib.rs`)
