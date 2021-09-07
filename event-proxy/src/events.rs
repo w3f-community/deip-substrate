@@ -14,6 +14,8 @@ use super::frame::{
     deip_assets::{self, DeipAssets},
 };
 
+mod mapping;
+
 #[derive(Serialize, Debug, Copy, Clone)]
 pub struct BlockMetadata<T: System> {
     pub number: T::BlockNumber,
