@@ -5,12 +5,12 @@ use serde::{Deserialize, de::DeserializeOwned};
 
 pub fn load<Offchain: DeserializeOwned, P: AsRef<Path>>(path: P) -> io::Result<Config<Offchain>> {
     toml::from_slice(fs::read(path)?.as_slice()).map_err(Into::into)
-} 
+}
 
 #[derive(Deserialize)]
 pub struct Config<Offchain> {
     pub blockchain: BlockchainConfig,
-    pub kafka: KafkaConfig,
+    pub message_broker: MessageBrokerConfig,
     pub offchain: Offchain
 }
 
@@ -20,8 +20,8 @@ pub struct BlockchainConfig {
 }
 
 #[derive(Deserialize, Clone)]
-pub struct KafkaConfig {
-    pub bootstrap_servers: String,
+pub struct MessageBrokerConfig {
+    pub kafka_bootstrap_servers: String,
 }
 
 #[derive(Deserialize, Clone)]

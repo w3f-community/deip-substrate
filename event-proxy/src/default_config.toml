@@ -1,15 +1,11 @@
 [blockchain]
 rpc = "ws://localhost:9944/"
 
-[kafka]
-bootstrap_servers = "127.0.0.1:9092"
+[message_broker]
+kafka_bootstrap_servers = "127.0.0.1:9092"
 
 [offchain]
 #[offchain.last_known_block]
 #number = 0
 #hash = "0x24e1f2517d77bd828896cdc2d4710edd3d67b1ac26e883130a622ab5ff37fa1e"
 #parent_hash = "0x0000000000000000000000000000000000000000000000000000000000000000"
-[offchain.last_known_block]
-number = 56992
-hash = "0x94f47bfb955011bcec275ef55e2b9f4a91644065ec431187008361715e7d5423"
-parent_hash = "0x85f44b3c561b802a8bc7a2e606d6f24e61e9e0a045d512a122b00accd637f50f"

@@ -71,12 +71,25 @@ macro_rules! blockchain_actor_SubscribeFinalizedBlocks {
     };
 }
 
+use clap::value_t_or_exit;
+
 #[tokio::main]
 async fn main() {
     
-    // flexi_logger::Logger::try_with_env().unwrap().start().unwrap();
+    flexi_logger::Logger::try_with_env().unwrap().start().unwrap();
     
-    let config_file = "/home/ymitrofanov/Documents/DEIP/project/deip-polkadot/event-proxy/src/default_config.toml";
+    let args = clap::App::new("event-proxy")
+        .arg(clap::Arg::with_name("config")
+            .long("config")
+            .value_name("FILE")
+            .help("Config file")
+            .takes_value(true)
+            .empty_values(false)
+            .required(true)
+        ).get_matches();
+    
+    let config_file = clap::value_t_or_exit!(args, "config", String);
+    
     let config = config::load::<config::OffchainConfig<app::LastKnownBlock>, _>(config_file)
         .unwrap_or_else(|e| {
             log::error!("{}\n EXIT(-1)", e.to_string());
@@ -153,11 +166,11 @@ async fn main() {
         },
         Some(subscription_task_result) = subscription_task_queue.next() => {
             let (maybe_finalized_block_header, subscription, buf) = subscription_task_result;
-            println!("BUFFERED SUBSCRIPTION TASK QUEUE");
+            // println!("BUFFERED SUBSCRIPTION TASK QUEUE");
             match maybe_finalized_block_header {
                 Ok(Some(finalized_block_header)) => {
                     // Put subscription item into buffer:
-                    println!("PUT SUBSCRIPTION ITEM INTO BUFFER");
+                    // println!("PUT SUBSCRIPTION ITEM INTO BUFFER");
                     let buf: SubscriptionBufferIn = buf;
                     buf.push(finalized_block_header);
                     subscription_task_queue.push(subscription_task(subscription, buf));
@@ -179,9 +192,9 @@ async fn main() {
         Some(SubscriptionBufferTaskResult {
             subscription_item, subscription_buffer, events_buffer
         }) = subscription_buffer_task_queue.next() => {
-            println!("NEXT SUBSCRIPTION TASK");
+            // println!("NEXT SUBSCRIPTION TASK");
             let finalized_block_header: <RuntimeT as System>::Header = subscription_item;
-            println!("GOT FINALIZED BLOCK HEADER");
+            // println!("GOT FINALIZED BLOCK HEADER");
             blockchain_actor_task_queue.push(init_actor_task::<_, _, BlockchainActorIO>(
                 BlockchainActorInput::get_block_events(
                     finalized_block_header.hash(),
@@ -247,7 +260,7 @@ async fn main() {
                                         &mut released_blockchain_actor_queue
                                     ).await);
                                     // Accumulate subscription items in the buffer until blocks replay ends:
-                                    println!("ACCUMULATE SUBSCRIPTION ITEMS");
+                                    // println!("ACCUMULATE SUBSCRIPTION ITEMS");
                                     subscription_task_queue.push(subscription_task(subscription, subscription_buffer_in));
                                 },
                                 err => {
@@ -277,11 +290,11 @@ async fn main() {
                 BlockchainActorOutput::Ok(BlockchainActorOutputData::GetBlockEvents {
                     maybe_events, subscription_buffer, events_buffer
                 }) => {
-                    println!("GET BLOCK EVENTS: {:?}", &maybe_events);
+                    // println!("GET BLOCK EVENTS: {:?}", &maybe_events);
                     match maybe_events {
                         Ok(events) => {
                             let events = events.expect("EXISTENT BLOCK");
-                            println!("EVENTS: {:?}", &events);
+                            // println!("EVENTS: {:?}", &events);
                             let remaining = events.len();
                             for x in events.into_iter() {
                                 events_buffer.push(x);
@@ -300,11 +313,11 @@ async fn main() {
                     }
                 },
                 BlockchainActorOutput::Ok(BlockchainActorOutputData::GetReplayedBlockEvents(maybe_events, replay)) => {
-                    println!("GET REPLAYED EVENTS: {:?}", &maybe_events);
+                    // println!("GET REPLAYED EVENTS: {:?}", &maybe_events);
                     match maybe_events {
                         Ok(events) => {
                             let events = events.expect("EXISTENT BLOCK");
-                            println!("REPLAYED EVENTS: {:?}", &events);
+                            // println!("REPLAYED EVENTS: {:?}", &events);
                             let remaining = events.len();
                             for x in events.into_iter() {
                                 replay.3.push(x);
@@ -333,7 +346,7 @@ async fn main() {
                 ).await);
             } else {
                 // End of blocks replay. Just start consume items from subscription buffer:
-                println!("END OF BLOCKS REPLAY");
+                // println!("END OF BLOCKS REPLAY");
                 subscription_buffer_task_queue.push(subscription_buffer_task(replay.2, replay.3));
             }
         },
@@ -341,7 +354,7 @@ async fn main() {
         Some(EventsBufferTaskResult {
             event, events_buffer, remaining, subscription_buffer
         }) = events_buffer_task_queue.next() => {
-            println!("EventsBufferTaskResult");
+            // println!("EventsBufferTaskResult");
             message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
                 MessageBrokerActorInput::send_block_event(event, events_buffer, remaining, subscription_buffer),
                 &mut released_message_broker_actor_queue
@@ -350,7 +363,7 @@ async fn main() {
         Some(ReplayedBlockEventsBufferTaskResult {
             event, remaining, replay
         }) = replayed_block_events_buffer_task_queue.next() => {
-            println!("ReplayedBlockEventsBufferTaskResult: {:?}", &event);
+            // println!("ReplayedBlockEventsBufferTaskResult: {:?}", &event);
             message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
                 MessageBrokerActorInput::send_replayed_block_event(event, remaining, replay),
                 &mut released_message_broker_actor_queue
@@ -364,7 +377,7 @@ async fn main() {
             let delivery_status = match output {
                 MessageBrokerActorOutput::NotConfigured(ctx) => {
                     message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
-                        MessageBrokerActorInput::configure(config.kafka.clone(), ctx),
+                        MessageBrokerActorInput::configure(config.message_broker.clone(), ctx),
                         &mut released_message_broker_actor_queue
                     ).await);
                     continue;
@@ -381,7 +394,7 @@ async fn main() {
                             log::error!("{}", e);
                             tokio::time::sleep(Duration::from_secs(5)).await;
                             message_broker_actor_task_queue.push(init_actor_task::<_, _, MessageBrokerActorIO>(
-                                MessageBrokerActorInput::configure(config.kafka.clone(), ctx),
+                                MessageBrokerActorInput::configure(config.message_broker.clone(), ctx),
                                 &mut released_message_broker_actor_queue
                             ).await);
                         },
@@ -390,11 +403,11 @@ async fn main() {
                 },
                 MessageBrokerActorOutput::Result(MessageBrokerActorOutputData::SendReplayedBlockEvent(app::SendEventResult { delivery, ctx })) => {
                     if ctx.remaining > 0 {
-                        println!("replayed_block_events_buffer_task AGAIN: remaining={:?}", ctx.remaining);
+                        // println!("replayed_block_events_buffer_task AGAIN: remaining={:?}", ctx.remaining);
                         replayed_block_events_buffer_task_queue.push(
                             replayed_block_events_buffer_task(ctx.remaining, ctx.replay));
                     } else {
-                        println!("PUSH BLOCK REPLAY TASK");
+                        // println!("PUSH BLOCK REPLAY TASK");
                         // Replay next block:
                         blocks_replay_task_queue.push(blocks_replay_task(ctx.replay));
                     }
@@ -402,12 +415,12 @@ async fn main() {
                 },
                 MessageBrokerActorOutput::Result(MessageBrokerActorOutputData::SendBlockEvent(app::SendEventResult { delivery, ctx })) => {
                     if ctx.remaining > 0 {
-                        println!("events_buffer_task_queue AGAIN: remaining={:?}", ctx.remaining);
+                        // println!("events_buffer_task_queue AGAIN: remaining={:?}", ctx.remaining);
                         events_buffer_task_queue.push(
                             events_buffer_task(ctx.events_buffer, ctx.remaining, ctx.subscription_buffer));
                     } else {
                         // Process the next finalized block:
-                        println!("SEND NEXT SUBSCRIPTION TASK");
+                        // println!("SEND NEXT SUBSCRIPTION TASK");
                         subscription_buffer_task_queue.push(
                         subscription_buffer_task(ctx.subscription_buffer, ctx.events_buffer));
                     }

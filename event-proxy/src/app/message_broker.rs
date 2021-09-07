@@ -19,7 +19,7 @@ impl MessageBrokerActor {
 
 pub type MessageBrokerActorInput = ActorDirective<MessageBrokerActorInputData>;
 impl MessageBrokerActorInput {
-    pub fn configure(config: super::KafkaConfig, ctx: MessageBrokerConfigureCtx) -> Self {
+    pub fn configure(config: super::MessageBrokerConfig, ctx: MessageBrokerConfigureCtx) -> Self {
         MessageBrokerActorInputData::Configure(MessageBrokerConfigure { config, ctx }).into()
     }
     
@@ -79,7 +79,7 @@ pub struct SendBlockEventCtx {
 }
 
 pub struct MessageBrokerConfigure<Ctx> {
-    config: super::KafkaConfig,
+    config: super::MessageBrokerConfig,
     ctx: Ctx
 }
 pub struct MessageBrokerConfigureCtx {
@@ -131,7 +131,7 @@ fn configure(c: MessageBrokerConfigure<MessageBrokerConfigureCtx>) -> (Option<Fu
 {
     let MessageBrokerConfigure { config: c, ctx } = c;
     let mut config = rdkafka::ClientConfig::new();
-    config.set("bootstrap.servers", &c.bootstrap_servers);
+    config.set("bootstrap.servers", &c.kafka_bootstrap_servers);
 
     match config.create::<FutureProducer>() {
         Ok(producer) => {
