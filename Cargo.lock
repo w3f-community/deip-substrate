@@ -1214,6 +1214,25 @@ name = "deip-assets-error"
 version = "0.1.0"
 
 [[package]]
+name = "deip-assets-rpc"
+version = "3.0.0"
+dependencies = [
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip-assets",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "deip-org-rpc"
 version = "3.0.0"
 dependencies = [
@@ -3630,6 +3649,7 @@ dependencies = [
 name = "node-template"
 version = "3.0.0"
 dependencies = [
+ "deip-assets-rpc",
  "deip-org-rpc",
  "deip-rpc",
  "frame-benchmarking",

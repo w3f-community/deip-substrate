@@ -28,6 +28,7 @@ pallet-deip = { path = "../pallets/deip" }
 pallet-deip-assets = { path = "../pallets/deip_assets" }
 deip-org-rpc = { path = "../rpc/deip_org_rpc" }
 deip-rpc = { path = "../rpc/deip_rpc" }
+deip-assets-rpc = { path = "../rpc/deip_assets_rpc" }
 
 # Substrate dependencies
 frame-benchmarking = '3.0.0'
