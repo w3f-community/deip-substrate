@@ -1217,6 +1217,7 @@ version = "0.1.0"
 name = "deip-assets-rpc"
 version = "3.0.0"
 dependencies = [
+ "frame-support",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
