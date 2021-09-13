@@ -11,9 +11,9 @@ use codec::{Codec, Decode, Encode};
 
 use sp_runtime::traits::Block as BlockT;
 
-use sp_core::{hashing::blake2_128, storage::StorageKey};
+use sp_core::storage::StorageKey;
 
-use frame_support::{Blake2_128Concat, StorageHasher, ReversibleStorageHasher};
+use frame_support::{Blake2_128Concat, ReversibleStorageHasher, StorageHasher};
 
 mod types;
 use types::*;
@@ -58,6 +58,14 @@ where
         count: u32,
         start_id: Option<(AssetId, AccountId)>,
     ) -> FutureResult<Vec<AssetBalanceWithIds<AssetId, Balance, AccountId>>>;
+
+    #[rpc(name = "assets_getAssetBalanceByOwner")]
+    fn get_asset_balance_by_owner(
+        &self,
+        at: Option<BlockHash>,
+        owner: AccountId,
+        asset: AssetId,
+    ) -> FutureResult<Option<AssetBalance<Balance>>>;
 }
 
 pub struct DeipAssetsRpcObj<State, B> {
@@ -316,6 +324,42 @@ where
                     }
                 },
             ),
+        )
+    }
+
+    fn get_asset_balance_by_owner(
+        &self,
+        at: Option<HashOf<Block>>,
+        owner: AccountId,
+        asset: AssetId,
+    ) -> FutureResult<Option<AssetBalance<Balance>>> {
+        let (pallet, map) = prefix(b"Assets", b"Account");
+
+        let key = StorageKey(
+            pallet
+                .iter()
+                .chain(&map)
+                .chain(&asset.using_encoded(Blake2_128Concat::hash))
+                .chain(&owner.using_encoded(Blake2_128Concat::hash))
+                .map(|b| *b)
+                .collect(),
+        );
+
+        let state = &self.state;
+        Box::new(
+            state
+                .storage(key, at)
+                .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
+                .and_then(|d| match d {
+                    None => future::ok(None),
+                    Some(data) => match AssetBalance::<Balance>::decode(&mut &data.0[..]) {
+                        Err(_) => future::err(to_rpc_error(
+                            Error::AssetBalanceDecodeFailed,
+                            Some(format!("{:?}", data)),
+                        )),
+                        Ok(balance) => future::ok(Some(balance)),
+                    },
+                }),
         )
     }
 }
