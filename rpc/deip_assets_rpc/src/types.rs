@@ -1,15 +1,11 @@
 use codec::Decode;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 // copied from pallet_assets since struct members are not public
 #[derive(Decode)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct AssetDetails<
-    Balance: Decode,
-    AccountId: Decode,
-    DepositBalance: Decode + Default,
-> {
+pub struct AssetDetails<Balance: Decode, AccountId: Decode, DepositBalance: Decode + Default> {
     owner: AccountId,
     issuer: AccountId,
     admin: AccountId,
@@ -36,4 +32,22 @@ pub struct AssetDetailsWithId<
     pub id: AssetId,
     #[serde(flatten)]
     pub details: AssetDetails<Balance, AccountId, DepositBalance>,
+}
+
+#[derive(Decode)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct AssetBalance<Balance: Decode> {
+    balance: Balance,
+    is_frozen: bool,
+    is_zombie: bool,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct AssetBalanceWithIds<AssetId, Balance: Decode, AccountId: Decode> {
+    pub asset: AssetId,
+    pub account: AccountId,
+    #[serde(flatten)]
+    pub balance: AssetBalance<Balance>,
 }

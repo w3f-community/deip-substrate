@@ -4,6 +4,8 @@ pub enum Error {
     ScRpcApiError,
     AssetDetailsDecodeFailed,
     AssetIdDecodeFailed,
+    AccountIdDecodeFailed,
+    AssetBalanceDecodeFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -16,6 +18,8 @@ impl Into<RpcErrorCode> for Error {
             ScRpcApiError => BASE,
             AssetDetailsDecodeFailed => BASE + 1,
             AssetIdDecodeFailed => BASE + 2,
+            AccountIdDecodeFailed => BASE + 3,
+            AssetBalanceDecodeFailed => BASE + 4,
         })
     }
 }
