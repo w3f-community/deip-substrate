@@ -3656,6 +3656,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
+ "jsonrpc-pubsub",
  "node-template-runtime",
  "pallet-deip",
  "pallet-deip-assets",
