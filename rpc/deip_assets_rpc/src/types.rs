@@ -45,8 +45,16 @@ pub struct AssetBalance<Balance: Decode> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct AssetBalanceWithIds<AssetId, Balance: Decode, AccountId: Decode> {
+pub struct AssetBalanceWithIds<AssetId, Balance: Decode, AccountId> {
     pub asset: AssetId,
+    pub account: AccountId,
+    #[serde(flatten)]
+    pub balance: AssetBalance<Balance>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub struct AssetBalanceWithOwner<Balance: Decode, AccountId> {
     pub account: AccountId,
     #[serde(flatten)]
     pub balance: AssetBalance<Balance>,
