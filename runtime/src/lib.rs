@@ -573,9 +573,6 @@ impl_runtime_apis! {
         fn get_multi(names: Vec<pallet_deip_org::org::OrgName>) -> pallet_deip_org::api::GetMultiResult<AccountId> {
             DeipOrg::rpc_get_multi(names)
         }
-        fn list() -> pallet_deip_org::api::ListResult<AccountId> {
-            DeipOrg::rpc_list()
-        }
     }
     
     // Here we implement our custom runtime API.

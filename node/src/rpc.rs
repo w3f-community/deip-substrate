@@ -76,8 +76,12 @@ where
     io.extend_with(deip_rpc::DeipStorageApi::to_delegate(
         deip_rpc::DeipStorage::new(client.clone()),
     ));
+
+    let subscriptions = SubscriptionManager::new(Arc::new(task_executor.clone()));
+    let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe);
+
     io.extend_with(deip_org_rpc::DeipOrgRpcApi::to_delegate(
-        deip_org_rpc::DeipOrgRpcApiObj::new(client.clone()),
+        deip_org_rpc::DeipOrgRpcApiObj::new(client.clone(), state),
     ));
 
     let subscriptions = SubscriptionManager::new(Arc::new(task_executor.clone()));

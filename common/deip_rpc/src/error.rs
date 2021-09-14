@@ -12,6 +12,8 @@ pub enum Error {
     AssetBalanceDecodeFailed,
     NoneForReturnedKey,
     DaoDecodeFailed,
+    DaoApiGetFailed,
+    DaoApiGetMultiFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -28,6 +30,8 @@ impl Into<RpcErrorCode> for Error {
             AssetBalanceDecodeFailed => BASE + 4,
             NoneForReturnedKey => BASE + 5,
             DaoDecodeFailed => BASE + 6,
+            DaoApiGetFailed => BASE + 7,
+            DaoApiGetMultiFailed => BASE + 8,
         })
     }
 }

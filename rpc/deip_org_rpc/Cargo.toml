@@ -18,7 +18,13 @@ features = ['derive']
 package = 'parity-scale-codec'
 version = '2.0.0'
 
+[dependencies.common_rpc]
+default-features = false
+package = 'common-deip-rpc'
+path = "../../common/deip_rpc"
+
 [dependencies]
+sc-rpc-api = '0.9.0'
 sp-std = { default-features = false, version = '3.0.0' }
 sp-runtime = { version = '3.0.0', default-features = false }
 sp-core = { default-features = false, version = '3.0.0' }
