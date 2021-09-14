@@ -7,7 +7,13 @@ repository = 'https://github.com/DEIPworld/deip-polkadot'
 description = "A pallet which implements read RPC API for DEIP pallet"
 license = "GPL-3.0-or-later"
 
+[dependencies.common_rpc]
+default-features = false
+package = 'common-deip-rpc'
+path = "../../common/deip_rpc"
+
 [dependencies]
+sc-rpc-api = '0.9.0'
 codec = { package = "parity-scale-codec", version = "2.0.0" }
 jsonrpc-core = "15.0"
 jsonrpc-core-client = "15.0"

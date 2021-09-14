@@ -10,6 +10,9 @@ pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
 use pallet_deip::*;
 use codec::{Codec};
 
+use common_rpc::{HashOf, FutureResult};
+
+mod types;
 
 #[rpc]
 pub trait DeipStorageApi<BlockHash, AccountId> {
@@ -21,10 +24,17 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
     fn get_project_content_list(&self, at: Option<BlockHash>, content_ids: Option<Vec<ProjectContentId>>) -> Result<Vec<ProjectContent<H256, AccountId>>>;
     #[rpc(name = "deipStorage_getProjectContent")]
     fn get_project_content(&self, at: Option<BlockHash>, project_id: ProjectId, project_content_id: ProjectContentId) -> Result<ProjectContent<H256, AccountId>>;
-    #[rpc(name = "deipStorage_getDomains")]
-    fn get_domains(&self, at: Option<BlockHash>) -> Result<Vec<Domain>>;
-    #[rpc(name = "deipStorage_getDomain")]
+
+    #[rpc(name = "deip_getDomainList")]
+    fn get_domains(&self,
+        at: Option<BlockHash>,
+        count: u32,
+        start_id: Option<DomainId>,
+    ) -> FutureResult<Vec<types::DomainWrapper>>;
+
+    #[rpc(name = "deip_getDomain")]
     fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Domain>;
+
     #[rpc(name = "deipStorage_getNdaList")]
     fn get_nda_list(&self, at: Option<BlockHash>) -> Result<Vec<Nda<H256, AccountId, u64>>>;
     #[rpc(name = "deipStorage_getNda")]
@@ -36,47 +46,33 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
 }
 
 /// A struct that implements the `DeipStorage`.
-pub struct DeipStorage<C, M> {
+pub struct DeipStorage<C, State, M> {
     // If you have more generics, no need to DeipStorage<C, M, N, P, ...>
     // just use a tuple like DeipStorage<C, (M, N, P, ...)>
     client: Arc<C>,
+    state: State,
     _marker: std::marker::PhantomData<M>,
 }
 
-impl<C, M> DeipStorage<C, M> {
+impl<C, State, M> DeipStorage<C, State, M> {
     /// Create new `DeipStorage` instance with the given reference to the client.
-    pub fn new(client: Arc<C>) -> Self {
+    pub fn new(client: Arc<C>, state: State) -> Self {
         Self {
             client,
+            state,
             _marker: Default::default(),
         }
     }
 }
 
-/// Error type of this RPC api.
-// pub enum Error {
-//     /// The transaction was not decodable.
-//     DecodeError,
-//     /// The call to runtime failed.
-//     RuntimeError,
-// }
-//
-// impl From<Error> for i64 {
-//     fn from(e: Error) -> i64 {
-//         match e {
-//             Error::RuntimeError => 1,
-//             Error::DecodeError => 2,
-//         }
-//     }
-// }
-
-impl<C, Block, AccountId> DeipStorageApi<<Block as BlockT>::Hash, AccountId> for DeipStorage<C, Block>
+impl<C, State, Block, AccountId> DeipStorageApi<HashOf<Block>, AccountId> for DeipStorage<C, State, Block>
 where
     Block: BlockT,
     C: Send + Sync + 'static,
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block>,
     C::Api: DeipStorageRuntimeApi<Block, AccountId>,
+    State: sc_rpc_api::state::StateApi<HashOf<Block>>,
     AccountId: Codec,
 {
     fn get_projects(&self, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<Project<H256, AccountId>>> {
@@ -113,21 +109,15 @@ where
             data: Some(format!("{:?}", e).into()),
         })
     }
-    
-    fn get_domains(&self, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<Domain>> {
-        let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
 
-        let runtime_api_result = api.get_domains(&at);
-        
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+    fn get_domains(&self,
+        at: Option<HashOf<Block>>,
+        count: u32,
+        start_id: Option<DomainId>,
+    ) -> FutureResult<Vec<types::DomainWrapper>> {
+        common_rpc::get_list(&self.state, b"Deip", b"Domains", at, count, start_id)
     }
+
     fn get_domain(&self, at: Option<<Block as BlockT>::Hash>, domain_id: DomainId) -> Result<Domain> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
