@@ -21,6 +21,14 @@ pub struct AssetDetails<Balance: Decode, AccountId: Decode, DepositBalance: Deco
     is_frozen: bool,
 }
 
+impl<Balance: Decode, AccountId: Decode, DepositBalance: Decode + Default> common_rpc::GetError
+    for AssetDetails<Balance, AccountId, DepositBalance>
+{
+    fn get_error() -> common_rpc::Error {
+        common_rpc::Error::AssetDetailsDecodeFailed
+    }
+}
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct AssetDetailsWithId<
@@ -41,6 +49,12 @@ pub struct AssetBalance<Balance: Decode> {
     balance: Balance,
     is_frozen: bool,
     is_zombie: bool,
+}
+
+impl<Balance: Decode> common_rpc::GetError for AssetBalance<Balance> {
+    fn get_error() -> common_rpc::Error {
+        common_rpc::Error::AssetBalanceDecodeFailed
+    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

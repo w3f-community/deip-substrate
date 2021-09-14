@@ -1,4 +1,8 @@
-use super::*;
+pub use jsonrpc_core::{Error as RpcError, ErrorCode as RpcErrorCode};
+
+pub trait GetError {
+    fn get_error() -> Error;
+}
 
 pub enum Error {
     ScRpcApiError,
@@ -6,6 +10,8 @@ pub enum Error {
     AssetIdDecodeFailed,
     AccountIdDecodeFailed,
     AssetBalanceDecodeFailed,
+    NoneForReturnedKey,
+    DaoDecodeFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -20,6 +26,8 @@ impl Into<RpcErrorCode> for Error {
             AssetIdDecodeFailed => BASE + 2,
             AccountIdDecodeFailed => BASE + 3,
             AssetBalanceDecodeFailed => BASE + 4,
+            NoneForReturnedKey => BASE + 5,
+            DaoDecodeFailed => BASE + 6,
         })
     }
 }
