@@ -5,7 +5,7 @@ use jsonrpc_core::{
 
 use sp_core::{hashing::twox_128_into, storage::StorageKey};
 
-use frame_support::{Blake2_128Concat, ReversibleStorageHasher, StorageHasher};
+use frame_support::{ReversibleStorageHasher, StorageHasher};
 
 use codec::{Decode, Encode};
 
@@ -25,68 +25,6 @@ pub fn prefix(pallet: &[u8], storage: &[u8]) -> Vec<u8> {
     twox_128_into(storage, <&mut [u8; 16]>::try_from(&mut prefix[16..]).unwrap());
 
     prefix
-}
-
-pub fn get_list<R, State, Hash, Id>(
-    state: &State,
-    pallet: &[u8],
-    map: &[u8],
-    at: Option<Hash>,
-    count: u32,
-    start_id: Option<Id>,
-) -> FutureResult<Vec<R>>
-where
-    R: 'static + Decode + GetError + Send,
-    State: sc_rpc_api::state::StateApi<Hash>,
-    Hash: Copy,
-    Id: Encode,
-{
-    let prefix = prefix(pallet, map);
-
-    let start_key = start_id.map(|id| chain_key_hash_map::<_, Blake2_128Concat>(&prefix, &id));
-
-    let keys = match state
-        .storage_keys_paged(Some(StorageKey(prefix)), count, start_key, at)
-        .wait()
-    {
-        Ok(k) => k,
-        Err(e) => {
-            return Box::new(future::err(to_rpc_error(
-                Error::ScRpcApiError,
-                Some(format!("{:?}", e)),
-            )))
-        }
-    };
-    if keys.is_empty() {
-        return Box::new(future::ok(vec![]));
-    }
-
-    let key_futures: Vec<_> = keys
-        .into_iter()
-        .map(|k| {
-            state
-                .storage(k, at)
-                .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
-        })
-        .collect();
-
-    let result = Vec::with_capacity(key_futures.len());
-    Box::new(
-        stream::futures_ordered(key_futures.into_iter()).fold(result, |mut result, data| {
-            let data = match data {
-                None => return future::err(to_rpc_error(Error::NoneForReturnedKey, None)),
-                Some(d) => d,
-            };
-
-            match R::decode(&mut &data.0[..]) {
-                Err(_) => future::err(to_rpc_error(R::get_error(), Some(format!("{:?}", data)))),
-                Ok(details) => {
-                    result.push(details);
-                    future::ok(result)
-                }
-            }
-        }),
-    )
 }
 
 pub fn chain_key_hash_map<Key: Encode, Hasher: StorageHasher>(
@@ -178,7 +116,14 @@ where
 
 pub struct StorageMap<Hasher>(std::marker::PhantomData<Hasher>);
 
-impl<Hasher: StorageHasher> StorageMap<Hasher> {
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListResult<Key, Value> {
+    key: Key,
+    value: Value,
+}
+
+impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
     pub fn get_value<R, State, Key, BlockHash>(
         state: &State,
         pallet: &[u8],
@@ -193,6 +138,83 @@ impl<Hasher: StorageHasher> StorageMap<Hasher> {
         BlockHash: Copy,
     {
         get_value(state, key_hash_map::<_, Hasher>(pallet, map, key), at)
+    }
+
+    pub fn get_list<Value, State, BlockHash, Key>(
+        state: &State,
+        pallet: &[u8],
+        map: &[u8],
+        at: Option<BlockHash>,
+        count: u32,
+        start_id: Option<Key>,
+    ) -> FutureResult<Vec<ListResult<Key, Value>>>
+    where
+        Value: 'static + Decode + GetError + Send,
+        State: sc_rpc_api::state::StateApi<BlockHash>,
+        BlockHash: Copy,
+        Key: 'static + Encode + Decode + GetError + Send,
+    {
+        let prefix = prefix(pallet, map);
+        let start_key = start_id.map(|id| chain_key_hash_map::<_, Hasher>(&prefix, &id));
+
+        let keys = match state
+            .storage_keys_paged(Some(StorageKey(prefix)), count, start_key, at)
+            .wait()
+        {
+            Ok(k) => k,
+            Err(e) => {
+                return Box::new(future::err(to_rpc_error(
+                    Error::ScRpcApiError,
+                    Some(format!("{:?}", e)),
+                )))
+            }
+        };
+        if keys.is_empty() {
+            return Box::new(future::ok(vec![]));
+        }
+
+        let key_futures: Vec<_> = keys
+            .into_iter()
+            .map(|k| {
+                state
+                    .storage(k.clone(), at)
+                    .map(|v| (k, v))
+                    .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
+            })
+            .collect();
+
+        let result = Vec::with_capacity(key_futures.len());
+        Box::new(
+            stream::futures_ordered(key_futures.into_iter()).fold(result, |mut result, kv| {
+                let (key, value) = kv;
+                let data = match value {
+                    None => return future::err(to_rpc_error(Error::NoneForReturnedKey, None)),
+                    Some(d) => d,
+                };
+
+                let no_prefix = Hasher::reverse(&key.0[32..]);
+                let key = match Key::decode(&mut &no_prefix[..]) {
+                    Err(_) => {
+                        return future::err(to_rpc_error(
+                            Key::get_error(),
+                            Some(format!("{:?}", &key.0)),
+                        ))
+                    }
+                    Ok(k) => k,
+                };
+
+                match Value::decode(&mut &data.0[..]) {
+                    Err(_) => future::err(to_rpc_error(
+                        Value::get_error(),
+                        Some(format!("{:?}", data)),
+                    )),
+                    Ok(value) => {
+                        result.push(ListResult { key, value });
+                        future::ok(result)
+                    }
+                }
+            }),
+        )
     }
 }
 

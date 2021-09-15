@@ -15,8 +15,8 @@ use sp_core::storage::StorageKey;
 use frame_support::{Blake2_128Concat, ReversibleStorageHasher, StorageHasher};
 
 use common_rpc::{
-    chain_key_hash_double_map, chain_key_hash_map, prefix, to_rpc_error, Error, FutureResult,
-    HashOf, StorageDoubleMap, StorageMap,
+    chain_key_hash_double_map, prefix, to_rpc_error, Error, FutureResult, HashOf, ListResult,
+    StorageDoubleMap, StorageMap,
 };
 
 mod types;
@@ -25,7 +25,7 @@ use types::*;
 #[rpc]
 pub trait DeipAssetsRpc<BlockHash, AssetId, Balance, AccountId, DepositBalance>
 where
-    AssetId: Encode,
+    AssetId: Encode + Decode,
     Balance: Decode,
     AccountId: Decode,
     DepositBalance: Decode + Default,
@@ -43,7 +43,9 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<AssetId>,
-    ) -> FutureResult<Vec<AssetDetailsWithId<AssetId, Balance, AccountId, DepositBalance>>>;
+    ) -> FutureResult<
+        Vec<ListResult<types::AssetId<AssetId>, AssetDetails<Balance, AccountId, DepositBalance>>>,
+    >;
 
     #[rpc(name = "assets_getAssetBalanceList")]
     fn get_asset_balance_list(
@@ -109,74 +111,16 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<AssetId>,
-    ) -> FutureResult<Vec<AssetDetailsWithId<AssetId, Balance, AccountId, DepositBalance>>> {
-        let prefix = prefix(b"Assets", b"Asset");
-
-        let start_key = start_id.map(|id| chain_key_hash_map::<_, Blake2_128Concat>(&prefix, &id));
-
-        let state = &self.state;
-        let keys = match state
-            .storage_keys_paged(Some(StorageKey(prefix)), count, start_key, at)
-            .wait()
-        {
-            Ok(k) => k,
-            Err(e) => {
-                return Box::new(future::err(to_rpc_error(
-                    Error::ScRpcApiError,
-                    Some(format!("{:?}", e)),
-                )))
-            }
-        };
-        if keys.is_empty() {
-            return Box::new(future::ok(vec![]));
-        }
-
-        let key_futures: Vec<_> = keys
-            .into_iter()
-            .map(|k| {
-                state
-                    .storage(k.clone(), at)
-                    .map(|v| (k, v))
-                    .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
-            })
-            .collect();
-
-        let result = Vec::with_capacity(key_futures.len());
-        Box::new(
-            jsonrpc_core::futures::stream::futures_ordered(key_futures.into_iter()).fold(
-                result,
-                |mut result, kv| {
-                    let (key, value) = kv;
-                    let data = match value {
-                        None => return future::ok(result),
-                        Some(d) => d,
-                    };
-
-                    let no_prefix = Blake2_128Concat::reverse(&key.0[32..]);
-                    let id = match AssetId::decode(&mut &no_prefix[..]) {
-                        Err(_) => {
-                            return future::err(to_rpc_error(
-                                Error::AssetIdDecodeFailed,
-                                Some(format!("{:?}", &key.0)),
-                            ))
-                        }
-                        Ok(id) => id,
-                    };
-
-                    match AssetDetails::<Balance, AccountId, DepositBalance>::decode(
-                        &mut &data.0[..],
-                    ) {
-                        Err(_) => future::err(to_rpc_error(
-                            Error::AssetDetailsDecodeFailed,
-                            Some(format!("{:?}", data)),
-                        )),
-                        Ok(details) => {
-                            result.push(AssetDetailsWithId { id, details });
-                            future::ok(result)
-                        }
-                    }
-                },
-            ),
+    ) -> FutureResult<
+        Vec<ListResult<types::AssetId<AssetId>, AssetDetails<Balance, AccountId, DepositBalance>>>,
+    > {
+        StorageMap::<Blake2_128Concat>::get_list(
+            &self.state,
+            b"Assets",
+            b"Asset",
+            at,
+            count,
+            start_id.map(|id| types::AssetId { id }),
         )
     }
 
@@ -196,12 +140,7 @@ where
 
         let state = &self.state;
         let keys = match state
-            .storage_keys_paged(
-                Some(StorageKey(prefix)),
-                count,
-                start_key,
-                at,
-            )
+            .storage_keys_paged(Some(StorageKey(prefix)), count, start_key, at)
             .wait()
         {
             Ok(k) => k,
@@ -317,11 +256,7 @@ where
             )
         });
 
-        let prefix = prefix
-            .iter()
-            .chain(&asset_hashed)
-            .map(|b| *b)
-            .collect();
+        let prefix = prefix.iter().chain(&asset_hashed).map(|b| *b).collect();
 
         let state = &self.state;
         let keys = match state

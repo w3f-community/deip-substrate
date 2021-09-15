@@ -24,6 +24,7 @@ package = 'common-deip-rpc'
 path = "../../common/deip_rpc"
 
 [dependencies]
+frame-support = { default-features = false, version = '3.0.0' }
 sc-rpc-api = '0.9.0'
 sp-std = { default-features = false, version = '3.0.0' }
 sp-runtime = { version = '3.0.0', default-features = false }

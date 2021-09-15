@@ -12,6 +12,7 @@ frame-support = { default-features = false, version = '3.0.0' }
 sc-rpc-api = '0.9.0'
 sp-core = { default-features = false, version = '3.0.0' }
 sp-runtime = { version = '3.0.0', default-features = false }
+serde = { version = "1.0.123", features = ["derive"] }
 
 [dependencies.codec]
 default-features = false

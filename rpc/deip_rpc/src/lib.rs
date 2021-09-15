@@ -10,7 +10,9 @@ pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
 use pallet_deip::*;
 use codec::{Codec};
 
-use common_rpc::{HashOf, FutureResult};
+use common_rpc::{HashOf, FutureResult, ListResult, StorageMap};
+
+use frame_support::Blake2_128Concat;
 
 mod types;
 
@@ -30,7 +32,7 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<DomainId>,
-    ) -> FutureResult<Vec<types::DomainWrapper>>;
+    ) -> FutureResult<Vec<ListResult<types::DomainId, types::Domain>>>;
 
     #[rpc(name = "deip_getDomain")]
     fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Domain>;
@@ -114,8 +116,8 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<DomainId>,
-    ) -> FutureResult<Vec<types::DomainWrapper>> {
-        common_rpc::get_list(&self.state, b"Deip", b"Domains", at, count, start_id)
+    ) -> FutureResult<Vec<ListResult<types::DomainId, types::Domain>>> {
+        StorageMap::<Blake2_128Concat>::get_list(&self.state, b"Deip", b"Domains", at, count, start_id.map(|id| types::DomainId{ id }))
     }
 
     fn get_domain(&self, at: Option<<Block as BlockT>::Hash>, domain_id: DomainId) -> Result<Domain> {

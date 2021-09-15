@@ -1,5 +1,33 @@
-use codec::Decode;
+use core::ops::Deref;
+use codec::{Encode, Decode};
 use serde::{Deserialize, Serialize};
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+#[serde(transparent)]
+pub struct AssetId<Id>{
+    pub id: Id,
+}
+
+impl<Id> common_rpc::GetError for AssetId<Id> {
+    fn get_error() -> common_rpc::Error {
+        common_rpc::Error::AssetIdDecodeFailed
+    }
+}
+
+impl<Id: Decode> Decode for AssetId<Id> {
+    fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+        Id::decode(input).map(|id| Self { id })
+    }
+}
+
+impl<Id> codec::WrapperTypeEncode for AssetId<Id> {}
+impl<Id: Encode> codec::EncodeLike<Id> for AssetId<Id> {}
+
+impl<Id> Deref for AssetId<Id> {
+    type Target = Id;
+    fn deref(&self) -> &Self::Target { &self.id }
+}
 
 // copied from pallet_assets since struct members are not public
 #[derive(Decode)]

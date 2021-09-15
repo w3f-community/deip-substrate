@@ -15,6 +15,8 @@ pub enum Error {
     DaoApiGetFailed,
     DaoApiGetMultiFailed,
     DomainDecodeFailed,
+    DaoIdDecodeFailed,
+    DomainIdDecodeFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -34,6 +36,8 @@ impl Into<RpcErrorCode> for Error {
             DaoApiGetFailed => BASE + 7,
             DaoApiGetMultiFailed => BASE + 8,
             DomainDecodeFailed => BASE + 9,
+            DaoIdDecodeFailed => BASE + 10,
+            DomainIdDecodeFailed => BASE + 11,
         })
     }
 }
