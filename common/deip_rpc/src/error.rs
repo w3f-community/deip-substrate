@@ -17,6 +17,8 @@ pub enum Error {
     DomainDecodeFailed,
     DaoIdDecodeFailed,
     DomainIdDecodeFailed,
+    ProjectIdDecodeFailed,
+    ProjectDecodeFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -38,6 +40,8 @@ impl Into<RpcErrorCode> for Error {
             DomainDecodeFailed => BASE + 9,
             DaoIdDecodeFailed => BASE + 10,
             DomainIdDecodeFailed => BASE + 11,
+            ProjectIdDecodeFailed => BASE + 12,
+            ProjectDecodeFailed => BASE + 13,
         })
     }
 }

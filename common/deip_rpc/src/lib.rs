@@ -119,8 +119,30 @@ pub struct StorageMap<Hasher>(std::marker::PhantomData<Hasher>);
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListResult<Key, Value> {
-    key: Key,
+    key: KeyWrapper<Key>,
     value: Value,
+}
+
+pub trait KeyValueInfo {
+    type Key: 'static + Encode + Decode + Send;
+    type KeyError: GetError;
+    type Value: 'static + Decode + Send;
+    type ValueError: GetError;
+
+    fn key(&self) -> &Self::Key;
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(transparent)]
+pub struct KeyWrapper<Key>{
+    pub key: Key,
+}
+
+impl<Key> From<Key> for KeyWrapper<Key> {
+    fn from(key: Key) -> Self {
+        Self { key }
+    }
 }
 
 impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
@@ -140,22 +162,21 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         get_value(state, key_hash_map::<_, Hasher>(pallet, map, key), at)
     }
 
-    pub fn get_list<Value, State, BlockHash, Key>(
+    pub fn get_list<KeyValue, State, BlockHash>(
         state: &State,
         pallet: &[u8],
         map: &[u8],
         at: Option<BlockHash>,
         count: u32,
-        start_id: Option<Key>,
-    ) -> FutureResult<Vec<ListResult<Key, Value>>>
+        start_id: Option<KeyValue>,
+    ) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
     where
-        Value: 'static + Decode + GetError + Send,
+        KeyValue: KeyValueInfo,
         State: sc_rpc_api::state::StateApi<BlockHash>,
         BlockHash: Copy,
-        Key: 'static + Encode + Decode + GetError + Send,
     {
         let prefix = prefix(pallet, map);
-        let start_key = start_id.map(|id| chain_key_hash_map::<_, Hasher>(&prefix, &id));
+        let start_key = start_id.map(|id| chain_key_hash_map::<_, Hasher>(&prefix, id.key()));
 
         let keys = match state
             .storage_keys_paged(Some(StorageKey(prefix)), count, start_key, at)
@@ -193,19 +214,19 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
                 };
 
                 let no_prefix = Hasher::reverse(&key.0[32..]);
-                let key = match Key::decode(&mut &no_prefix[..]) {
+                let key = match KeyValue::Key::decode(&mut &no_prefix[..]) {
                     Err(_) => {
                         return future::err(to_rpc_error(
-                            Key::get_error(),
+                            KeyValue::KeyError::get_error(),
                             Some(format!("{:?}", &key.0)),
                         ))
                     }
-                    Ok(k) => k,
+                    Ok(k) => KeyWrapper::from(k),
                 };
 
-                match Value::decode(&mut &data.0[..]) {
+                match KeyValue::Value::decode(&mut &data.0[..]) {
                     Err(_) => future::err(to_rpc_error(
-                        Value::get_error(),
+                        KeyValue::ValueError::get_error(),
                         Some(format!("{:?}", data)),
                     )),
                     Ok(value) => {

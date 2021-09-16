@@ -17,7 +17,7 @@ use pallet_deip_org::org::{Org, OrgName};
 
 use frame_support::Blake2_128Concat;
 
-use common_rpc::{FutureResult, HashOf, StorageMap, ListResult};
+use common_rpc::{FutureResult, HashOf, ListResult, StorageMap};
 
 mod types;
 
@@ -39,7 +39,7 @@ pub trait DeipOrgRpcApi<BlockHash, AccountId> {
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<OrgName>,
-    ) -> FutureResult<Vec<ListResult<types::DaoId, types::Dao<AccountId, OrgName>>>>;
+    ) -> FutureResult<Vec<ListResult<OrgName, Org<AccountId, OrgName>>>>;
 }
 
 pub struct DeipOrgRpcApiObj<C, State, Block> {
@@ -105,14 +105,14 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<OrgName>,
-    ) -> FutureResult<Vec<ListResult<types::DaoId, types::Dao<AccountId, OrgName>>>> {
+    ) -> FutureResult<Vec<ListResult<OrgName, Org<AccountId, OrgName>>>> {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
             b"DeipOrg",
             b"OrgRepository",
             at,
             count,
-            start_id.map(|id| types::DaoId{ id }),
+            start_id.map(types::DaoKeyValue::new),
         )
     }
 }

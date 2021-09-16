@@ -1,49 +1,82 @@
-use core::ops::Deref;
 use codec::Decode;
-use serde::{Serialize, Deserialize};
+use common_rpc::*;
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct Domain {
-    #[serde(flatten)]
-    domain: super::Domain,
-}
+// Domains
 
-impl common_rpc::GetError for Domain {
-    fn get_error() -> common_rpc::Error {
-        common_rpc::Error::DomainDecodeFailed
+pub struct DomainIdError;
+impl GetError for DomainIdError {
+    fn get_error() -> Error {
+        Error::DomainIdDecodeFailed
     }
 }
 
-impl Decode for Domain {
-    fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-        super::Domain::decode(input).map(|domain| Self { domain })
+pub struct DomainError;
+impl GetError for DomainError {
+    fn get_error() -> Error {
+        Error::DomainDecodeFailed
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-#[serde(transparent)]
-pub struct DomainId {
+pub struct DomainKeyValue {
     pub id: super::DomainId,
 }
 
-impl common_rpc::GetError for DomainId {
-    fn get_error() -> common_rpc::Error {
-        common_rpc::Error::DomainIdDecodeFailed
+impl DomainKeyValue {
+    pub fn new(id: super::DomainId) -> Self {
+        Self { id }
     }
 }
 
-impl Decode for DomainId {
-    fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-        super::DomainId::decode(input).map(|id| Self { id })
+impl KeyValueInfo for DomainKeyValue {
+    type Key = super::DomainId;
+    type KeyError = DomainIdError;
+    type Value = super::Domain;
+    type ValueError = DomainError;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
     }
 }
 
-impl codec::WrapperTypeEncode for DomainId {}
-impl codec::EncodeLike<super::DomainId> for DomainId {}
+// Projects
 
-impl Deref for DomainId {
-    type Target = super::DomainId;
-    fn deref(&self) -> &Self::Target { &self.id }
+pub struct ProjectIdError;
+impl GetError for ProjectIdError {
+    fn get_error() -> Error {
+        Error::ProjectIdDecodeFailed
+    }
+}
+
+pub struct ProjectError;
+impl GetError for ProjectError {
+    fn get_error() -> Error {
+        Error::ProjectDecodeFailed
+    }
+}
+
+pub struct ProjectKeyValue<Hash, AccountId> {
+    pub id: super::ProjectId,
+    _m: std::marker::PhantomData<(Hash, AccountId)>,
+}
+
+impl<Hash, AccountId> ProjectKeyValue<Hash, AccountId> {
+    pub fn new(id: super::ProjectId) -> Self {
+        Self {
+            id,
+            _m: Default::default(),
+        }
+    }
+}
+
+impl<Hash: 'static + Decode + Send, AccountId: 'static + Decode + Send> KeyValueInfo
+    for ProjectKeyValue<Hash, AccountId>
+{
+    type Key = super::ProjectId;
+    type KeyError = ProjectIdError;
+    type Value = super::Project<Hash, AccountId>;
+    type ValueError = ProjectError;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
 }

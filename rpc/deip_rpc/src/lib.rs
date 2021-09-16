@@ -12,16 +12,22 @@ use codec::{Codec};
 
 use common_rpc::{HashOf, FutureResult, ListResult, StorageMap};
 
-use frame_support::Blake2_128Concat;
+use frame_support::{Blake2_128Concat, Identity};
 
 mod types;
 
 #[rpc]
 pub trait DeipStorageApi<BlockHash, AccountId> {
-    #[rpc(name = "deipStorage_getProjects")]
-    fn get_projects(&self, at: Option<BlockHash>) -> Result<Vec<Project<H256, AccountId>>>;
+    #[rpc(name = "deip_getProjectList")]
+    fn get_project_list(&self,
+        at: Option<BlockHash>,
+        count: u32,
+        start_id: Option<ProjectId>,
+    ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>>;
+
     #[rpc(name = "deipStorage_getProject")]
     fn get_project(&self, at: Option<BlockHash>, project_id: ProjectId) -> Result<Project<H256, AccountId>>;
+
     #[rpc(name = "deipStorage_getProjectContentList")]
     fn get_project_content_list(&self, at: Option<BlockHash>, content_ids: Option<Vec<ProjectContentId>>) -> Result<Vec<ProjectContent<H256, AccountId>>>;
     #[rpc(name = "deipStorage_getProjectContent")]
@@ -32,7 +38,7 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<DomainId>,
-    ) -> FutureResult<Vec<ListResult<types::DomainId, types::Domain>>>;
+    ) -> FutureResult<Vec<ListResult<DomainId, Domain>>>;
 
     #[rpc(name = "deip_getDomain")]
     fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Domain>;
@@ -75,26 +81,21 @@ where
     C: HeaderBackend<Block>,
     C::Api: DeipStorageRuntimeApi<Block, AccountId>,
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
-    AccountId: Codec,
+    AccountId: 'static + Codec + Send,
 {
-    fn get_projects(&self, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<Project<H256, AccountId>>> {
-        let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
-
-        let runtime_api_result = api.get_projects(&at)
-            .map(|projects| {
-                projects.iter()
-                    .map(|(project_id, ..)| api.get_project(&at, project_id).unwrap())
-                    .collect()        
-            });
-        
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+    fn get_project_list(&self,
+        at: Option<HashOf<Block>>,
+        count: u32,
+        start_id: Option<ProjectId>,
+    ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>> {
+        StorageMap::<Identity>::get_list(
+            &self.state,
+            b"Deip",
+            b"ProjectMap",
+            at,
+            count,
+            start_id.map(types::ProjectKeyValue::new)
+        )
     }
     
     fn get_project(&self, at: Option<<Block as BlockT>::Hash>, project_id: ProjectId) -> Result<Project<H256, AccountId>> {
@@ -116,8 +117,15 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<DomainId>,
-    ) -> FutureResult<Vec<ListResult<types::DomainId, types::Domain>>> {
-        StorageMap::<Blake2_128Concat>::get_list(&self.state, b"Deip", b"Domains", at, count, start_id.map(|id| types::DomainId{ id }))
+    ) -> FutureResult<Vec<ListResult<DomainId, Domain>>> {
+        StorageMap::<Blake2_128Concat>::get_list(
+            &self.state,
+            b"Deip",
+            b"Domains",
+            at,
+            count,
+            start_id.map(types::DomainKeyValue::new)
+        )
     }
 
     fn get_domain(&self, at: Option<<Block as BlockT>::Hash>, domain_id: DomainId) -> Result<Domain> {

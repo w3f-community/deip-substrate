@@ -1,38 +1,16 @@
-use core::ops::Deref;
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-#[serde(transparent)]
-pub struct AssetId<Id>{
-    pub id: Id,
-}
-
-impl<Id> common_rpc::GetError for AssetId<Id> {
+pub struct AssetIdError;
+impl common_rpc::GetError for AssetIdError {
     fn get_error() -> common_rpc::Error {
         common_rpc::Error::AssetIdDecodeFailed
     }
 }
 
-impl<Id: Decode> Decode for AssetId<Id> {
-    fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-        Id::decode(input).map(|id| Self { id })
-    }
-}
-
-impl<Id> codec::WrapperTypeEncode for AssetId<Id> {}
-impl<Id: Encode> codec::EncodeLike<Id> for AssetId<Id> {}
-
-impl<Id> Deref for AssetId<Id> {
-    type Target = Id;
-    fn deref(&self) -> &Self::Target { &self.id }
-}
-
 // copied from pallet_assets since struct members are not public
-#[derive(Decode)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+#[derive(Decode, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AssetDetails<Balance: Decode, AccountId: Decode, DepositBalance: Decode + Default> {
     owner: AccountId,
     issuer: AccountId,
@@ -57,17 +35,37 @@ impl<Balance: Decode, AccountId: Decode, DepositBalance: Decode + Default> commo
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct AssetDetailsWithId<
-    AssetId,
-    Balance: Decode,
-    AccountId: Decode,
-    DepositBalance: Decode + Default,
-> {
+pub struct AssetKeyValue<AssetId, Balance, AccountId, DepositBalance> {
     pub id: AssetId,
-    #[serde(flatten)]
-    pub details: AssetDetails<Balance, AccountId, DepositBalance>,
+    _m: std::marker::PhantomData<(Balance, AccountId, DepositBalance)>,
+}
+
+impl<AssetId, Balance, AccountId, DepositBalance>
+    AssetKeyValue<AssetId, Balance, AccountId, DepositBalance>
+{
+    pub fn new(id: AssetId) -> Self {
+        Self {
+            id,
+            _m: Default::default(),
+        }
+    }
+}
+
+impl<
+        AssetId: 'static + Encode + Decode + Send,
+        Balance: 'static + Decode + Send,
+        AccountId: 'static + Decode + Send,
+        DepositBalance: 'static + Decode + Default + Send,
+    > common_rpc::KeyValueInfo for AssetKeyValue<AssetId, Balance, AccountId, DepositBalance>
+{
+    type Key = AssetId;
+    type KeyError = AssetIdError;
+    type Value = AssetDetails<Balance, AccountId, DepositBalance>;
+    type ValueError = Self::Value;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
 }
 
 #[derive(Decode)]

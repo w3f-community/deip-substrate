@@ -44,7 +44,7 @@ where
         count: u32,
         start_id: Option<AssetId>,
     ) -> FutureResult<
-        Vec<ListResult<types::AssetId<AssetId>, AssetDetails<Balance, AccountId, DepositBalance>>>,
+        Vec<ListResult<AssetId, AssetDetails<Balance, AccountId, DepositBalance>>>,
     >;
 
     #[rpc(name = "assets_getAssetBalanceList")]
@@ -112,7 +112,7 @@ where
         count: u32,
         start_id: Option<AssetId>,
     ) -> FutureResult<
-        Vec<ListResult<types::AssetId<AssetId>, AssetDetails<Balance, AccountId, DepositBalance>>>,
+        Vec<ListResult<AssetId, AssetDetails<Balance, AccountId, DepositBalance>>>,
     > {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
@@ -120,7 +120,7 @@ where
             b"Asset",
             at,
             count,
-            start_id.map(|id| types::AssetId { id }),
+            start_id.map(types::AssetKeyValue::new),
         )
     }
 
