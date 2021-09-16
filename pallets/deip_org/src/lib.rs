@@ -89,7 +89,7 @@ pub mod pallet {
         /// Access denied
         Forbidden,
         ///
-        KeySourceMismatch
+        AuthorityMismatch
     }
     
     #[pallet::event]
@@ -100,6 +100,8 @@ pub mod pallet {
         OrgCreate(OrgOf<T>),
         /// Emits when organisation ownership transferred
         OrgTransferOwnership(OrgOf<T>),
+        /// Emits when authority alteration
+        OrgAlterAuthority(OrgOf<T>),
     }
     
     #[doc(hidden)]
@@ -121,7 +123,8 @@ pub mod pallet {
         #[cfg(feature = "std")]
         use serde::{Serialize, Deserialize};
         use frame_system::Key;
-        use crate::Error::KeySourceMismatch;
+        use crate::Error::AuthorityMismatch;
+        use codec::Codec;
 
         #[allow(type_alias_bounds)]
         pub type OrgOf<T: Config> = Org<T::AccountId, OrgName>;
@@ -142,7 +145,7 @@ pub mod pallet {
             fn match_key(&self, org: &OrgOf<T>) -> bool {
                 match self {
                     Self::Members(k) => {
-                        *k == org.key()
+                        *k == org.authority_key()
                     },
                     Self::Own(k) => {
                         *k == org.org_key()
@@ -181,65 +184,94 @@ pub mod pallet {
         
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-        pub struct KeySource<AccountId> {
+        pub struct Authority<AccountId> {
             signatories: Vec<AccountId>,
             threshold: u16 
         }
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-        pub struct InputKeySource<AccountId> {
+        pub struct InputAuthority<AccountId> {
             pub signatories: Vec<AccountId>,
             pub threshold: u16 
         }
-        pub enum KeySourceAssert {
+        pub enum AuthorityAssert {
             EmptySignatories,
             /// We expect signatures list with exactly one element for plain account
             PlainAccountExpect,
             ThresholdMismatch,
-            OriginMismatch,
+            KeyMismatch,
         }
-        impl<T: Config> From<KeySourceAssert> for Error<T> {
-            fn from(source: KeySourceAssert) -> Self {
-                Error::<T>::KeySourceMismatch
+        impl<T: Config> From<AuthorityAssert> for Error<T> {
+            fn from(source: AuthorityAssert) -> Self {
+                Error::<T>::AuthorityMismatch
             }
         }
-        pub trait AssertKeySource<T: Config> {
-            fn assert(self, origin: &T::AccountId) -> Result<KeySource<T::AccountId>, KeySourceAssert>;
+        pub trait AssertAuthority<T: Config> {
+            // fn assert(self, origin: &T::AccountId) -> Result<Authority<T::AccountId>, AuthorityAssert>;
         }
-        pub fn multi_account_id<T: Config>(who: &[T::AccountId], threshold: u16) -> T::AccountId {
+        fn multi_account_id<T: Codec + Default>(who: &[T], threshold: u16) -> T {
             let entropy = (b"modlpy/utilisuba", who, threshold).using_encoded(sp_io::hashing::blake2_256);
-            T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
+            T::decode(&mut &entropy[..]).unwrap_or_default()
         }
-        impl<T: Config> AssertKeySource<T> for InputKeySource<T::AccountId> {
-            fn assert(self, origin: &T::AccountId) -> Result<KeySource<T::AccountId>, KeySourceAssert>
+        impl<T: Config> AssertAuthority<T> for InputAuthority<T::AccountId> {
+            
+        }
+        impl<AccountId: Codec + Default + Clone> Authority<AccountId> {
+            pub fn authority_key(&self) -> AccountId {
+                if self.threshold == 0 { return unsafe { self.signatories.get_unchecked(0).clone() } }
+                multi_account_id::<AccountId>(&self.signatories[..], self.threshold)
+            }
+        }
+        impl<AccountId: Ord + Eq + PartialEq> Authority<AccountId> {
+            pub fn add_member(&mut self, member: AccountId) {
+                if let Err(pos) = self.signatories.binary_search(&member) {
+                    self.signatories.insert(pos, member);
+                    self.threshold += 1;
+                }
+            }
+            pub fn remove_member(&mut self, member: AccountId) {
+                if self.signatories.len() == 1 { return }
+                if let Ok(pos) = self.signatories.binary_search(&member) {
+                    self.signatories.remove(pos);
+                    if self.signatories.len() == 1 {
+                        self.threshold = 0;
+                        return
+                    }
+                    if self.signatories.len() > 1 && (self.threshold - 1) > 0 {
+                        self.threshold -= 1;
+                    }
+                }
+            }
+        }
+        impl<AccountId: Codec + Default + Clone + Ord + Eq + PartialEq> InputAuthority<AccountId> {
+            pub(crate) fn assert(self, authority_key: &AccountId) -> Result<Authority<AccountId>, AuthorityAssert>
             {
                 let Self { mut signatories, threshold } = self;
-                ensure!(!signatories.is_empty(), KeySourceAssert::EmptySignatories);
+                ensure!(!signatories.is_empty(), AuthorityAssert::EmptySignatories);
+                signatories.sort();
+                signatories.dedup_by(|x, y| x == y);
                 
                 // zero threshold adjusts plain non-multisig account
-                let key = if threshold == 0 {
-                    ensure!(signatories.len() == 1, KeySourceAssert::PlainAccountExpect);
-                    signatories.get(0).unwrap().clone()
+                if threshold == 0 {
+                    ensure!(signatories.len() == 1, AuthorityAssert::PlainAccountExpect);
                 } else {
-                    ensure!(threshold as usize <= signatories.len(), KeySourceAssert::ThresholdMismatch);
-                    signatories.sort();
-                    multi_account_id::<T>(signatories.as_slice(), threshold)
+                    ensure!(threshold as usize <= signatories.len(), AuthorityAssert::ThresholdMismatch);
                 };
-                if origin == &key {
-                    Ok(KeySource { signatories, threshold })
-                } else {
-                    Err(KeySourceAssert::OriginMismatch)
-                }
+                
+                let authority = Authority { signatories, threshold };
+                ensure!(authority_key == &authority.authority_key(), AuthorityAssert::KeyMismatch);
+                
+                Ok(authority)
             }
         }
         
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
         pub struct Org<AccountId, Name> {
-            /// Members aka "control" key. Not fixed, may changes in future
-            members_key: AccountId,
+            /// Authority aka "control" key. Not fixed, may changes in future
+            authority_key: AccountId,
             /// Details of control key: multi-sig or plain account
-            members_key_source: KeySource<AccountId>,
+            authority: Authority<AccountId>,
             /// Unique organisation name aka ID
             name: Name,
             /// Own key of organization for keeping assets,
@@ -251,44 +283,63 @@ pub mod pallet {
         impl<AccountId, Name> Org<AccountId, Name> {
             pub fn new(
                 members_key: AccountId,
-                members_key_source: KeySource<AccountId>,
+                members_key_source: Authority<AccountId>,
                 name: Name,
                 org_key: AccountId,
             )
                 -> Self
             {
-                Self { members_key, members_key_source, name, org_key }
+                Self { authority_key: members_key, authority: members_key_source, name, org_key }
             }
-        }
-        impl<AccountId, Name> Org<AccountId, Name> {
-            pub fn key(&self) -> &AccountId { &self.members_key }
-            pub fn key_source(&self) -> &KeySource<AccountId>{ &self.members_key_source }
+            
+            pub fn authority_key(&self) -> &AccountId { &self.authority_key }
+            pub fn authority(&self) -> &Authority<AccountId>{ &self.authority }
             pub fn name(&self) -> &Name { &self.name }
             pub fn org_key(&self) -> &AccountId { &self.org_key }
-        }
-        impl<AccountId, Name> Org<AccountId, Name> {
-            pub fn update_members_key(&mut self, members_key: AccountId, source: KeySource<AccountId>) {
-                self.members_key = members_key;
-                self.members_key_source = source;
+            
+            pub fn alter_authoriry(self, op: AlterAuthority<AccountId>) -> Result<Self, AuthorityAssert>
+                where
+                    AccountId: Codec + Default + Clone + Ord + Eq + PartialEq            {
+                let Self {
+                    authority_key: _,
+                    mut authority,
+                    name,
+                    org_key } = self;
+                match op {
+                    AlterAuthority::AddMember { member } => {
+                        authority.add_member(member);
+                    },
+                    AlterAuthority::RemoveMember { member } => {
+                        authority.remove_member(member);
+                    },
+                    AlterAuthority::ReplaceAuthority { authority_key: new_authority_key, authority: new_authority } => {
+                        authority = new_authority.assert(&new_authority_key)?;
+                    },
+                }
+                Ok(Self::new(authority.authority_key(), authority, name, org_key))
             }
+        }
+        
+        #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
+        #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+        pub enum AlterAuthority<AccountId> {
+            AddMember { member: AccountId },
+            RemoveMember { member: AccountId},
+            ReplaceAuthority { authority_key: AccountId, authority: InputAuthority<AccountId> }
         }
     }
     
     impl<T: Config> Pallet<T> {
         pub fn org_key(org_name: &OrgName) -> T::AccountId {
-            let entropy = (b"deip/DAOs/", org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
-            T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
+            org_key::<T::AccountId>(org_name)
         }
     }
-
-    pub fn org_key2<T: frame_system::Config>(org_name: &OrgName) -> T::AccountId {
-        let entropy = (b"deip/DAOs/", org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
-        T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
-    }
-    
-    pub fn org_key3<T: Decode + Default>(org_name: &OrgName) -> T {
+    pub fn org_key<T: Decode + Default>(org_name: &OrgName) -> T {
         let entropy = (b"deip/DAOs/", org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
         T::decode(&mut &entropy[..]).unwrap_or_default()
+    }
+    pub fn org_key2<T: frame_system::Config>(org_name: &OrgName) -> T::AccountId {
+        org_key::<T::AccountId>(org_name)
     }
     
     #[pallet::call]
@@ -298,20 +349,17 @@ pub mod pallet {
         pub fn create(
             origin: OriginFor<T>,
             name: OrgName,
-            key_source: InputKeySource<T::AccountId>,
+            authority: InputAuthority<T::AccountId>,
         )
             -> DispatchResultWithPostInfo
-            where KeySourceAssert: Into<Error<T>>,
-                  InputKeySource<T::AccountId>: AssertKeySource<T>,
         {
-            let who = ensure_signed(origin)?;
-            let key_source = key_source.assert(&who)
-                .map_err(|x| x.into())?;
+            let authority_key = ensure_signed(origin)?;
+            let authority = authority.assert(&authority_key).map_err::<Error<T>, _>(Into::into)?;
             ensure!(!OrgRepository::<T>::contains_key(&name), Error::<T>::Exists);
             let org_key = Self::org_key(&name);
             let org = OrgOf::<T>::new(
-                who,
-                key_source,
+                authority_key,
+                authority,
                 name,
                 org_key
             );
@@ -324,24 +372,19 @@ pub mod pallet {
         }
         
         #[pallet::weight(10_000)]
-        pub fn transfer_ownership(
+        pub fn alter_authority(
             origin: OriginFor<T>,
-            transfer_to: T::AccountId,
-            key_source: InputKeySource<T::AccountId>,
+            alter_authority: AlterAuthority<T::AccountId>,
         )
             -> DispatchResultWithPostInfo
-            where InputKeySource<T::AccountId>: AssertKeySource<T>,
-                  KeySourceAssert: Into<Error<T>>
         {
             let who = ensure_signed(origin)?;
             let mut org = load_org::<T>(LoadBy::OrgKey { org_key: &who })?;
-            let key_source = key_source.assert(&transfer_to)
-                .map_err(|x| x.into())?;
-            org.update_members_key(transfer_to, key_source);
+            org = org.alter_authoriry(alter_authority).map_err::<Error<T>, _>(Into::into)?;
             StorageOpsTransaction::<StorageOps<T>>::new()
                 .commit(move |ops| {
                     ops.push_op(StorageOps::UpdateOrg(org.clone()));
-                    ops.push_op(StorageOps::DepositEvent(Event::<T>::OrgTransferOwnership(org)));
+                    ops.push_op(StorageOps::DepositEvent(Event::<T>::OrgAlterAuthority(org)));
                 });
             Ok(Some(0).into())
         }

@@ -22,7 +22,7 @@ impl Into<AccountId32> for DeipAccountId<AccountId32> {
         match self {
             Self::Native(native) => { native },
             Self::Org(name) => {
-                pallet_deip_org::org_key3::<AccountId32>(&name)
+                pallet_deip_org::org_key::<AccountId32>(&name)
             },
         }
     }

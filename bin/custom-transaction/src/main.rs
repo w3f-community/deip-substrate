@@ -12,7 +12,7 @@ use codec::Encode;
 use node_template_runtime::app_tag_ext::{TagApp, AppTag};
 use node_template_runtime::{Runtime, Call, Address, AccountId, Signature, Hash};
 
-use pallet_deip_org::{Call as DeipOrgCall, org::{OrgName, InputKeySource}};
+use pallet_deip_org::{Call as DeipOrgCall, org::{OrgName, InputAuthority}};
 
 use sp_core::crypto::{Ss58Codec, Pair, AccountId32};
 use sp_core::ed25519;
@@ -65,7 +65,7 @@ fn main() {
     
     let function = Call::DeipOrg(DeipOrgCall::create(
         name,
-        InputKeySource { signatories: vec![account.clone()], threshold: 0 }
+        InputAuthority { signatories: vec![account.clone()], threshold: 0 }
     ));
     
     let signed = Address::from(account);

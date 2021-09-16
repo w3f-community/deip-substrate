@@ -83,8 +83,8 @@ fn expect_event<E: Into<Event>>(e: E) {
     assert_eq!(last_event(), e.into());
 }
 
-fn plain_key_source(who: u64) -> InputKeySource<u64> {
-    InputKeySource { signatories: vec![who], threshold: 0 }
+fn plain_key_source(who: u64) -> InputAuthority<u64> {
+    InputAuthority { signatories: vec![who], threshold: 0 }
 }
 
 #[test]
