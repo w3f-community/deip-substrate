@@ -455,10 +455,9 @@ decl_error! {
 
 decl_storage! {
     trait Store for Module<T: Config> as Deip {
-        /// Map from ProjectID to Project Info
-        ProjectMap get(fn project): map hasher(identity) ProjectId => ProjectOf<T>;
-        /// Project list, guarantees uniquest and provides Project listing
-        Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
+        ProjectMap: map hasher(identity) ProjectId => ProjectOf<T>;
+
+        ProjectIdByTeamId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ProjectId => ();
 
         SimpleCrowdfundingMap: map hasher(identity) InvestmentId => SimpleCrowdfundingOf<T>;
 
@@ -540,26 +539,11 @@ decl_module! {
                 ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
             }
 
-            let mut projects = Projects::<T>::get();
+            ensure!(!ProjectMap::<T>::contains_key(project.external_id), Error::<T>::ProjectAlreadyExists);
 
-            // We don't want to add duplicate projects, so we check whether the potential new
-            // project is already present in the list. Because the list is always ordered, we can
-            // leverage the binary search which makes this check O(log n).
-            match projects.binary_search_by_key(&project.external_id, |&(a,_)| a) {
-                // If the search succeeds, the project is already a exists, so just return
-                Ok(_) => return Err(Error::<T>::ProjectAlreadyExists.into()),
-                // If the search fails, the project is not a exists and we learned the index where
-                // they should be inserted
-                Err(index) => {
-                    projects.insert(index, (project.external_id, project.team_id.clone()));
-                    Projects::<T>::put(projects);
-                }
-            };
-
-            // Store the projects related to account
             ProjectMap::<T>::insert(project.external_id, project.clone());
+            ProjectIdByTeamId::<T>::insert(project.team_id.clone(), project.external_id, ());
 
-            // Emit an event that the project was created.
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
         }
 
@@ -1069,9 +1053,7 @@ impl<T: Config> Module<T> {
         ProjectContentMap::<T>::iter_prefix_values(project_id)
             .any(|x| x.content_type == ProjectContentType::FinalResult)
     }
-    pub fn get_projects() -> Vec<(ProjectId, T::AccountId)>{
-        Self::projects()
-    }
+
     pub fn get_project(project_id: &ProjectId) -> ProjectOf<T> {
         ProjectMap::<T>::get(project_id)
     }

@@ -577,13 +577,6 @@ impl_runtime_apis! {
     
     // Here we implement our custom runtime API.
     impl pallet_deip::api::DeipApi<Block,  AccountId> for Runtime {
-        fn get_projects() -> Vec<(ProjectId, AccountId)> {
-            // This Runtime API calls into a specific pallet. Calling a pallet is a common
-            // design pattern. You can see most other APIs in this file do the same.
-            // It is also possible to write your logic right here in the runtime
-            // amalgamator file
-            Deip::get_projects()
-        }
         fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
             Deip::get_project(project_id)
         }

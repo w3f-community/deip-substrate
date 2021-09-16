@@ -15,8 +15,8 @@ use sp_core::storage::StorageKey;
 use frame_support::{Blake2_128Concat, ReversibleStorageHasher, StorageHasher};
 
 use common_rpc::{
-    chain_key_hash_double_map, prefix, to_rpc_error, Error, FutureResult, HashOf, ListResult,
-    StorageDoubleMap, StorageMap,
+    chain_key_hash_double_map, prefix, to_rpc_error, Error, FutureResult, HashOf, HashedKey,
+    HashedKeyTrait, ListResult, StorageDoubleMap, StorageMap,
 };
 
 mod types;
@@ -43,9 +43,7 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<AssetId>,
-    ) -> FutureResult<
-        Vec<ListResult<AssetId, AssetDetails<Balance, AccountId, DepositBalance>>>,
-    >;
+    ) -> FutureResult<Vec<ListResult<AssetId, AssetDetails<Balance, AccountId, DepositBalance>>>>;
 
     #[rpc(name = "assets_getAssetBalanceList")]
     fn get_asset_balance_list(
@@ -111,9 +109,8 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<AssetId>,
-    ) -> FutureResult<
-        Vec<ListResult<AssetId, AssetDetails<Balance, AccountId, DepositBalance>>>,
-    > {
+    ) -> FutureResult<Vec<ListResult<AssetId, AssetDetails<Balance, AccountId, DepositBalance>>>>
+    {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
             b"Assets",
@@ -133,8 +130,10 @@ where
         let prefix = prefix(b"Assets", b"Account");
 
         let start_key = start_id.map(|(first, second)| {
-            chain_key_hash_double_map::<_, _, Blake2_128Concat, Blake2_128Concat>(
-                &prefix, &first, &second,
+            chain_key_hash_double_map(
+                &prefix,
+                &HashedKey::<Blake2_128Concat>::new(&first),
+                &HashedKey::<Blake2_128Concat>::new(&second),
             )
         });
 

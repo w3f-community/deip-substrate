@@ -1,40 +1,66 @@
-//! RPC interface for the transaction payment module.
-
+use codec::Codec;
+use jsonrpc_core::futures::future::Future;
 use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
 use jsonrpc_derive::rpc;
+pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
+use pallet_deip::*;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use std::sync::Arc;
-pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
-use pallet_deip::*;
-use codec::{Codec};
 
-use common_rpc::{HashOf, FutureResult, ListResult, StorageMap};
+use common_rpc::{
+    chain_key_hash_double_map, chain_key_hash_map, prefix, to_rpc_error, Error, FutureResult,
+    HashOf, HashedKey, HashedKeyRef, HashedKeyTrait, ListResult, StorageKey, StorageMap,
+};
 
-use frame_support::{Blake2_128Concat, Identity};
+use frame_support::{Blake2_128Concat, Identity, ReversibleStorageHasher};
 
 mod types;
 
 #[rpc]
 pub trait DeipStorageApi<BlockHash, AccountId> {
     #[rpc(name = "deip_getProjectList")]
-    fn get_project_list(&self,
+    fn get_project_list(
+        &self,
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<ProjectId>,
     ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>>;
 
     #[rpc(name = "deipStorage_getProject")]
-    fn get_project(&self, at: Option<BlockHash>, project_id: ProjectId) -> Result<Project<H256, AccountId>>;
+    fn get_project(
+        &self,
+        at: Option<BlockHash>,
+        project_id: ProjectId,
+    ) -> Result<Project<H256, AccountId>>;
+
+    #[rpc(name = "deip_getProjectListByTeam")]
+    fn get_project_list_by_team(
+        &self,
+        at: Option<BlockHash>,
+        team_id: AccountId,
+        count: u32,
+        start_id: Option<ProjectId>,
+    ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>>;
 
     #[rpc(name = "deipStorage_getProjectContentList")]
-    fn get_project_content_list(&self, at: Option<BlockHash>, content_ids: Option<Vec<ProjectContentId>>) -> Result<Vec<ProjectContent<H256, AccountId>>>;
+    fn get_project_content_list(
+        &self,
+        at: Option<BlockHash>,
+        content_ids: Option<Vec<ProjectContentId>>,
+    ) -> Result<Vec<ProjectContent<H256, AccountId>>>;
     #[rpc(name = "deipStorage_getProjectContent")]
-    fn get_project_content(&self, at: Option<BlockHash>, project_id: ProjectId, project_content_id: ProjectContentId) -> Result<ProjectContent<H256, AccountId>>;
+    fn get_project_content(
+        &self,
+        at: Option<BlockHash>,
+        project_id: ProjectId,
+        project_content_id: ProjectContentId,
+    ) -> Result<ProjectContent<H256, AccountId>>;
 
     #[rpc(name = "deip_getDomainList")]
-    fn get_domains(&self,
+    fn get_domains(
+        &self,
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<DomainId>,
@@ -50,7 +76,11 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
     #[rpc(name = "deipStorage_getReviews")]
     fn get_reviews(&self, at: Option<BlockHash>) -> Result<Vec<Review<H256, AccountId>>>;
     #[rpc(name = "deipStorage_getReview")]
-    fn get_review(&self, at: Option<BlockHash>, review_id: ReviewId) -> Result<Review<H256, AccountId>>;
+    fn get_review(
+        &self,
+        at: Option<BlockHash>,
+        review_id: ReviewId,
+    ) -> Result<Review<H256, AccountId>>;
 }
 
 /// A struct that implements the `DeipStorage`.
@@ -73,7 +103,8 @@ impl<C, State, M> DeipStorage<C, State, M> {
     }
 }
 
-impl<C, State, Block, AccountId> DeipStorageApi<HashOf<Block>, AccountId> for DeipStorage<C, State, Block>
+impl<C, State, Block, AccountId> DeipStorageApi<HashOf<Block>, AccountId>
+    for DeipStorage<C, State, Block>
 where
     Block: BlockT,
     C: Send + Sync + 'static,
@@ -83,7 +114,8 @@ where
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
     AccountId: 'static + Codec + Send,
 {
-    fn get_project_list(&self,
+    fn get_project_list(
+        &self,
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<ProjectId>,
@@ -94,18 +126,21 @@ where
             b"ProjectMap",
             at,
             count,
-            start_id.map(types::ProjectKeyValue::new)
+            start_id.map(types::ProjectKeyValue::new),
         )
     }
-    
-    fn get_project(&self, at: Option<<Block as BlockT>::Hash>, project_id: ProjectId) -> Result<Project<H256, AccountId>> {
+
+    fn get_project(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+        project_id: ProjectId,
+    ) -> Result<Project<H256, AccountId>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_project(&at, &project_id);
-        
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),
@@ -113,7 +148,47 @@ where
         })
     }
 
-    fn get_domains(&self,
+    fn get_project_list_by_team(
+        &self,
+        at: Option<HashOf<Block>>,
+        key: AccountId,
+        count: u32,
+        start_id: Option<ProjectId>,
+    ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>> {
+        let key_encoded = key.encode();
+        let key_encoded_size = key_encoded.len();
+
+        let map = |k: StorageKey| {
+            // below we retrieve key in the other map from the index map key
+            let no_prefix = Blake2_128Concat::reverse(&k.0[32..]);
+            let key_hashed =
+                HashedKeyRef::<'_, Identity>::unsafe_from_hashed(&no_prefix[key_encoded_size..]);
+
+            let key = chain_key_hash_map(&prefix(b"Deip", b"ProjectMap"), &key_hashed);
+
+            self.state
+                .storage(key.clone(), at)
+                .map(|v| (key, v))
+                .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
+        };
+
+        let prefix = prefix(b"Deip", b"ProjectIdByTeamId");
+        let key = HashedKey::<Blake2_128Concat>::unsafe_from_encoded(&key_encoded);
+        let start_key = start_id
+            .map(|id| chain_key_hash_double_map(&prefix, &key, &HashedKey::<Identity>::new(&id)));
+
+        common_rpc::get_list_by_keys::<types::ProjectKeyValue<H256, AccountId>, Identity, _, _, _, _>(
+            &self.state,
+            chain_key_hash_map(&prefix, &key),
+            count,
+            start_key,
+            at,
+            map,
+        )
+    }
+
+    fn get_domains(
+        &self,
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<DomainId>,
@@ -124,49 +199,57 @@ where
             b"Domains",
             at,
             count,
-            start_id.map(types::DomainKeyValue::new)
+            start_id.map(types::DomainKeyValue::new),
         )
     }
 
-    fn get_domain(&self, at: Option<<Block as BlockT>::Hash>, domain_id: DomainId) -> Result<Domain> {
+    fn get_domain(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+        domain_id: DomainId,
+    ) -> Result<Domain> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_domain(&at, &domain_id);
-        
-        
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),
             data: Some(format!("{:?}", e).into()),
         })
     }
-    
-    fn get_project_content_list(&self, at: Option<<Block as BlockT>::Hash>, content_ids: Option<Vec<ProjectContentId>>) -> Result<Vec<ProjectContent<H256, AccountId>>> {
+
+    fn get_project_content_list(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+        content_ids: Option<Vec<ProjectContentId>>,
+    ) -> Result<Vec<ProjectContent<H256, AccountId>>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_project_content_list(&at, &content_ids);
-        
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),
             data: Some(format!("{:?}", e).into()),
         })
     }
-    fn get_project_content(&self, at: Option<<Block as BlockT>::Hash>, project_id: ProjectId, project_content_id: ProjectContentId) -> Result<ProjectContent<H256, AccountId>> {
+    fn get_project_content(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+        project_id: ProjectId,
+        project_content_id: ProjectContentId,
+    ) -> Result<ProjectContent<H256, AccountId>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_project_content(&at, &project_id, &project_content_id);
-        
-        
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),
@@ -174,29 +257,33 @@ where
         })
     }
 
-    fn get_nda_list(&self, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<Nda<H256, AccountId, u64>>> {
+    fn get_nda_list(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> Result<Vec<Nda<H256, AccountId, u64>>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_nda_list(&at);
-        
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),
             data: Some(format!("{:?}", e).into()),
         })
     }
-    fn get_nda(&self, at: Option<<Block as BlockT>::Hash>, nda_id: NdaId) -> Result<Nda<H256, AccountId, u64>> {
+    fn get_nda(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+        nda_id: NdaId,
+    ) -> Result<Nda<H256, AccountId, u64>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_nda(&at, &nda_id);
-        
-        
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),
@@ -204,34 +291,37 @@ where
         })
     }
 
-    fn get_reviews(&self, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<Review<H256, AccountId>>> {
+    fn get_reviews(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> Result<Vec<Review<H256, AccountId>>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_reviews(&at);
-        
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),
             data: Some(format!("{:?}", e).into()),
         })
     }
-    fn get_review(&self, at: Option<<Block as BlockT>::Hash>, review_id: ReviewId) -> Result<Review<H256, AccountId>> {
+    fn get_review(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+        review_id: ReviewId,
+    ) -> Result<Review<H256, AccountId>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_review(&at, &review_id);
-        
-        
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),
             data: Some(format!("{:?}", e).into()),
         })
     }
-
 }

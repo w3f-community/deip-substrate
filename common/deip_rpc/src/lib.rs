@@ -1,9 +1,9 @@
 use jsonrpc_core::{
     futures::future::{self, Future},
-    futures::{stream, Stream},
+    futures::{self, stream, Stream},
 };
 
-use sp_core::{hashing::twox_128_into, storage::StorageKey};
+pub use sp_core::{hashing::twox_128_into, storage::StorageData, storage::StorageKey};
 
 use frame_support::{ReversibleStorageHasher, StorageHasher};
 
@@ -21,23 +21,55 @@ pub fn prefix(pallet: &[u8], storage: &[u8]) -> Vec<u8> {
     let mut prefix = Vec::new();
     prefix.resize(32, 0u8);
 
-    twox_128_into(pallet, <&mut [u8; 16]>::try_from(&mut prefix[..16]).unwrap());
-    twox_128_into(storage, <&mut [u8; 16]>::try_from(&mut prefix[16..]).unwrap());
+    twox_128_into(
+        pallet,
+        <&mut [u8; 16]>::try_from(&mut prefix[..16]).unwrap(),
+    );
+    twox_128_into(
+        storage,
+        <&mut [u8; 16]>::try_from(&mut prefix[16..]).unwrap(),
+    );
 
     prefix
 }
 
-pub fn chain_key_hash_map<Key: Encode, Hasher: StorageHasher>(
-    prefix: &[u8],
-    key: &Key,
-) -> StorageKey {
-    StorageKey(
-        prefix
-            .iter()
-            .chain(key.using_encoded(Hasher::hash).as_ref())
-            .map(|b| *b)
-            .collect(),
-    )
+pub struct HashedKey<Hasher: StorageHasher>(Hasher::Output);
+pub struct HashedKeyRef<'a, Hasher: StorageHasher>(&'a [u8], std::marker::PhantomData<Hasher>);
+
+pub trait HashedKeyTrait {
+    fn as_ref(&self) -> &[u8];
+}
+
+impl<Hasher: StorageHasher> HashedKey<Hasher> {
+    pub fn new<Key: Encode>(key: &Key) -> Self {
+        Self(key.using_encoded(Hasher::hash))
+    }
+
+    pub fn unsafe_from_encoded(encoded: &[u8]) -> Self {
+        Self(Hasher::hash(encoded))
+    }
+}
+
+impl<Hasher: StorageHasher> HashedKeyTrait for HashedKey<Hasher> {
+    fn as_ref(&self) -> &[u8] {
+        return self.0.as_ref();
+    }
+}
+
+impl<'a, Hasher: StorageHasher> HashedKeyTrait for HashedKeyRef<'a, Hasher> {
+    fn as_ref(&self) -> &[u8] {
+        self.0
+    }
+}
+
+impl<'a, Hasher: StorageHasher> HashedKeyRef<'a, Hasher> {
+    pub fn unsafe_from_hashed(hashed: &'a [u8]) -> Self {
+        Self(hashed, Default::default())
+    }
+}
+
+pub fn chain_key_hash_map<T: HashedKeyTrait>(prefix: &[u8], key: &T) -> StorageKey {
+    StorageKey(prefix.iter().chain(key.as_ref()).map(|b| *b).collect())
 }
 
 pub fn key_hash_map<Key: Encode, Hasher: StorageHasher>(
@@ -45,25 +77,19 @@ pub fn key_hash_map<Key: Encode, Hasher: StorageHasher>(
     map: &[u8],
     key: &Key,
 ) -> StorageKey {
-    chain_key_hash_map::<_, Hasher>(prefix(pallet, map).as_ref(), key)
+    chain_key_hash_map(prefix(pallet, map).as_ref(), &HashedKey::<Hasher>::new(key))
 }
 
-pub fn chain_key_hash_double_map<KeyFirst, KeySecond, HasherFirst, HasherSecond>(
+pub fn chain_key_hash_double_map<KeyFirst: HashedKeyTrait, KeySecond: HashedKeyTrait>(
     prefix: &[u8],
     key_first: &KeyFirst,
     key_second: &KeySecond,
-) -> StorageKey
-where
-    KeyFirst: Encode,
-    KeySecond: Encode,
-    HasherFirst: StorageHasher,
-    HasherSecond: StorageHasher,
-{
+) -> StorageKey {
     StorageKey(
         prefix
             .iter()
-            .chain(key_first.using_encoded(HasherFirst::hash).as_ref())
-            .chain(key_second.using_encoded(HasherSecond::hash).as_ref())
+            .chain(key_first.as_ref())
+            .chain(key_second.as_ref())
             .map(|b| *b)
             .collect(),
     )
@@ -81,10 +107,10 @@ where
     HasherFirst: StorageHasher,
     HasherSecond: StorageHasher,
 {
-    chain_key_hash_double_map::<_, _, HasherFirst, HasherSecond>(
+    chain_key_hash_double_map(
         prefix(pallet, map).as_ref(),
-        key_first,
-        key_second,
+        &HashedKey::<HasherFirst>::new(key_first),
+        &HashedKey::<HasherSecond>::new(key_second),
     )
 }
 
@@ -114,13 +140,51 @@ where
     )
 }
 
+pub fn get_list_by_keys<KeyValue, Hasher, State, BlockHash, KeyMap, T>(
+    state: &State,
+    prefix_key: StorageKey,
+    count: u32,
+    start_key: Option<StorageKey>,
+    at: Option<BlockHash>,
+    key_map: KeyMap,
+) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
+where
+    KeyValue: KeyValueInfo,
+    Hasher: StorageHasher + ReversibleStorageHasher,
+    State: sc_rpc_api::state::StateApi<BlockHash>,
+    BlockHash: Copy,
+    KeyMap: FnMut(StorageKey) -> T,
+    T: futures::future::IntoFuture<Item = (StorageKey, Option<StorageData>), Error = RpcError>,
+    T::Future: 'static + Send,
+{
+    let keys = match state
+        .storage_keys_paged(Some(prefix_key), count, start_key, at)
+        .wait()
+    {
+        Ok(k) => k,
+        Err(e) => {
+            return Box::new(future::err(to_rpc_error(
+                Error::ScRpcApiError,
+                Some(format!("{:?}", e)),
+            )))
+        }
+    };
+    if keys.is_empty() {
+        return Box::new(future::ok(vec![]));
+    }
+
+    let key_futures: Vec<_> = keys.into_iter().map(key_map).collect();
+
+    StorageMap::<Hasher>::get_list_by_keys::<KeyValue, _>(key_futures)
+}
+
 pub struct StorageMap<Hasher>(std::marker::PhantomData<Hasher>);
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListResult<Key, Value> {
-    key: KeyWrapper<Key>,
-    value: Value,
+    pub key: KeyWrapper<Key>,
+    pub value: Value,
 }
 
 pub trait KeyValueInfo {
@@ -135,7 +199,7 @@ pub trait KeyValueInfo {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(transparent)]
-pub struct KeyWrapper<Key>{
+pub struct KeyWrapper<Key> {
     pub key: Key,
 }
 
@@ -176,37 +240,37 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         BlockHash: Copy,
     {
         let prefix = prefix(pallet, map);
-        let start_key = start_id.map(|id| chain_key_hash_map::<_, Hasher>(&prefix, id.key()));
+        let start_key =
+            start_id.map(|id| chain_key_hash_map(&prefix, &HashedKey::<Hasher>::new(id.key())));
 
-        let keys = match state
-            .storage_keys_paged(Some(StorageKey(prefix)), count, start_key, at)
-            .wait()
-        {
-            Ok(k) => k,
-            Err(e) => {
-                return Box::new(future::err(to_rpc_error(
-                    Error::ScRpcApiError,
-                    Some(format!("{:?}", e)),
-                )))
-            }
+        let map = |k: StorageKey| {
+            state
+                .storage(k.clone(), at)
+                .map(|v| (k, v))
+                .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
         };
-        if keys.is_empty() {
-            return Box::new(future::ok(vec![]));
-        }
 
-        let key_futures: Vec<_> = keys
-            .into_iter()
-            .map(|k| {
-                state
-                    .storage(k.clone(), at)
-                    .map(|v| (k, v))
-                    .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
-            })
-            .collect();
+        get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
+            state,
+            StorageKey(prefix),
+            count,
+            start_key,
+            at,
+            map,
+        )
+    }
 
-        let result = Vec::with_capacity(key_futures.len());
+    pub fn get_list_by_keys<KeyValue, T>(
+        keys: Vec<T>,
+    ) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
+    where
+        KeyValue: KeyValueInfo,
+        T: futures::future::IntoFuture<Item = (StorageKey, Option<StorageData>), Error = RpcError>,
+        T::Future: 'static + Send,
+    {
+        let result = Vec::with_capacity(keys.len());
         Box::new(
-            stream::futures_ordered(key_futures.into_iter()).fold(result, |mut result, kv| {
+            stream::futures_ordered(keys.into_iter()).fold(result, |mut result, kv| {
                 let (key, value) = kv;
                 let data = match value {
                     None => return future::err(to_rpc_error(Error::NoneForReturnedKey, None)),

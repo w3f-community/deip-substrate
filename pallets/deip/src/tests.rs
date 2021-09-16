@@ -202,18 +202,8 @@ fn cant_add_duplicate_domain() {
 #[test]
 fn add_project() {
     new_test_ext().execute_with(|| {
-        let (project_id ,project, ..) = create_ok_project(None);
+        let (project_id, project, _, team) = create_ok_project(None);
 
-        
-        // TODO Add event check
-        // let expected_event = mock::Event::pallet_deip(crate::Event::ProjectCreated(account_id, project)::<<Test as system::Config>::AccountId, ProjectOf<Test>>);
-
-        // assert_eq!(
-        //     System::events()[0].event,
-        //     expected_event,
-        // );
-
-        let projects = Projects::<Test>::get();
         let project_stored = ProjectMap::<Test>::get(project_id);
 
         assert!(
@@ -225,11 +215,10 @@ fn add_project() {
         assert_eq!(project, project_stored);
 
         assert!(
-            projects.binary_search_by_key(&project_id, |&(external_id, ..)| external_id).is_ok(),
-            "Projects did not contain project, value was `{}`",
+            ProjectIdByTeamId::<Test>::contains_key(team, project_id),
+            "ProjectIdByTeamId did not contain project, value was `{}`",
             project_id
         );
-
     })
 }
 
