@@ -19,7 +19,7 @@ use frame_support::{Blake2_128Concat, Identity, ReversibleStorageHasher};
 mod types;
 
 #[rpc]
-pub trait DeipStorageApi<BlockHash, AccountId> {
+pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance> {
     #[rpc(name = "deip_getProjectList")]
     fn get_project_list(
         &self,
@@ -81,6 +81,21 @@ pub trait DeipStorageApi<BlockHash, AccountId> {
         at: Option<BlockHash>,
         review_id: ReviewId,
     ) -> Result<Review<H256, AccountId>>;
+
+    #[rpc(name = "deip_getInvestmentOpportunity")]
+    fn get_investment_opportunity(
+        &self,
+        at: Option<BlockHash>,
+        id: InvestmentId,
+    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>;
+
+    #[rpc(name = "deip_getInvestmentOpportunityList")]
+    fn get_investment_opportunity_list(
+        &self,
+        at: Option<BlockHash>,
+        count: u32,
+        start_id: Option<InvestmentId>,
+    ) -> FutureResult<Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>>;
 }
 
 /// A struct that implements the `DeipStorage`.
@@ -103,16 +118,20 @@ impl<C, State, M> DeipStorage<C, State, M> {
     }
 }
 
-impl<C, State, Block, AccountId> DeipStorageApi<HashOf<Block>, AccountId>
+impl<C, State, Block, AccountId, Moment, AssetId, AssetBalance>
+    DeipStorageApi<HashOf<Block>, AccountId, Moment, AssetId, AssetBalance>
     for DeipStorage<C, State, Block>
 where
     Block: BlockT,
     C: Send + Sync + 'static,
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block>,
-    C::Api: DeipStorageRuntimeApi<Block, AccountId>,
+    C::Api: DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance>,
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
     AccountId: 'static + Codec + Send,
+    Moment: 'static + Codec + Send,
+    AssetId: 'static + Codec + Send,
+    AssetBalance: 'static + Codec + Send,
 {
     fn get_project_list(
         &self,
@@ -323,5 +342,38 @@ where
             message: "Something wrong".into(),
             data: Some(format!("{:?}", e).into()),
         })
+    }
+
+    fn get_investment_opportunity(
+        &self,
+        at: Option<HashOf<Block>>,
+        id: InvestmentId,
+    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance>>> {
+        let api = self.client.runtime_api();
+        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
+
+        let runtime_api_result = api.get_investment_opportunity(&at, &id);
+        runtime_api_result.map_err(|e| {
+            to_rpc_error(
+                Error::InvestmentOpportunityApiGetFailed,
+                Some(format!("{:?}", e)),
+            )
+        })
+    }
+
+    fn get_investment_opportunity_list(
+        &self,
+        at: Option<HashOf<Block>>,
+        count: u32,
+        start_id: Option<InvestmentId>,
+    ) -> FutureResult<Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>> {
+        StorageMap::<Identity>::get_list(
+            &self.state,
+            b"Deip",
+            b"SimpleCrowdfundingMap",
+            at,
+            count,
+            start_id.map(types::InvestmentOpportunityKeyValue::new),
+        )
     }
 }

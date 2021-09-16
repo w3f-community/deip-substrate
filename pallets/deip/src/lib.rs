@@ -69,12 +69,11 @@ mod tests;
 pub mod api;
 
 mod investment_opportunity;
-use investment_opportunity::{
-    Status as SimpleCrowdfundingStatus,
-    Info as SimpleCrowdfunding};
+use investment_opportunity::{Status as SimpleCrowdfundingStatus};
 pub use investment_opportunity::{
     Id as InvestmentId,
     FundingModel, FundingModelOf,
+    Info as SimpleCrowdfunding
 };
 
 mod contribution;
@@ -1100,5 +1099,9 @@ impl<T: Config> Module<T> {
     }
     pub fn get_review(review_id: &ReviewId) -> ReviewOf<T> {
         ReviewMap::<T>::get(review_id)
+    }
+
+    pub fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<T>> {
+        SimpleCrowdfundingMap::<T>::try_get(id).ok()
     }
 }

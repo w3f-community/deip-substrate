@@ -80,3 +80,46 @@ impl<Hash: 'static + Decode + Send, AccountId: 'static + Decode + Send> KeyValue
         &self.id
     }
 }
+
+// Investment opportunities
+
+pub struct InvestmentIdError;
+impl GetError for InvestmentIdError {
+    fn get_error() -> Error {
+        Error::InvestmentIdDecodeFailed
+    }
+}
+
+pub struct InvestmentOpportunityError;
+impl GetError for InvestmentOpportunityError {
+    fn get_error() -> Error {
+        Error::InvestmentOpportunityDecodeFailed
+    }
+}
+
+pub struct InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance> {
+    pub id: super::InvestmentId,
+    _m: std::marker::PhantomData<(Moment, AssetId, AssetBalance)>,
+}
+
+impl<Moment, AssetId, AssetBalance> InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance> {
+    pub fn new(id: super::InvestmentId) -> Self {
+        Self {
+            id,
+            _m: Default::default(),
+        }
+    }
+}
+
+impl<Moment: 'static + Decode + Send, AssetId: 'static + Decode + Send, AssetBalance: 'static + Decode + Send> KeyValueInfo
+    for InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance>
+{
+    type Key = super::InvestmentId;
+    type KeyError = InvestmentIdError;
+    type Value = super::SimpleCrowdfunding<Moment, AssetId, AssetBalance>;
+    type ValueError = InvestmentOpportunityError;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
+}

@@ -85,6 +85,7 @@ pub type DigestItem = generic::DigestItem<Hash>;
 
 pub type AssetId = compact_h160::H160;
 pub type AssetBalance = u64;
+pub type Moment = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -238,7 +239,7 @@ parameter_types! {
 
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
-    type Moment = u64;
+    type Moment = Moment;
     type OnTimestampSet = Aura;
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
@@ -576,7 +577,7 @@ impl_runtime_apis! {
     }
     
     // Here we implement our custom runtime API.
-    impl pallet_deip::api::DeipApi<Block,  AccountId> for Runtime {
+    impl pallet_deip::api::DeipApi<Block, AccountId, Moment, AssetId, AssetBalance> for Runtime {
         fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
             Deip::get_project(project_id)
         }
@@ -603,6 +604,10 @@ impl_runtime_apis! {
         }
         fn get_review(review_id: &ReviewId) -> Review<H256, AccountId> {
             Deip::get_review(review_id)
+        }
+
+        fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<crate::Runtime>> {
+            Deip::get_investment_opportunity(id)
         }
     }
 

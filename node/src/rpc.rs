@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use node_template_runtime::{opaque::Block, AccountId, AssetBalance, AssetId, Balance, Index};
+use node_template_runtime::{opaque::Block, AccountId, AssetBalance, AssetId, Balance, Index, Moment};
 pub use sc_rpc_api::DenyUnsafe;
 use sp_api::{CallApiAt, Metadata, ProvideRuntimeApi};
 use sp_block_builder::BlockBuilder;
@@ -44,7 +44,7 @@ where
     C: Send + Sync + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-    C::Api: deip_rpc::DeipStorageRuntimeApi<Block, AccountId>,
+    C::Api: deip_rpc::DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance>,
     C::Api: deip_org_rpc::DeipOrgRuntimeApi<Block, AccountId>,
     C::Api: BlockBuilder<Block>,
     C::Api: Metadata<Block, Error = BlockChainError>,
