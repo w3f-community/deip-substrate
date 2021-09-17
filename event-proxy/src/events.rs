@@ -121,7 +121,7 @@ impl<T: DeipProposal + Deip + DeipOrg + DeipAssets> Serialize for DomainEventDat
             ContractAgreementAccepted(e) => e.serialize(serializer),
             // =============== DeipOrg:
             OrgCreate(e) => e.serialize(serializer),
-            OrgTransferOwnership(e) => e.serialize(serializer),
+            OrgAlterAuthority(e) => e.serialize(serializer),
             // =============== DeipAssets:
             AssetClassCreated(e) => e.serialize(serializer),
             AssetIssued(e) => e.serialize(serializer),
@@ -173,7 +173,7 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg + DeipAssets> {
     ContractAgreementAccepted(deip::ContractAgreementAcceptedEvent<T>),
     // DeipOrg:
     OrgCreate(deip_org::OrgCreateEvent<T>),
-    OrgTransferOwnership(deip_org::OrgTransferOwnershipEvent<T>),
+    OrgAlterAuthority(deip_org::OrgAlterAuthorityEvent<T>),
     // DeipAssets:
     AssetClassCreated(deip_assets::CreatedEvent<T>),
     AssetIssued(deip_assets::IssuedEvent<T>),
@@ -400,11 +400,11 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + DeipAssets + Debug
             meta,
         },
         (                               
-            deip_org::OrgTransferOwnershipEvent::<T>::MODULE,
-            deip_org::OrgTransferOwnershipEvent::<T>::EVENT
+            deip_org::OrgAlterAuthorityEvent::<T>::MODULE,
+            deip_org::OrgAlterAuthorityEvent::<T>::EVENT
         ) => DomainEvent {
-            name: "dao_transferOwnership".to_string(),
-            data: decode_event_data(raw).map(OrgTransferOwnership)?,
+            name: "dao_alterAuthority".to_string(),
+            data: decode_event_data(raw).map(OrgAlterAuthority)?,
             meta,
         },
         // =========== DeipAssets:

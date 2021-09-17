@@ -98,8 +98,6 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// Emits when organisation created
         OrgCreate(OrgOf<T>),
-        /// Emits when organisation ownership transferred
-        OrgTransferOwnership(OrgOf<T>),
         /// Emits when authority alteration
         OrgAlterAuthority(OrgOf<T>),
     }
@@ -322,6 +320,7 @@ pub mod pallet {
         
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+        #[cfg_attr(feature = "std", serde(tag = "operation", content = "data"))]
         pub enum AlterAuthority<AccountId> {
             AddMember { member: AccountId },
             RemoveMember { member: AccountId},

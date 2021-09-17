@@ -328,12 +328,11 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
             }
             .serialize(serializer),
 
-            transfer_ownership(transfer_to, key_source) => CallObject {
+            alter_authority(alter_authority_) => CallObject {
                 module: "deip_org",
-                call: "transfer_ownership",
-                args: &DeipOrgTransferOwnershipCallArgs {
-                    transfer_to,
-                    key_source,
+                call: "alter_authority",
+                args: &DeipOrgAlterAuthorityCallArgs {
+                    alter_authority: alter_authority_,
                 },
             }
             .serialize(serializer),
@@ -590,9 +589,8 @@ struct DeipOrgOnBehalfCallArgs<A, B> {
 }
 
 #[derive(Serialize)]
-struct DeipOrgTransferOwnershipCallArgs<A, B> {
-    transfer_to: A,
-    key_source: B,
+struct DeipOrgAlterAuthorityCallArgs<A> {
+    alter_authority: A,
 }
 
 #[derive(Serialize)]

@@ -55,7 +55,7 @@ where
             /* deip_org::OrgCreateEvent */
             unimplemented!()
         }
-        OrgTransferOwnership(_) => {
+        OrgAlterAuthority(_) => {
             /* deip_org::OrgTransferOwnershipEvent */
             unimplemented!()
         }

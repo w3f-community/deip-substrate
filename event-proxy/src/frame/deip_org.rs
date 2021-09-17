@@ -27,12 +27,12 @@ impl<T: DeipOrg> Serialize for OrgCreateEvent<T> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct OrgTransferOwnershipEvent<T: DeipOrg>(T::Org);
-impl<T: DeipOrg> Serialize for OrgTransferOwnershipEvent<T> {
+pub struct OrgAlterAuthorityEvent<T: DeipOrg>(T::Org);
+impl<T: DeipOrg> Serialize for OrgAlterAuthorityEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("OrgTransferOwnershipEvent", 1)?;
+        let mut s = serializer.serialize_struct("OrgAlterAuthorityEvent", 1)?;
         s.serialize_field("dao", &self.0)?;
         s.end()
     }

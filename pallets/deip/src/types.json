@@ -10,15 +10,29 @@
       "Org": "OrgName"
     }
   },
-  "InputKeySource": "KeySource",
-  "KeySource": {
+  "AlterAuthority": {
+    "_enum": {
+      "AddMember": {
+        "member": "AccountId"
+      },
+      "RemoveMember": {
+        "member": "AccountId"
+      },
+      "ReplaceAuthority": {
+        "authority_key": "AccountId",
+        "authority": "Authority"
+      }
+    }
+  },
+  "InputAuthority": "Authority",
+  "Authority": {
     "signatories": "Vec<AccountId>",
     "threshold": "u16"
   },
   "OrgOf": "Org",
   "Org": {
-    "members_key": "AccountId",
-    "members_key_source": "KeySource",
+    "authority_key": "AccountId",
+    "authority": "Authoritry",
     "name": "OrgName",
     "org_key": "AccountId"
   },
