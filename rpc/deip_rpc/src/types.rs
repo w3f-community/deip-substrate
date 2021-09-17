@@ -111,8 +111,11 @@ impl<Moment, AssetId, AssetBalance> InvestmentOpportunityKeyValue<Moment, AssetI
     }
 }
 
-impl<Moment: 'static + Decode + Send, AssetId: 'static + Decode + Send, AssetBalance: 'static + Decode + Send> KeyValueInfo
-    for InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance>
+impl<
+        Moment: 'static + Decode + Send,
+        AssetId: 'static + Decode + Send,
+        AssetBalance: 'static + Decode + Send,
+    > KeyValueInfo for InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance>
 {
     type Key = super::InvestmentId;
     type KeyError = InvestmentIdError;
@@ -145,7 +148,9 @@ pub struct AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance> {
     _m: std::marker::PhantomData<(AccountId, Hash, Moment, AssetId, AssetBalance)>,
 }
 
-impl<AccountId, Hash, Moment, AssetId, AssetBalance> AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance> {
+impl<AccountId, Hash, Moment, AssetId, AssetBalance>
+    AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance>
+{
     pub fn new(id: super::ContractAgreementId) -> Self {
         Self {
             id,
@@ -165,8 +170,58 @@ where
 {
     type Key = super::ContractAgreementId;
     type KeyError = AgreementIdError;
-    type Value = super::contract::Agreement<AccountId, Hash, Moment, super::DeipAsset<AssetId, AssetBalance>>;
+    type Value = super::contract::Agreement<
+        AccountId,
+        Hash,
+        Moment,
+        super::DeipAsset<AssetId, AssetBalance>,
+    >;
     type ValueError = AgreementError;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
+}
+
+// Project contents
+
+pub struct ProjectContentIdError;
+impl GetError for ProjectContentIdError {
+    fn get_error() -> Error {
+        Error::ProjectContentIdDecodeFailed
+    }
+}
+
+pub struct ProjectContentError;
+impl GetError for ProjectContentError {
+    fn get_error() -> Error {
+        Error::ProjectContentDecodeFailed
+    }
+}
+
+pub struct ProjectContentKeyValue<Hash, AccountId> {
+    pub id: super::ProjectContentId,
+    _m: std::marker::PhantomData<(Hash, AccountId)>,
+}
+
+impl<Hash, AccountId> ProjectContentKeyValue<Hash, AccountId> {
+    pub fn new(id: super::ProjectContentId) -> Self {
+        Self {
+            id,
+            _m: Default::default(),
+        }
+    }
+}
+
+impl<Hash, AccountId> KeyValueInfo for ProjectContentKeyValue<Hash, AccountId>
+where
+    AccountId: 'static + Decode + Send,
+    Hash: 'static + Decode + Send,
+{
+    type Key = super::ProjectContentId;
+    type KeyError = ProjectContentIdError;
+    type Value = super::ProjectContent<Hash, AccountId>;
+    type ValueError = ProjectContentError;
 
     fn key(&self) -> &Self::Key {
         &self.id

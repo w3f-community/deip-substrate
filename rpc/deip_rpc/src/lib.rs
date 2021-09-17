@@ -42,19 +42,29 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
         start_id: Option<ProjectId>,
     ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>>;
 
-    #[rpc(name = "deipStorage_getProjectContentList")]
+    #[rpc(name = "deip_getProjectContentList")]
     fn get_project_content_list(
         &self,
         at: Option<BlockHash>,
-        content_ids: Option<Vec<ProjectContentId>>,
-    ) -> Result<Vec<ProjectContent<H256, AccountId>>>;
-    #[rpc(name = "deipStorage_getProjectContent")]
-    fn get_project_content(
+        count: u32,
+        start_id: Option<ProjectContentId>,
+    ) -> FutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>>;
+
+    #[rpc(name = "deip_getProjectContentListByProject")]
+    fn get_project_content_list_by_project(
         &self,
         at: Option<BlockHash>,
         project_id: ProjectId,
-        project_content_id: ProjectContentId,
-    ) -> Result<ProjectContent<H256, AccountId>>;
+        count: u32,
+        start_id: Option<ProjectContentId>,
+    ) -> FutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>>;
+
+    #[rpc(name = "deip_getProjectContent")]
+    fn get_project_content(
+        &self,
+        at: Option<BlockHash>,
+        id: ProjectContentId,
+    ) -> Result<ProjectContent<Hash, AccountId>>;
 
     #[rpc(name = "deip_getDomainList")]
     fn get_domains(
@@ -253,38 +263,50 @@ where
 
     fn get_project_content_list(
         &self,
-        at: Option<<Block as BlockT>::Hash>,
-        content_ids: Option<Vec<ProjectContentId>>,
-    ) -> Result<Vec<ProjectContent<H256, AccountId>>> {
-        let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
-
-        let runtime_api_result = api.get_project_content_list(&at, &content_ids);
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+        at: Option<HashOf<Block>>,
+        count: u32,
+        start_id: Option<ProjectContentId>,
+    ) -> FutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>> {
+        StorageMap::<Identity>::get_list(
+            &self.state,
+            at,
+            b"Deip",
+            b"ProjectContentMap",
+            count,
+            start_id.map(types::ProjectContentKeyValue::new),
+        )
     }
+
+    fn get_project_content_list_by_project(
+        &self,
+        at: Option<HashOf<Block>>,
+        key: ProjectId,
+        count: u32,
+        start_id: Option<ProjectContentId>,
+    ) -> FutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>> {
+        get_list_by_index::<Identity, Identity, _, _, _, _>(
+            &self.state,
+            at,
+            b"Deip",
+            b"ContentIdByProjectId",
+            b"ProjectContentMap",
+            count,
+            &key,
+            start_id.map(types::ProjectContentKeyValue::new),
+        )
+    }
+
     fn get_project_content(
         &self,
-        at: Option<<Block as BlockT>::Hash>,
-        project_id: ProjectId,
-        project_content_id: ProjectContentId,
-    ) -> Result<ProjectContent<H256, AccountId>> {
+        at: Option<HashOf<Block>>,
+        id: ProjectContentId,
+    ) -> Result<ProjectContent<Hash, AccountId>> {
         let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
+        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
-        let runtime_api_result = api.get_project_content(&at, &project_id, &project_content_id);
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+        let runtime_api_result = api.get_project_content(&at, &id);
+        runtime_api_result
+            .map_err(|e| to_rpc_error(Error::ProjectContentApiGetFailed, Some(format!("{:?}", e))))
     }
 
     fn get_nda_list(

@@ -66,10 +66,10 @@ impl<T: Config> Module<T> {
             .err()
             .ok_or(Error::<T>::ReviewAlreadyExists)?;
 
-        ProjectsContent::<T>::get()
-            .iter()
-            .find(|(id, ..)| id == &review.project_content_external_id)
-            .ok_or(Error::<T>::NoSuchProjectContent)?;
+        ensure!(
+            ProjectContentMap::<T>::contains_key(review.project_content_external_id),
+            Error::<T>::NoSuchProjectContent
+        );
 
         reviews.insert(
             index_to_insert_review,

@@ -581,15 +581,11 @@ impl_runtime_apis! {
         fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
             Deip::get_project(project_id)
         }
-        fn get_project_content_list(content_ids: &Option<Vec<ProjectContentId>>) -> Vec<ProjectContent<H256, AccountId>> {
-            Deip::get_project_content_list(content_ids)
+
+        fn get_project_content(id: &ProjectContentId) -> ProjectContentOf<crate::Runtime> {
+            Deip::get_project_content(id)
         }
-        fn get_project_content(project_id: &ProjectId, project_content_id: &ProjectContentId) -> ProjectContent<H256, AccountId> {
-            Deip::get_project_content(project_id, project_content_id)
-        }
-        fn get_domains() -> Vec<Domain> {
-            Deip::get_domains()
-        }
+
         fn get_domain(domain_id: &DomainId) -> Domain {
             Deip::get_domain(domain_id)
         }

@@ -27,6 +27,9 @@ pub enum Error {
     AgreementApiGetFailed,
     DomainApiGetFailed,
     ProjectApiGetFailed,
+    ProjectContentApiGetFailed,
+    ProjectContentIdDecodeFailed,
+    ProjectContentDecodeFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -58,6 +61,9 @@ impl Into<RpcErrorCode> for Error {
             AgreementApiGetFailed => BASE + 19,
             DomainApiGetFailed => BASE + 20,
             ProjectApiGetFailed => BASE + 21,
+            ProjectContentApiGetFailed => BASE + 22,
+            ProjectContentIdDecodeFailed => BASE + 23,
+            ProjectContentDecodeFailed => BASE + 24,
         })
     }
 }

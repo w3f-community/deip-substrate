@@ -464,10 +464,8 @@ decl_storage! {
         /// Contains various contributions from DAOs
         InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, InvestmentOf<T>)>;
 
-        /// Map to Project Content Info
-        ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
-        /// Project Content list, guarantees uniquest and provides Project Conent listing
-        ProjectsContent get(fn project_content_list): Vec<(ProjectContentId, ProjectId, T::AccountId)>;
+        ProjectContentMap: map hasher(identity) ProjectContentId => ProjectContentOf<T>;
+        ContentIdByProjectId: double_map hasher(identity) ProjectContentId, hasher(identity) ProjectId => ();
 
         /// NDA list, guarantees uniquest and provides NDA listing
         Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
@@ -667,10 +665,7 @@ decl_module! {
                 references
             };
 
-            let mut project_content = ProjectsContent::<T>::get();
-
-            let index_to_insert_content = project_content.binary_search_by_key(&content.external_id, |&(a,_, _)| a)
-                .err().ok_or(Error::<T>::ProjectContentAlreadyExists)?;
+            ensure!(!ProjectContentMap::<T>::contains_key(&content.external_id), Error::<T>::ProjectContentAlreadyExists);
 
             let project = ProjectMap::<T>::get(content.project_external_id);
 
@@ -678,22 +673,17 @@ decl_module! {
             ensure!(project.team_id == content.team_id, Error::<T>::ProjectNotBelongToTeam);
             ensure!(!Self::is_project_finished(&project.external_id), Error::<T>::ProjectAlreadyFinished);
 
-
             if let Some(references) = &content.references {
                 let is_all_references_exists = references
                     .iter()
-                    .all(|&reference| project_content.binary_search_by_key(&reference,|&(id,_, _)| id).is_ok());
+                    .all(|&reference| ProjectContentMap::<T>::contains_key(reference));
 
                 ensure!(is_all_references_exists, Error::<T>::NoSuchReference);
             }
 
-            project_content.insert(index_to_insert_content, (content.external_id, content.project_external_id,  content.team_id.clone()));
-            ProjectsContent::<T>::put(project_content);
+            ProjectContentMap::<T>::insert(content.external_id, content.clone());
+            ContentIdByProjectId::insert(content.project_external_id, content.external_id, ());
 
-            // Store the content
-            ProjectContentMap::<T>::insert(project.external_id, content.external_id, content.clone());
-
-            // Emit an event that the content was created.
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
 
@@ -1051,41 +1041,30 @@ impl<T: Config> ValidateUnsigned for Module<T> {
 
 impl<T: Config> Module<T> {
     fn is_project_finished(project_id: &ProjectId) -> bool {
-        ProjectContentMap::<T>::iter_prefix_values(project_id)
-            .any(|x| x.content_type == ProjectContentType::FinalResult)
+        ContentIdByProjectId::iter_prefix(project_id)
+            .map(|(k, _)| ProjectContentMap::<T>::get(k))
+            .any(|c| c.content_type == ProjectContentType::FinalResult)
     }
 
     pub fn get_project(project_id: &ProjectId) -> ProjectOf<T> {
         ProjectMap::<T>::get(project_id)
     }
+
     pub fn try_get_project_team(id: &ProjectId) -> Option<AccountIdOf<T>> {
         match ProjectMap::<T>::try_get(*id) {
             Err(_) => None,
             Ok(project) => Some(project.team_id),
         }
     }
-    pub fn get_domains() -> Vec<Domain> {
-        <Domains as IterableStorageMap<DomainId, Domain>>::iter()
-            .map(|(_id, domain)| domain)
-            .collect()
-    }
+
     pub fn get_domain(domain_id: &DomainId) -> Domain {
         Domains::get(domain_id)
     }
-    pub fn get_project_content_list(content_ids: &Option<Vec<ProjectContentId>>) -> Vec<ProjectContentOf<T>>{
-        <ProjectContentMap<T> as IterableStorageDoubleMap<ProjectId, ProjectContentId, ProjectContentOf<T>>>::iter()
-            .filter(|(_project_id, project_content_id, ..)| {                
-                match content_ids {
-                    Some(ids) => ids.contains(&project_content_id),
-                    _ => true
-                }
-            })
-            .map(|(_project_id, _project_content_id, content)| content)
-            .collect()
+
+    pub fn get_project_content(id: &ProjectContentId) -> ProjectContentOf<T> {
+        ProjectContentMap::<T>::get(id)
     }
-    pub fn get_project_content(project_id: &ProjectId, project_content_id: &ProjectContentId) -> ProjectContentOf<T> {
-        ProjectContentMap::<T>::get(project_id, project_content_id)
-    }
+
     pub fn get_nda_list() -> Vec<NdaOf<T>>{
         <NdaMap<T> as IterableStorageMap<NdaId, NdaOf<T>>>::iter()
             .map(|(_id, nda)| nda)
