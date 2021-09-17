@@ -123,3 +123,52 @@ impl<Moment: 'static + Decode + Send, AssetId: 'static + Decode + Send, AssetBal
         &self.id
     }
 }
+
+// Contract agreements
+
+pub struct AgreementIdError;
+impl GetError for AgreementIdError {
+    fn get_error() -> Error {
+        Error::AgreementIdDecodeFailed
+    }
+}
+
+pub struct AgreementError;
+impl GetError for AgreementError {
+    fn get_error() -> Error {
+        Error::AgreementDecodeFailed
+    }
+}
+
+pub struct AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance> {
+    pub id: super::ContractAgreementId,
+    _m: std::marker::PhantomData<(AccountId, Hash, Moment, AssetId, AssetBalance)>,
+}
+
+impl<AccountId, Hash, Moment, AssetId, AssetBalance> AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance> {
+    pub fn new(id: super::ContractAgreementId) -> Self {
+        Self {
+            id,
+            _m: Default::default(),
+        }
+    }
+}
+
+impl<AccountId, Hash, Moment, AssetId, AssetBalance> KeyValueInfo
+    for AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance>
+where
+    AccountId: 'static + Decode + Send,
+    Hash: 'static + Decode + Send,
+    Moment: 'static + Decode + Send,
+    AssetId: 'static + Decode + Send,
+    AssetBalance: 'static + Decode + Send,
+{
+    type Key = super::ContractAgreementId;
+    type KeyError = AgreementIdError;
+    type Value = super::contract::Agreement<AccountId, Hash, Moment, super::DeipAsset<AssetId, AssetBalance>>;
+    type ValueError = AgreementError;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
+}

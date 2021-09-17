@@ -86,12 +86,13 @@ use review::Vote as DeipReviewVote;
 mod asset;
 pub use asset::Asset as DeipAsset;
 
-mod contract;
+pub mod contract;
 pub use contract::{
     Id as ContractAgreementId,
     TermsOf as ContractAgreementTermsOf,
+    IndexTerms as ContractAgreementIndexTerms,
+    AgreementOf as ContractAgreementOf,
 };
-use contract::AgreementOf as ContractAgreementOf;
 
 pub mod traits;
 
@@ -491,7 +492,8 @@ decl_storage! {
         // Because the map does not store its size, we must store it separately
         DomainCount get(fn domain_count) config(): u32;
 
-        ContractAgreementMap: map hasher(identity) ContractAgreementId => ContractAgreementOf<T>;
+        ContractAgreementMap: map hasher(blake2_128_concat) ContractAgreementId => ContractAgreementOf<T>;
+        ContractAgreementIdByType: double_map hasher(twox_64_concat) ContractAgreementIndexTerms, hasher(blake2_128_concat) ContractAgreementId => ();
     }
 }
 
@@ -1103,5 +1105,9 @@ impl<T: Config> Module<T> {
 
     pub fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<T>> {
         SimpleCrowdfundingMap::<T>::try_get(id).ok()
+    }
+
+    pub fn get_contract_agreement(id: &ContractAgreementId) -> Option<ContractAgreementOf<T>> {
+        ContractAgreementMap::<T>::try_get(id).ok()
     }
 }

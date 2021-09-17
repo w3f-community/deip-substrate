@@ -577,7 +577,7 @@ impl_runtime_apis! {
     }
     
     // Here we implement our custom runtime API.
-    impl pallet_deip::api::DeipApi<Block, AccountId, Moment, AssetId, AssetBalance> for Runtime {
+    impl pallet_deip::api::DeipApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash> for Runtime {
         fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
             Deip::get_project(project_id)
         }
@@ -608,6 +608,10 @@ impl_runtime_apis! {
 
         fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<crate::Runtime>> {
             Deip::get_investment_opportunity(id)
+        }
+
+        fn get_contract_agreement(id: &ContractAgreementId) -> Option<ContractAgreementOf<crate::Runtime>> {
+            Deip::get_contract_agreement(id)
         }
     }
 

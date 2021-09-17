@@ -108,9 +108,9 @@ where
     ) -> FutureResult<Vec<ListResult<OrgName, Org<AccountId, OrgName>>>> {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
+            at,
             b"DeipOrg",
             b"OrgRepository",
-            at,
             count,
             start_id.map(types::DaoKeyValue::new),
         )

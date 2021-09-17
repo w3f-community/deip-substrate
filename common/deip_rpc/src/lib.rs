@@ -142,10 +142,10 @@ where
 
 pub fn get_list_by_keys<KeyValue, Hasher, State, BlockHash, KeyMap, T>(
     state: &State,
+    at: Option<BlockHash>,
     prefix_key: StorageKey,
     count: u32,
     start_key: Option<StorageKey>,
-    at: Option<BlockHash>,
     key_map: KeyMap,
 ) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
 where
@@ -176,6 +176,64 @@ where
     let key_futures: Vec<_> = keys.into_iter().map(key_map).collect();
 
     StorageMap::<Hasher>::get_list_by_keys::<KeyValue, _>(key_futures)
+}
+
+/// The function gets list of keys from the first map (i.e. index) and
+/// then retrieves the data from the second map (storage itself).
+///
+/// Hashing type of the second key in the index has to be the same
+/// used for the first key in the second map.
+///
+/// The index map has to be StorageDoubleMap.
+///
+pub fn get_list_by_index<IndexKeyHasher, Hasher, State, BlockHash, Key, KeyValue>(
+    state: &State,
+    at: Option<BlockHash>,
+    pallet: &[u8],
+    index: &[u8],
+    storage: &[u8],
+    count: u32,
+    key: &Key,
+    start_key: Option<KeyValue>,
+) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
+where
+    State: sc_rpc_api::state::StateApi<BlockHash>,
+    BlockHash: Copy,
+    Key: Encode,
+    KeyValue: KeyValueInfo,
+    IndexKeyHasher: StorageHasher + ReversibleStorageHasher,
+    Hasher: StorageHasher + ReversibleStorageHasher,
+{
+    let key_encoded = key.encode();
+    let key_encoded_size = key_encoded.len();
+
+    let map = |k: StorageKey| {
+        // below we retrieve key in the other map from the index map key
+        let no_prefix = IndexKeyHasher::reverse(&k.0[32..]);
+        let key_hashed =
+            HashedKeyRef::<'_, Hasher>::unsafe_from_hashed(&no_prefix[key_encoded_size..]);
+
+        let key = chain_key_hash_map(&prefix(pallet, storage), &key_hashed);
+
+        state
+            .storage(key.clone(), at)
+            .map(|v| (key, v))
+            .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
+    };
+
+    let prefix = prefix(pallet, index);
+    let key = HashedKey::<IndexKeyHasher>::unsafe_from_encoded(&key_encoded);
+    let start_key = start_key
+        .map(|id| chain_key_hash_double_map(&prefix, &key, &HashedKey::<Hasher>::new(&id.key())));
+
+    get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
+        state,
+        at,
+        chain_key_hash_map(&prefix, &key),
+        count,
+        start_key,
+        map,
+    )
 }
 
 pub struct StorageMap<Hasher>(std::marker::PhantomData<Hasher>);
@@ -210,12 +268,12 @@ impl<Key> From<Key> for KeyWrapper<Key> {
 }
 
 impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
-    pub fn get_value<R, State, Key, BlockHash>(
+    pub fn get_value<R, State, BlockHash, Key>(
         state: &State,
+        at: Option<BlockHash>,
         pallet: &[u8],
         map: &[u8],
         key: &Key,
-        at: Option<BlockHash>,
     ) -> FutureResult<Option<R>>
     where
         R: 'static + Decode + GetError + Send,
@@ -228,9 +286,9 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
 
     pub fn get_list<KeyValue, State, BlockHash>(
         state: &State,
+        at: Option<BlockHash>,
         pallet: &[u8],
         map: &[u8],
-        at: Option<BlockHash>,
         count: u32,
         start_id: Option<KeyValue>,
     ) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
@@ -252,10 +310,10 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
 
         get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
             state,
+            at,
             StorageKey(prefix),
             count,
             start_key,
-            at,
             map,
         )
     }
@@ -310,13 +368,13 @@ pub struct StorageDoubleMap<HasherFirst, HasherSecond>(
 impl<HasherFirst: StorageHasher, HasherSecond: StorageHasher>
     StorageDoubleMap<HasherFirst, HasherSecond>
 {
-    pub fn get_value<R, State, KeyFirst, KeySecond, BlockHash>(
+    pub fn get_value<R, State, BlockHash, KeyFirst, KeySecond>(
         state: &State,
+        at: Option<BlockHash>,
         pallet: &[u8],
         map: &[u8],
         key_first: &KeyFirst,
         key_second: &KeySecond,
-        at: Option<BlockHash>,
     ) -> FutureResult<Option<R>>
     where
         R: 'static + Decode + GetError + Send,

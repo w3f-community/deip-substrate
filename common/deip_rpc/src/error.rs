@@ -22,6 +22,11 @@ pub enum Error {
     InvestmentOpportunityApiGetFailed,
     InvestmentIdDecodeFailed,
     InvestmentOpportunityDecodeFailed,
+    AgreementIdDecodeFailed,
+    AgreementDecodeFailed,
+    AgreementApiGetFailed,
+    DomainApiGetFailed,
+    ProjectApiGetFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -48,6 +53,11 @@ impl Into<RpcErrorCode> for Error {
             InvestmentOpportunityApiGetFailed => BASE + 14,
             InvestmentIdDecodeFailed => BASE + 15,
             InvestmentOpportunityDecodeFailed => BASE + 16,
+            AgreementIdDecodeFailed => BASE + 17,
+            AgreementDecodeFailed => BASE + 18,
+            AgreementApiGetFailed => BASE + 19,
+            DomainApiGetFailed => BASE + 20,
+            ProjectApiGetFailed => BASE + 21,
         })
     }
 }

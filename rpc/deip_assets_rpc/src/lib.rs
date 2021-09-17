@@ -16,7 +16,7 @@ use frame_support::{Blake2_128Concat, ReversibleStorageHasher, StorageHasher};
 
 use common_rpc::{
     chain_key_hash_double_map, prefix, to_rpc_error, Error, FutureResult, HashOf, HashedKey,
-    HashedKeyTrait, ListResult, StorageDoubleMap, StorageMap,
+    ListResult, StorageDoubleMap, StorageMap,
 };
 
 mod types;
@@ -101,7 +101,7 @@ where
         at: Option<HashOf<Block>>,
         id: AssetId,
     ) -> FutureResult<Option<AssetDetails<Balance, AccountId, DepositBalance>>> {
-        StorageMap::<Blake2_128Concat>::get_value(&self.state, b"Assets", b"Asset", &id, at)
+        StorageMap::<Blake2_128Concat>::get_value(&self.state, at, b"Assets", b"Asset", &id)
     }
 
     fn get_asset_list(
@@ -113,9 +113,9 @@ where
     {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
+            at,
             b"Assets",
             b"Asset",
-            at,
             count,
             start_id.map(types::AssetKeyValue::new),
         )
@@ -224,11 +224,11 @@ where
     ) -> FutureResult<Option<AssetBalance<Balance>>> {
         StorageDoubleMap::<Blake2_128Concat, Blake2_128Concat>::get_value(
             &self.state,
+            at,
             b"Assets",
             b"Account",
             &asset,
             &owner,
-            at,
         )
     }
 

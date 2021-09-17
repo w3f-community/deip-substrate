@@ -1,5 +1,4 @@
 use codec::Codec;
-use jsonrpc_core::futures::future::Future;
 use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
 use jsonrpc_derive::rpc;
 pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
@@ -10,16 +9,15 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use std::sync::Arc;
 
 use common_rpc::{
-    chain_key_hash_double_map, chain_key_hash_map, prefix, to_rpc_error, Error, FutureResult,
-    HashOf, HashedKey, HashedKeyRef, HashedKeyTrait, ListResult, StorageKey, StorageMap,
+    get_list_by_index, to_rpc_error, Error, FutureResult, HashOf, ListResult, StorageMap,
 };
 
-use frame_support::{Blake2_128Concat, Identity, ReversibleStorageHasher};
+use frame_support::{Blake2_128Concat, Identity, Twox64Concat};
 
 mod types;
 
 #[rpc]
-pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance> {
+pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Hash> {
     #[rpc(name = "deip_getProjectList")]
     fn get_project_list(
         &self,
@@ -95,7 +93,49 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance> {
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<InvestmentId>,
-    ) -> FutureResult<Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>>;
+    ) -> FutureResult<
+        Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>,
+    >;
+
+    #[rpc(name = "deip_getContractAgreement")]
+    fn get_contract_agreement(
+        &self,
+        at: Option<BlockHash>,
+        id: ContractAgreementId,
+    ) -> Result<
+        Option<contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>>,
+    >;
+
+    #[rpc(name = "deip_getContractAgreementList")]
+    fn get_contract_agreement_list(
+        &self,
+        at: Option<BlockHash>,
+        count: u32,
+        start_id: Option<ContractAgreementId>,
+    ) -> FutureResult<
+        Vec<
+            ListResult<
+                ContractAgreementId,
+                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
+            >,
+        >,
+    >;
+
+    #[rpc(name = "deip_getContractAgreementListByType")]
+    fn get_contract_agreement_list_by_type(
+        &self,
+        at: Option<BlockHash>,
+        key: ContractAgreementIndexTerms,
+        count: u32,
+        start_id: Option<ContractAgreementId>,
+    ) -> FutureResult<
+        Vec<
+            ListResult<
+                ContractAgreementId,
+                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
+            >,
+        >,
+    >;
 }
 
 /// A struct that implements the `DeipStorage`.
@@ -118,20 +158,21 @@ impl<C, State, M> DeipStorage<C, State, M> {
     }
 }
 
-impl<C, State, Block, AccountId, Moment, AssetId, AssetBalance>
-    DeipStorageApi<HashOf<Block>, AccountId, Moment, AssetId, AssetBalance>
+impl<C, State, Block, AccountId, Moment, AssetId, AssetBalance, Hash>
+    DeipStorageApi<HashOf<Block>, AccountId, Moment, AssetId, AssetBalance, Hash>
     for DeipStorage<C, State, Block>
 where
     Block: BlockT,
     C: Send + Sync + 'static,
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block>,
-    C::Api: DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance>,
+    C::Api: DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash>,
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
     AccountId: 'static + Codec + Send,
     Moment: 'static + Codec + Send,
     AssetId: 'static + Codec + Send,
     AssetBalance: 'static + Codec + Send,
+    Hash: 'static + Codec + Send,
 {
     fn get_project_list(
         &self,
@@ -141,9 +182,9 @@ where
     ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>> {
         StorageMap::<Identity>::get_list(
             &self.state,
+            at,
             b"Deip",
             b"ProjectMap",
-            at,
             count,
             start_id.map(types::ProjectKeyValue::new),
         )
@@ -155,16 +196,11 @@ where
         project_id: ProjectId,
     ) -> Result<Project<H256, AccountId>> {
         let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
+        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
         let runtime_api_result = api.get_project(&at, &project_id);
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+        runtime_api_result
+            .map_err(|e| to_rpc_error(Error::ProjectApiGetFailed, Some(format!("{:?}", e))))
     }
 
     fn get_project_list_by_team(
@@ -174,35 +210,15 @@ where
         count: u32,
         start_id: Option<ProjectId>,
     ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>> {
-        let key_encoded = key.encode();
-        let key_encoded_size = key_encoded.len();
-
-        let map = |k: StorageKey| {
-            // below we retrieve key in the other map from the index map key
-            let no_prefix = Blake2_128Concat::reverse(&k.0[32..]);
-            let key_hashed =
-                HashedKeyRef::<'_, Identity>::unsafe_from_hashed(&no_prefix[key_encoded_size..]);
-
-            let key = chain_key_hash_map(&prefix(b"Deip", b"ProjectMap"), &key_hashed);
-
-            self.state
-                .storage(key.clone(), at)
-                .map(|v| (key, v))
-                .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
-        };
-
-        let prefix = prefix(b"Deip", b"ProjectIdByTeamId");
-        let key = HashedKey::<Blake2_128Concat>::unsafe_from_encoded(&key_encoded);
-        let start_key = start_id
-            .map(|id| chain_key_hash_double_map(&prefix, &key, &HashedKey::<Identity>::new(&id)));
-
-        common_rpc::get_list_by_keys::<types::ProjectKeyValue<H256, AccountId>, Identity, _, _, _, _>(
+        get_list_by_index::<Blake2_128Concat, Identity, _, _, _, _>(
             &self.state,
-            chain_key_hash_map(&prefix, &key),
-            count,
-            start_key,
             at,
-            map,
+            b"Deip",
+            b"ProjectIdByTeamId",
+            b"ProjectMap",
+            count,
+            &key,
+            start_id.map(types::ProjectKeyValue::new),
         )
     }
 
@@ -214,9 +230,9 @@ where
     ) -> FutureResult<Vec<ListResult<DomainId, Domain>>> {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
+            at,
             b"Deip",
             b"Domains",
-            at,
             count,
             start_id.map(types::DomainKeyValue::new),
         )
@@ -228,16 +244,11 @@ where
         domain_id: DomainId,
     ) -> Result<Domain> {
         let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
+        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
         let runtime_api_result = api.get_domain(&at, &domain_id);
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+        runtime_api_result
+            .map_err(|e| to_rpc_error(Error::DomainApiGetFailed, Some(format!("{:?}", e))))
     }
 
     fn get_project_content_list(
@@ -366,14 +377,80 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<InvestmentId>,
-    ) -> FutureResult<Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>> {
+    ) -> FutureResult<
+        Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>,
+    > {
         StorageMap::<Identity>::get_list(
             &self.state,
+            at,
             b"Deip",
             b"SimpleCrowdfundingMap",
-            at,
             count,
             start_id.map(types::InvestmentOpportunityKeyValue::new),
+        )
+    }
+
+    fn get_contract_agreement(
+        &self,
+        at: Option<HashOf<Block>>,
+        id: ContractAgreementId,
+    ) -> Result<
+        Option<contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>>,
+    > {
+        let api = self.client.runtime_api();
+        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
+
+        let runtime_api_result = api.get_contract_agreement(&at, &id);
+        runtime_api_result
+            .map_err(|e| to_rpc_error(Error::AgreementApiGetFailed, Some(format!("{:?}", e))))
+    }
+
+    fn get_contract_agreement_list(
+        &self,
+        at: Option<HashOf<Block>>,
+        count: u32,
+        start_id: Option<ContractAgreementId>,
+    ) -> FutureResult<
+        Vec<
+            ListResult<
+                ContractAgreementId,
+                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
+            >,
+        >,
+    > {
+        StorageMap::<Blake2_128Concat>::get_list(
+            &self.state,
+            at,
+            b"Deip",
+            b"ContractAgreementMap",
+            count,
+            start_id.map(types::AgreementKeyValue::new),
+        )
+    }
+
+    fn get_contract_agreement_list_by_type(
+        &self,
+        at: Option<HashOf<Block>>,
+        key: ContractAgreementIndexTerms,
+        count: u32,
+        start_id: Option<ContractAgreementId>,
+    ) -> FutureResult<
+        Vec<
+            ListResult<
+                ContractAgreementId,
+                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
+            >,
+        >,
+    > {
+        get_list_by_index::<Twox64Concat, Blake2_128Concat, _, _, _, _>(
+            &self.state,
+            at,
+            b"Deip",
+            b"ContractAgreementIdByType",
+            b"ContractAgreementMap",
+            count,
+            &key,
+            start_id.map(types::AgreementKeyValue::new),
         )
     }
 }
