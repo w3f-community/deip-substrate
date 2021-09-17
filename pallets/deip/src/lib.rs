@@ -482,6 +482,8 @@ decl_storage! {
         /// Review list, guarantees uniquest and provides Review listing
         Reviews get(fn reviews): Vec<(ReviewId, T::AccountId)>;
 
+        ReviewIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ReviewId => ();
+
         ReviewVoteMap: map hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => DeipReviewVoteOf<T>;
 
         // The set of all Domains.

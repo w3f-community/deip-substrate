@@ -66,10 +66,8 @@ impl<T: Config> Module<T> {
             .err()
             .ok_or(Error::<T>::ReviewAlreadyExists)?;
 
-        ensure!(
-            ProjectContentMap::<T>::contains_key(review.project_content_external_id),
-            Error::<T>::NoSuchProjectContent
-        );
+        let content = ProjectContentMap::<T>::try_get(review.project_content_external_id)
+            .map_err(|_| Error::<T>::NoSuchProjectContent)?;
 
         reviews.insert(
             index_to_insert_review,
@@ -78,6 +76,7 @@ impl<T: Config> Module<T> {
         Reviews::<T>::put(reviews);
 
         ReviewMap::<T>::insert(review.external_id, review.clone());
+        ReviewIdByProjectId::insert(content.project_external_id, review.external_id, ());
 
         Self::deposit_event(RawEvent::ReviewCreated(account, review));
 

@@ -90,6 +90,15 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
         start_id: Option<ReviewId>,
     ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
 
+    #[rpc(name = "deip_getReviewListByProject")]
+    fn get_review_list_by_project(
+        &self,
+        at: Option<BlockHash>,
+        project_id: ProjectId,
+        count: u32,
+        start_id: Option<ReviewId>,
+    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
+
     #[rpc(name = "deip_getReview")]
     fn get_review(
         &self,
@@ -362,6 +371,25 @@ where
             b"Deip",
             b"ReviewMap",
             count,
+            start_id.map(types::ReviewKeyValue::new),
+        )
+    }
+
+    fn get_review_list_by_project(
+        &self,
+        at: Option<HashOf<Block>>,
+        key: ProjectId,
+        count: u32,
+        start_id: Option<ReviewId>,
+    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
+        get_list_by_index::<Identity, Identity, _, _, _, _>(
+            &self.state,
+            at,
+            b"Deip",
+            b"ReviewIdByProjectId",
+            b"ReviewMap",
+            count,
+            &key,
             start_id.map(types::ReviewKeyValue::new),
         )
     }
