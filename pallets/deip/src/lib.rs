@@ -465,7 +465,7 @@ decl_storage! {
         InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, InvestmentOf<T>)>;
 
         ProjectContentMap: map hasher(identity) ProjectContentId => ProjectContentOf<T>;
-        ContentIdByProjectId: double_map hasher(identity) ProjectContentId, hasher(identity) ProjectId => ();
+        ContentIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ();
 
         /// NDA list, guarantees uniquest and provides NDA listing
         Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
@@ -477,12 +477,11 @@ decl_storage! {
         /// Map to NDA Access Requests Info
         NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
-        /// Map from ReviewID to Review Info
-        ReviewMap get(fn review): map hasher(identity) ReviewId => ReviewOf<T>;
-        /// Review list, guarantees uniquest and provides Review listing
-        Reviews get(fn reviews): Vec<(ReviewId, T::AccountId)>;
+        ReviewMap: map hasher(identity) ReviewId => ReviewOf<T>;
 
         ReviewIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ReviewId => ();
+        ReviewIdByContentId: double_map hasher(identity) ProjectContentId, hasher(identity) ReviewId => ();
+        ReviewIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ReviewId => ();
 
         ReviewVoteMap: map hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => DeipReviewVoteOf<T>;
 
