@@ -30,6 +30,9 @@ pub enum Error {
     ProjectContentApiGetFailed,
     ProjectContentIdDecodeFailed,
     ProjectContentDecodeFailed,
+    ReviewApiGetFailed,
+    ReviewIdDecodeFailed,
+    ReviewDecodeFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -64,6 +67,9 @@ impl Into<RpcErrorCode> for Error {
             ProjectContentApiGetFailed => BASE + 22,
             ProjectContentIdDecodeFailed => BASE + 23,
             ProjectContentDecodeFailed => BASE + 24,
+            ReviewApiGetFailed => BASE + 25,
+            ReviewIdDecodeFailed => BASE + 26,
+            ReviewDecodeFailed => BASE + 27,
         })
     }
 }

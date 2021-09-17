@@ -227,3 +227,48 @@ where
         &self.id
     }
 }
+
+// Reviews
+
+pub struct ReviewIdError;
+impl GetError for ReviewIdError {
+    fn get_error() -> Error {
+        Error::ReviewIdDecodeFailed
+    }
+}
+
+pub struct ReviewError;
+impl GetError for ReviewError {
+    fn get_error() -> Error {
+        Error::ReviewDecodeFailed
+    }
+}
+
+pub struct ReviewKeyValue<Hash, AccountId> {
+    pub id: super::ReviewId,
+    _m: std::marker::PhantomData<(Hash, AccountId)>,
+}
+
+impl<Hash, AccountId> ReviewKeyValue<Hash, AccountId> {
+    pub fn new(id: super::ReviewId) -> Self {
+        Self {
+            id,
+            _m: Default::default(),
+        }
+    }
+}
+
+impl<Hash, AccountId> KeyValueInfo for ReviewKeyValue<Hash, AccountId>
+where
+    AccountId: 'static + Decode + Send,
+    Hash: 'static + Decode + Send,
+{
+    type Key = super::ReviewId;
+    type KeyError = ReviewIdError;
+    type Value = super::Review<Hash, AccountId>;
+    type ValueError = ReviewError;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
+}

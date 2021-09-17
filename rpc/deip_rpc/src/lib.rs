@@ -81,14 +81,21 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
     fn get_nda_list(&self, at: Option<BlockHash>) -> Result<Vec<Nda<H256, AccountId, u64>>>;
     #[rpc(name = "deipStorage_getNda")]
     fn get_nda(&self, at: Option<BlockHash>, nda_id: NdaId) -> Result<Nda<H256, AccountId, u64>>;
-    #[rpc(name = "deipStorage_getReviews")]
-    fn get_reviews(&self, at: Option<BlockHash>) -> Result<Vec<Review<H256, AccountId>>>;
-    #[rpc(name = "deipStorage_getReview")]
+
+    #[rpc(name = "deip_getReviewList")]
+    fn get_review_list(
+        &self,
+        at: Option<BlockHash>,
+        count: u32,
+        start_id: Option<ReviewId>,
+    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
+
+    #[rpc(name = "deip_getReview")]
     fn get_review(
         &self,
         at: Option<BlockHash>,
         review_id: ReviewId,
-    ) -> Result<Review<H256, AccountId>>;
+    ) -> Result<Option<Review<Hash, AccountId>>>;
 
     #[rpc(name = "deip_getInvestmentOpportunity")]
     fn get_investment_opportunity(
@@ -343,38 +350,33 @@ where
         })
     }
 
-    fn get_reviews(
+    fn get_review_list(
         &self,
-        at: Option<<Block as BlockT>::Hash>,
-    ) -> Result<Vec<Review<H256, AccountId>>> {
-        let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
-
-        let runtime_api_result = api.get_reviews(&at);
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+        at: Option<HashOf<Block>>,
+        count: u32,
+        start_id: Option<ReviewId>,
+    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
+        StorageMap::<Identity>::get_list(
+            &self.state,
+            at,
+            b"Deip",
+            b"ReviewMap",
+            count,
+            start_id.map(types::ReviewKeyValue::new),
+        )
     }
+
     fn get_review(
         &self,
-        at: Option<<Block as BlockT>::Hash>,
-        review_id: ReviewId,
-    ) -> Result<Review<H256, AccountId>> {
+        at: Option<HashOf<Block>>,
+        id: ReviewId,
+    ) -> Result<Option<Review<Hash, AccountId>>> {
         let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
+        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
-        let runtime_api_result = api.get_review(&at, &review_id);
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+        let runtime_api_result = api.get_review(&at, &id);
+        runtime_api_result
+            .map_err(|e| to_rpc_error(Error::ReviewApiGetFailed, Some(format!("{:?}", e))))
     }
 
     fn get_investment_opportunity(
