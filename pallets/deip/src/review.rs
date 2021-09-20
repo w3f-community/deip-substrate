@@ -105,6 +105,9 @@ impl<T: Config> Module<T> {
         };
 
         ReviewVoteMap::<T>::insert((review_id, account.clone(), domain_id), vote);
+        VoteIdByReviewId::<T>::insert(review_id, (review_id, account.clone(), domain_id), ());
+        VoteIdByAccountId::<T>::insert(account.clone(), (review_id, account.clone(), domain_id), ());
+
         Self::deposit_event(RawEvent::ReviewUpvoted(review_id, account, domain_id));
 
         Ok(())

@@ -80,8 +80,11 @@ mod contribution;
 use contribution::{Contribution as Investment};
 
 mod review;
-pub use review::{Id as ReviewId, Review as Review};
-use review::Vote as DeipReviewVote;
+pub use review::{
+    Id as ReviewId,
+    Review as Review,
+    Vote as DeipReviewVote
+};
 
 mod asset;
 pub use asset::Asset as DeipAsset;
@@ -484,6 +487,9 @@ decl_storage! {
         ReviewIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ReviewId => ();
 
         ReviewVoteMap: map hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => DeipReviewVoteOf<T>;
+
+        VoteIdByReviewId: double_map hasher(identity) ReviewId, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
+        VoteIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
 
         // The set of all Domains.
         Domains get(fn domains) config(): map hasher(blake2_128_concat) DomainId => Domain;

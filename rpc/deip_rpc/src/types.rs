@@ -272,3 +272,48 @@ where
         &self.id
     }
 }
+
+// Upvotes
+
+pub struct UpvoteIdError;
+impl GetError for UpvoteIdError {
+    fn get_error() -> Error {
+        Error::UpvoteIdDecodeFailed
+    }
+}
+
+pub struct UpvoteError;
+impl GetError for UpvoteError {
+    fn get_error() -> Error {
+        Error::UpvoteDecodeFailed
+    }
+}
+
+pub struct UpvoteKeyValue<AccountId, Moment> {
+    pub id: (super::ReviewId, AccountId, super::DomainId),
+    _m: std::marker::PhantomData<(AccountId, Moment)>,
+}
+
+impl<AccountId, Moment> UpvoteKeyValue<AccountId, Moment> {
+    pub fn new(id: (super::ReviewId, AccountId, super::DomainId)) -> Self {
+        Self {
+            id,
+            _m: Default::default(),
+        }
+    }
+}
+
+impl<AccountId, Moment> KeyValueInfo for UpvoteKeyValue<AccountId, Moment>
+where
+    AccountId: 'static + codec::Codec + Send,
+    Moment: 'static + Decode + Send,
+{
+    type Key = (super::ReviewId, AccountId, super::DomainId);
+    type KeyError = UpvoteIdError;
+    type Value = super::DeipReviewVote<AccountId, Moment>;
+    type ValueError = UpvoteError;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
+}

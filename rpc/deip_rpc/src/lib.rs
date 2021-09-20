@@ -180,6 +180,24 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
             >,
         >,
     >;
+
+    #[rpc(name = "deip_getReviewUpvoteListByReview")]
+    fn get_review_upvote_list_by_review(
+        &self,
+        at: Option<BlockHash>,
+        key: ReviewId,
+        count: u32,
+        start_id: Option<(ReviewId, AccountId, DomainId)>,
+    ) -> FutureResult<Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>>;
+
+    #[rpc(name = "deip_getReviewUpvoteListByUpvoter")]
+    fn get_review_upvote_list_by_upvoter(
+        &self,
+        at: Option<BlockHash>,
+        key: AccountId,
+        count: u32,
+        start_id: Option<(ReviewId, AccountId, DomainId)>,
+    ) -> FutureResult<Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>>;
 }
 
 /// A struct that implements the `DeipStorage`.
@@ -559,6 +577,44 @@ where
             count,
             &key,
             start_id.map(types::AgreementKeyValue::new),
+        )
+    }
+
+    fn get_review_upvote_list_by_review(
+        &self,
+        at: Option<HashOf<Block>>,
+        key: ReviewId,
+        count: u32,
+        start_id: Option<(ReviewId, AccountId, DomainId)>,
+    ) -> FutureResult<Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>> {
+        get_list_by_index::<Identity, Blake2_128Concat, _, _, _, _>(
+            &self.state,
+            at,
+            b"Deip",
+            b"VoteIdByReviewId",
+            b"ReviewVoteMap",
+            count,
+            &key,
+            start_id.map(types::UpvoteKeyValue::new),
+        )
+    }
+
+    fn get_review_upvote_list_by_upvoter(
+        &self,
+        at: Option<HashOf<Block>>,
+        key: AccountId,
+        count: u32,
+        start_id: Option<(ReviewId, AccountId, DomainId)>,
+    ) -> FutureResult<Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>> {
+        get_list_by_index::<Blake2_128Concat, Blake2_128Concat, _, _, _, _>(
+            &self.state,
+            at,
+            b"Deip",
+            b"VoteIdByAccountId",
+            b"ReviewVoteMap",
+            count,
+            &key,
+            start_id.map(types::UpvoteKeyValue::new),
         )
     }
 }
