@@ -1,12 +1,10 @@
-use codec::{Encode, Decode};
 use super::{frame, RuntimeT};
 
 use pallet_deip_assets::pallet_assets;
 
-type RealRuntime = node_template_runtime::Runtime;
+use deip_call::WrappedCall;
 
-#[derive(Clone, Debug, Eq, PartialEq, Decode, Encode)]
-pub struct WrappedCall<T>(pub T);
+type RealRuntime = node_template_runtime::Runtime;
 
 impl frame::deip_proposal::DeipProposal for RuntimeT {
     type ProposalBatch = pallet_deip_proposal::proposal::ProposalBatch<RealRuntime>;
@@ -26,22 +24,13 @@ impl frame::deip_proposal::DeipProposal for RuntimeT {
         batch.iter().map(|x| {
             pallet_deip_proposal::proposal::BatchItem {
                 account: x.account.clone(),
-                call: Self::wrap_call(&x.call)
+                call: WrappedCall::wrap(&x.call)
             }
         }).collect::<Self::WrappedBatch>().into()
     }
 
     fn wrap_input_batch(batch: &Self::InputProposalBatch) -> Self::WrappedInputBatch {
-        batch.iter().map(|x| {
-            pallet_deip_proposal::proposal::BatchItem {
-                account: x.account.clone(),
-                call: Self::wrap_call(&x.call)
-            }
-        }).collect()
-    }
-    
-    fn wrap_call(call: &Self::Call) -> Self::WrappedCall {
-        WrappedCall(call.clone())
+        deip_call::wrap_input_batch(batch)
     }
 }
 

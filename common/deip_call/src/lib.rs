@@ -1,8 +1,39 @@
-use super::{frame::DeipProposal, runtime, RuntimeT};
-use node_template_runtime::Call;
-use serde::{ser::Serializer, Serialize};
+use codec::{Decode, Encode};
+use frame_support::Parameter;
+use node_runtime::{Call, Runtime};
+use serde::{ser::Serializer, Serialize, Deserialize};
+use sp_runtime::traits::Member;
+use sp_std::borrow::Borrow;
 
-impl Serialize for runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
+use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
+
+#[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
+pub struct WrappedCall<Call: Parameter + Member>(pub Call);
+
+impl<Call: Parameter + Member> WrappedCall<Call> {
+    pub fn wrap(call: &Call) -> Self {
+        WrappedCall(call.clone())
+    }
+}
+
+pub fn wrap_input_batch(
+    batch: &InputProposalBatch<Runtime>,
+) -> Vec<
+    BatchItem<
+        node_runtime::deip_account::DeipAccountId<node_runtime::AccountId>,
+        WrappedCall<Call>,
+    >,
+> {
+    batch
+        .iter()
+        .map(|x| BatchItem {
+            account: x.account.clone(),
+            call: WrappedCall::wrap(&x.call),
+        })
+        .collect()
+}
+
+impl Serialize for WrappedCall<Call> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
         S: Serializer,
@@ -40,9 +71,9 @@ impl Serialize for runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
     }
 }
 
-impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
+impl WrappedCall<Call> {
     fn serialize_deip_call<S>(
-        deip_call: &pallet_deip::Call<node_template_runtime::Runtime>,
+        deip_call: &pallet_deip::Call<Runtime>,
         serializer: S,
     ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
@@ -271,7 +302,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
     }
 
     fn serialize_deip_proposal_call<S>(
-        deip_proposal_call: &pallet_deip_proposal::Call<node_template_runtime::Runtime>,
+        deip_proposal_call: &pallet_deip_proposal::Call<Runtime>,
         serializer: S,
     ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
@@ -284,7 +315,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
                 module: "deip_proposal",
                 call: "propose",
                 args: &DeipProposalProposeCallArgs {
-                    batch: &RuntimeT::wrap_input_batch(batch),
+                    batch: &wrap_input_batch(batch),
                     external_id,
                 },
             }
@@ -312,7 +343,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
     }
 
     fn serialize_deip_org_call<S>(
-        deip_org_call: &pallet_deip_org::Call<node_template_runtime::Runtime>,
+        deip_org_call: &pallet_deip_org::Call<Runtime>,
         serializer: S,
     ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
@@ -342,7 +373,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
                 call: "on_behalf",
                 args: &DeipOrgOnBehalfCallArgs {
                     name,
-                    call: &RuntimeT::wrap_call(call),
+                    call: &WrappedCall::wrap(call.borrow()),
                 },
             }
             .serialize(serializer),
@@ -352,7 +383,7 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
     }
 
     fn serialize_deip_assets_call<S>(
-        deip_assets_call: &pallet_deip_assets::Call<node_template_runtime::Runtime>,
+        deip_assets_call: &pallet_deip_assets::Call<Runtime>,
         serializer: S,
     ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
@@ -630,7 +661,7 @@ struct DeipCreateContractAgreementCallArgs<A, B, C, D, E, F, G> {
     hash: D,
     start_time: E,
     end_time: F,
-    terms: G
+    terms: G,
 }
 
 #[derive(Serialize)]

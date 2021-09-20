@@ -829,6 +829,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "common-deip-call"
+version = "0.0.0"
+dependencies = [
+ "frame-support",
+ "node-template-runtime",
+ "pallet-deip",
+ "pallet-deip-assets",
+ "pallet-deip-org",
+ "pallet-deip-proposal",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "common-deip-rpc"
 version = "0.0.0"
 dependencies = [

@@ -30,6 +30,7 @@ pallet-deip-org = { path = "../pallets/deip_org" }
 pallet-deip = { path = "../pallets/deip"}
 pallet-deip-assets = { path = "../pallets/deip_assets"}
 node-template-runtime = { path = '../runtime'}
+deip-call = { package = "common-deip-call", path = "../common/deip_call" }
 
 codec = { package = "parity-scale-codec", version = "2.1", default-features = false, features = ["derive", "full"] }
 hex = "0.4.3"

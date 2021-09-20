@@ -27,8 +27,6 @@ pub trait DeipProposal: System {
     fn wrap_batch<T: From<Self::WrappedBatch>>(batch: &Self::ProposalBatch) -> T;
     
     fn wrap_input_batch(batch: &Self::InputProposalBatch) -> Self::WrappedInputBatch;
-    
-    fn wrap_call(call: &Self::Call) -> Self::WrappedCall;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
