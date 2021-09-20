@@ -32,9 +32,10 @@
   "OrgOf": "Org",
   "Org": {
     "authority_key": "AccountId",
-    "authority": "Authoritry",
+    "authority": "Authority",
     "name": "OrgName",
-    "org_key": "AccountId"
+    "org_key": "AccountId",
+    "metadata": "Option<H256>"
   },
   "OrgName": "H160",
   "DomainId": "H160",

@@ -65,7 +65,8 @@ fn main() {
     
     let function = Call::DeipOrg(DeipOrgCall::create(
         name,
-        InputAuthority { signatories: vec![account.clone()], threshold: 0 }
+        InputAuthority { signatories: vec![account.clone()], threshold: 0 },
+        None
     ));
     
     let signed = Address::from(account);

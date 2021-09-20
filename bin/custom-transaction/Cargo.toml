@@ -27,3 +27,19 @@ rustc-hex = "2.1.0"
 pallet-transaction-payment = { default-features = false, version = '3.0.0' }
 pallet-sudo = { default-features = false, version = '3.0.0' }
 pallet-balances = { default-features = false, version = '3.0.0' }
+sp-std = { default-features = false, version = '3.0.0' }
+
+[features]
+default = ['std']
+std = [
+    'codec/std',
+    'sp-runtime/std',
+    'frame-system/std',
+    'node-template-runtime/std',
+    'pallet-deip-org/std',
+    'sp-core/std',
+    'rustc-hex/std',
+    'pallet-transaction-payment/std',
+    'pallet-sudo/std',
+    'pallet-balances/std',
+]

@@ -321,10 +321,10 @@ impl runtime::WrappedCall<<RuntimeT as DeipProposal>::Call> {
         use pallet_deip_org::Call::*;
 
         match deip_org_call {
-            create(name, key_source) => CallObject {
+            create(name, authority, metadata) => CallObject {
                 module: "deip_org",
                 call: "create",
-                args: &DeipOrgCreateCallArgs { name, key_source },
+                args: &DeipOrgCreateCallArgs { name, authority, metadata },
             }
             .serialize(serializer),
 
@@ -594,9 +594,10 @@ struct DeipOrgAlterAuthorityCallArgs<A> {
 }
 
 #[derive(Serialize)]
-struct DeipOrgCreateCallArgs<A, B> {
+struct DeipOrgCreateCallArgs<A, B, C> {
     name: A,
-    key_source: B,
+    authority: B,
+    metadata: C,
 }
 
 #[derive(Serialize)]

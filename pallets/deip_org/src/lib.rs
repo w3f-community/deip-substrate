@@ -51,8 +51,7 @@ pub mod pallet {
     use sp_runtime::{MultiSigner, traits::{Dispatchable, IdentifyAccount}};
     use frame_support::dispatch::DispatchResult;
     
-    // use sp_core::crypto::Pair;
-    // use sp_core::ed25519;
+    use sp_core::H256;
     
     use pallet_deip_toolkit::storage_ops::StorageOpsTransaction;
 
@@ -121,8 +120,8 @@ pub mod pallet {
         #[cfg(feature = "std")]
         use serde::{Serialize, Deserialize};
         use frame_system::Key;
-        use crate::Error::AuthorityMismatch;
         use codec::Codec;
+        use sp_core::H256;
 
         #[allow(type_alias_bounds)]
         pub type OrgOf<T: Config> = Org<T::AccountId, OrgName>;
@@ -276,7 +275,8 @@ pub mod pallet {
             /// to signing of an extrinsics calls dispatched on behalf of organization etc ..
             /// Must be generated internally when organisation will be created,
             /// nobody knows private half of this key
-            org_key: AccountId
+            org_key: AccountId,
+            metadata: Option<H256>
         }
         impl<AccountId, Name> Org<AccountId, Name> {
             pub fn new(
@@ -284,10 +284,11 @@ pub mod pallet {
                 members_key_source: Authority<AccountId>,
                 name: Name,
                 org_key: AccountId,
+                metadata: Option<H256>,
             )
                 -> Self
             {
-                Self { authority_key: members_key, authority: members_key_source, name, org_key }
+                Self { authority_key: members_key, authority: members_key_source, name, org_key, metadata }
             }
             
             pub fn authority_key(&self) -> &AccountId { &self.authority_key }
@@ -302,7 +303,9 @@ pub mod pallet {
                     authority_key: _,
                     mut authority,
                     name,
-                    org_key } = self;
+                    org_key,
+                    metadata
+                } = self;
                 match op {
                     AlterAuthority::AddMember { member } => {
                         authority.add_member(member);
@@ -314,7 +317,7 @@ pub mod pallet {
                         authority = new_authority.assert(&new_authority_key)?;
                     },
                 }
-                Ok(Self::new(authority.authority_key(), authority, name, org_key))
+                Ok(Self::new(authority.authority_key(), authority, name, org_key, metadata))
             }
         }
         
@@ -349,6 +352,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             name: OrgName,
             authority: InputAuthority<T::AccountId>,
+            metadata: Option<H256>,
         )
             -> DispatchResultWithPostInfo
         {
@@ -360,7 +364,8 @@ pub mod pallet {
                 authority_key,
                 authority,
                 name,
-                org_key
+                org_key,
+                metadata,
             );
             StorageOpsTransaction::<StorageOps<T>>::new()
                 .commit(move |ops| {
