@@ -15,7 +15,7 @@ use pallet_deip_proposal::proposal::ProposalId;
 
 use frame_support::Blake2_128Concat;
 
-use common_rpc::{FutureResult, HashOf, ListResult, StorageMap};
+use common_rpc::{FutureResult, HashOf, ListResult, StorageMap, get_list_by_index};
 
 mod types;
 
@@ -30,6 +30,15 @@ where
     fn get_proposal_list(
         &self,
         at: Option<BlockHash>,
+        count: u32,
+        start_id: Option<ProposalId>,
+    ) -> FutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, CallT>>>>;
+
+    #[rpc(name = "deipProposal_getListByCreator")]
+    fn get_proposal_list_by_creator(
+        &self,
+        at: Option<BlockHash>,
+        creator: AccountId,
         count: u32,
         start_id: Option<ProposalId>,
     ) -> FutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, CallT>>>>;
@@ -76,6 +85,25 @@ where
             b"DeipProposal",
             b"ProposalRepository",
             count,
+            start_id.map(types::ProposalKeyValue::new),
+        )
+    }
+
+    fn get_proposal_list_by_creator(
+        &self,
+        at: Option<HashOf<Block>>,
+        key: AccountId,
+        count: u32,
+        start_id: Option<ProposalId>,
+    ) -> FutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, Call>>>> {
+        get_list_by_index::<Blake2_128Concat, Blake2_128Concat, _, _, _, _>(
+            &self.state,
+            at,
+            b"DeipProposal",
+            b"ProposalIdByAccountId",
+            b"ProposalRepository",
+            count,
+            &key,
             start_id.map(types::ProposalKeyValue::new),
         )
     }
