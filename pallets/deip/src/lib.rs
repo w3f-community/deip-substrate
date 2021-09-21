@@ -66,31 +66,36 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod api;
+
 mod investment_opportunity;
-use investment_opportunity::{
-    Status as SimpleCrowdfundingStatus,
-    Info as SimpleCrowdfunding};
+use investment_opportunity::{Status as SimpleCrowdfundingStatus};
 pub use investment_opportunity::{
     Id as InvestmentId,
     FundingModel, FundingModelOf,
+    Info as SimpleCrowdfunding
 };
 
 mod contribution;
 use contribution::{Contribution as Investment};
 
 mod review;
-pub use review::{Id as ReviewId, Review as Review};
-use review::Vote as DeipReviewVote;
+pub use review::{
+    Id as ReviewId,
+    Review as Review,
+    Vote as DeipReviewVote
+};
 
 mod asset;
 pub use asset::Asset as DeipAsset;
 
-mod contract;
+pub mod contract;
 pub use contract::{
     Id as ContractAgreementId,
     TermsOf as ContractAgreementTermsOf,
+    IndexTerms as ContractAgreementIndexTerms,
+    AgreementOf as ContractAgreementOf,
 };
-use contract::AgreementOf as ContractAgreementOf;
 
 pub mod traits;
 
@@ -453,20 +458,17 @@ decl_error! {
 
 decl_storage! {
     trait Store for Module<T: Config> as Deip {
-        /// Map from ProjectID to Project Info
-        ProjectMap get(fn project): map hasher(identity) ProjectId => ProjectOf<T>;
-        /// Project list, guarantees uniquest and provides Project listing
-        Projects get(fn projects): Vec<(ProjectId, T::AccountId)>;
+        ProjectMap: map hasher(identity) ProjectId => ProjectOf<T>;
+
+        ProjectIdByTeamId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ProjectId => ();
 
         SimpleCrowdfundingMap: map hasher(identity) InvestmentId => SimpleCrowdfundingOf<T>;
 
         /// Contains various contributions from DAOs
         InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, InvestmentOf<T>)>;
 
-        /// Map to Project Content Info
-        ProjectContentMap get(fn project_content_entity): double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ProjectContentOf<T>;
-        /// Project Content list, guarantees uniquest and provides Project Conent listing
-        ProjectsContent get(fn project_content_list): Vec<(ProjectContentId, ProjectId, T::AccountId)>;
+        ProjectContentMap: map hasher(identity) ProjectContentId => ProjectContentOf<T>;
+        ContentIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ();
 
         /// NDA list, guarantees uniquest and provides NDA listing
         Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
@@ -478,12 +480,16 @@ decl_storage! {
         /// Map to NDA Access Requests Info
         NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
-        /// Map from ReviewID to Review Info
-        ReviewMap get(fn review): map hasher(identity) ReviewId => ReviewOf<T>;
-        /// Review list, guarantees uniquest and provides Review listing
-        Reviews get(fn reviews): Vec<(ReviewId, T::AccountId)>;
+        ReviewMap: map hasher(identity) ReviewId => ReviewOf<T>;
+
+        ReviewIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ReviewId => ();
+        ReviewIdByContentId: double_map hasher(identity) ProjectContentId, hasher(identity) ReviewId => ();
+        ReviewIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ReviewId => ();
 
         ReviewVoteMap: map hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => DeipReviewVoteOf<T>;
+
+        VoteIdByReviewId: double_map hasher(identity) ReviewId, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
+        VoteIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
 
         // The set of all Domains.
         Domains get(fn domains) config(): map hasher(blake2_128_concat) DomainId => Domain;
@@ -491,7 +497,8 @@ decl_storage! {
         // Because the map does not store its size, we must store it separately
         DomainCount get(fn domain_count) config(): u32;
 
-        ContractAgreementMap: map hasher(identity) ContractAgreementId => ContractAgreementOf<T>;
+        ContractAgreementMap: map hasher(blake2_128_concat) ContractAgreementId => ContractAgreementOf<T>;
+        ContractAgreementIdByType: double_map hasher(twox_64_concat) ContractAgreementIndexTerms, hasher(blake2_128_concat) ContractAgreementId => ();
     }
 }
 
@@ -538,26 +545,11 @@ decl_module! {
                 ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
             }
 
-            let mut projects = Projects::<T>::get();
+            ensure!(!ProjectMap::<T>::contains_key(project.external_id), Error::<T>::ProjectAlreadyExists);
 
-            // We don't want to add duplicate projects, so we check whether the potential new
-            // project is already present in the list. Because the list is always ordered, we can
-            // leverage the binary search which makes this check O(log n).
-            match projects.binary_search_by_key(&project.external_id, |&(a,_)| a) {
-                // If the search succeeds, the project is already a exists, so just return
-                Ok(_) => return Err(Error::<T>::ProjectAlreadyExists.into()),
-                // If the search fails, the project is not a exists and we learned the index where
-                // they should be inserted
-                Err(index) => {
-                    projects.insert(index, (project.external_id, project.team_id.clone()));
-                    Projects::<T>::put(projects);
-                }
-            };
-
-            // Store the projects related to account
             ProjectMap::<T>::insert(project.external_id, project.clone());
+            ProjectIdByTeamId::<T>::insert(project.team_id.clone(), project.external_id, ());
 
-            // Emit an event that the project was created.
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
         }
 
@@ -680,10 +672,7 @@ decl_module! {
                 references
             };
 
-            let mut project_content = ProjectsContent::<T>::get();
-
-            let index_to_insert_content = project_content.binary_search_by_key(&content.external_id, |&(a,_, _)| a)
-                .err().ok_or(Error::<T>::ProjectContentAlreadyExists)?;
+            ensure!(!ProjectContentMap::<T>::contains_key(&content.external_id), Error::<T>::ProjectContentAlreadyExists);
 
             let project = ProjectMap::<T>::get(content.project_external_id);
 
@@ -691,22 +680,17 @@ decl_module! {
             ensure!(project.team_id == content.team_id, Error::<T>::ProjectNotBelongToTeam);
             ensure!(!Self::is_project_finished(&project.external_id), Error::<T>::ProjectAlreadyFinished);
 
-
             if let Some(references) = &content.references {
                 let is_all_references_exists = references
                     .iter()
-                    .all(|&reference| project_content.binary_search_by_key(&reference,|&(id,_, _)| id).is_ok());
+                    .all(|&reference| ProjectContentMap::<T>::contains_key(reference));
 
                 ensure!(is_all_references_exists, Error::<T>::NoSuchReference);
             }
 
-            project_content.insert(index_to_insert_content, (content.external_id, content.project_external_id,  content.team_id.clone()));
-            ProjectsContent::<T>::put(project_content);
+            ProjectContentMap::<T>::insert(content.external_id, content.clone());
+            ContentIdByProjectId::insert(content.project_external_id, content.external_id, ());
 
-            // Store the content
-            ProjectContentMap::<T>::insert(project.external_id, content.external_id, content.clone());
-
-            // Emit an event that the content was created.
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
 
@@ -1064,43 +1048,30 @@ impl<T: Config> ValidateUnsigned for Module<T> {
 
 impl<T: Config> Module<T> {
     fn is_project_finished(project_id: &ProjectId) -> bool {
-        ProjectContentMap::<T>::iter_prefix_values(project_id)
-            .any(|x| x.content_type == ProjectContentType::FinalResult)
+        ContentIdByProjectId::iter_prefix(project_id)
+            .map(|(k, _)| ProjectContentMap::<T>::get(k))
+            .any(|c| c.content_type == ProjectContentType::FinalResult)
     }
-    pub fn get_projects() -> Vec<(ProjectId, T::AccountId)>{
-        Self::projects()
-    }
+
     pub fn get_project(project_id: &ProjectId) -> ProjectOf<T> {
         ProjectMap::<T>::get(project_id)
     }
+
     pub fn try_get_project_team(id: &ProjectId) -> Option<AccountIdOf<T>> {
         match ProjectMap::<T>::try_get(*id) {
             Err(_) => None,
             Ok(project) => Some(project.team_id),
         }
     }
-    pub fn get_domains() -> Vec<Domain> {
-        <Domains as IterableStorageMap<DomainId, Domain>>::iter()
-            .map(|(_id, domain)| domain)
-            .collect()
-    }
+
     pub fn get_domain(domain_id: &DomainId) -> Domain {
         Domains::get(domain_id)
     }
-    pub fn get_project_content_list(content_ids: &Option<Vec<ProjectContentId>>) -> Vec<ProjectContentOf<T>>{
-        <ProjectContentMap<T> as IterableStorageDoubleMap<ProjectId, ProjectContentId, ProjectContentOf<T>>>::iter()
-            .filter(|(_project_id, project_content_id, ..)| {                
-                match content_ids {
-                    Some(ids) => ids.contains(&project_content_id),
-                    _ => true
-                }
-            })
-            .map(|(_project_id, _project_content_id, content)| content)
-            .collect()
+
+    pub fn get_project_content(id: &ProjectContentId) -> ProjectContentOf<T> {
+        ProjectContentMap::<T>::get(id)
     }
-    pub fn get_project_content(project_id: &ProjectId, project_content_id: &ProjectContentId) -> ProjectContentOf<T> {
-        ProjectContentMap::<T>::get(project_id, project_content_id)
-    }
+
     pub fn get_nda_list() -> Vec<NdaOf<T>>{
         <NdaMap<T> as IterableStorageMap<NdaId, NdaOf<T>>>::iter()
             .map(|(_id, nda)| nda)
@@ -1109,12 +1080,16 @@ impl<T: Config> Module<T> {
     pub fn get_nda(nda_id: &NdaId) -> NdaOf<T> {
         NdaMap::<T>::get(nda_id)
     }
-    pub fn get_reviews() -> Vec<ReviewOf<T>>{
-        <ReviewMap<T> as IterableStorageMap<ReviewId, ReviewOf<T>>>::iter()
-            .map(|(_id, review)| review)
-            .collect()
+
+    pub fn get_review(id: &ReviewId) -> Option<ReviewOf<T>> {
+        ReviewMap::<T>::try_get(id).ok()
     }
-    pub fn get_review(review_id: &ReviewId) -> ReviewOf<T> {
-        ReviewMap::<T>::get(review_id)
+
+    pub fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<T>> {
+        SimpleCrowdfundingMap::<T>::try_get(id).ok()
+    }
+
+    pub fn get_contract_agreement(id: &ContractAgreementId) -> Option<ContractAgreementOf<T>> {
+        ContractAgreementMap::<T>::try_get(id).ok()
     }
 }

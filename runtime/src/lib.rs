@@ -84,6 +84,8 @@ pub type Hash = sp_core::H256;
 pub type DigestItem = generic::DigestItem<Hash>;
 
 pub type AssetId = compact_h160::H160;
+pub type AssetBalance = u64;
+pub type Moment = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -237,14 +239,14 @@ parameter_types! {
 
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
-    type Moment = u64;
+    type Moment = Moment;
     type OnTimestampSet = Aura;
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 500;
+    pub const ExistentialDeposit: Balance = 500;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -282,7 +284,7 @@ impl pallet_template::Config for Runtime {
 }
 
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
-    type Balance = u64;
+    type Balance = AssetBalance;
     type AssetId = AssetId;
 
     fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
@@ -411,7 +413,7 @@ parameter_types! {
 
 impl pallet_assets::Config for Runtime {
     type Event = Event;
-    type Balance = u64;
+    type Balance = AssetBalance;
     type AssetId = AssetId;
     type Currency = Balances;
     type ForceOrigin = frame_system::EnsureRoot<AccountId>;
@@ -572,32 +574,18 @@ impl_runtime_apis! {
         fn get_multi(names: Vec<pallet_deip_org::org::OrgName>) -> pallet_deip_org::api::GetMultiResult<AccountId> {
             DeipOrg::rpc_get_multi(names)
         }
-        fn list() -> pallet_deip_org::api::ListResult<AccountId> {
-            DeipOrg::rpc_list()
-        }
     }
     
     // Here we implement our custom runtime API.
-    impl deip_runtime_api::DeipApi<Block,  AccountId> for Runtime {
-        fn get_projects() -> Vec<(ProjectId, AccountId)> {
-            // This Runtime API calls into a specific pallet. Calling a pallet is a common
-            // design pattern. You can see most other APIs in this file do the same.
-            // It is also possible to write your logic right here in the runtime
-            // amalgamator file
-            Deip::get_projects()
-        }
+    impl pallet_deip::api::DeipApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash> for Runtime {
         fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
             Deip::get_project(project_id)
         }
-        fn get_project_content_list(content_ids: &Option<Vec<ProjectContentId>>) -> Vec<ProjectContent<H256, AccountId>> {
-            Deip::get_project_content_list(content_ids)
+
+        fn get_project_content(id: &ProjectContentId) -> ProjectContentOf<crate::Runtime> {
+            Deip::get_project_content(id)
         }
-        fn get_project_content(project_id: &ProjectId, project_content_id: &ProjectContentId) -> ProjectContent<H256, AccountId> {
-            Deip::get_project_content(project_id, project_content_id)
-        }
-        fn get_domains() -> Vec<Domain> {
-            Deip::get_domains()
-        }
+
         fn get_domain(domain_id: &DomainId) -> Domain {
             Deip::get_domain(domain_id)
         }
@@ -607,11 +595,17 @@ impl_runtime_apis! {
         fn get_nda(nda_id: &NdaId) -> Nda<H256, AccountId, u64> {
             Deip::get_nda(nda_id)
         }
-        fn get_reviews() -> Vec<Review<H256, AccountId>> {
-            Deip::get_reviews()
+
+        fn get_review(id: &ReviewId) -> Option<ReviewOf<crate::Runtime>> {
+            Deip::get_review(id)
         }
-        fn get_review(review_id: &ReviewId) -> Review<H256, AccountId> {
-            Deip::get_review(review_id)
+
+        fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<crate::Runtime>> {
+            Deip::get_investment_opportunity(id)
+        }
+
+        fn get_contract_agreement(id: &ContractAgreementId) -> Option<ContractAgreementOf<crate::Runtime>> {
+            Deip::get_contract_agreement(id)
         }
     }
 

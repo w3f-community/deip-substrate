@@ -60,24 +60,15 @@ impl<T: Config> Module<T> {
             project_content_external_id,
         };
 
-        let mut reviews = Reviews::<T>::get();
-        let index_to_insert_review = reviews
-            .binary_search_by_key(&review.external_id, |&(a, _)| a)
-            .err()
-            .ok_or(Error::<T>::ReviewAlreadyExists)?;
+        ensure!(!ReviewMap::<T>::contains_key(review.external_id), Error::<T>::ReviewAlreadyExists);
 
-        ProjectsContent::<T>::get()
-            .iter()
-            .find(|(id, ..)| id == &review.project_content_external_id)
-            .ok_or(Error::<T>::NoSuchProjectContent)?;
-
-        reviews.insert(
-            index_to_insert_review,
-            (review.external_id, review.author.clone()),
-        );
-        Reviews::<T>::put(reviews);
+        let content = ProjectContentMap::<T>::try_get(review.project_content_external_id)
+            .map_err(|_| Error::<T>::NoSuchProjectContent)?;
 
         ReviewMap::<T>::insert(review.external_id, review.clone());
+        ReviewIdByProjectId::insert(content.project_external_id, review.external_id, ());
+        ReviewIdByContentId::insert(content.external_id, review.external_id, ());
+        ReviewIdByAccountId::<T>::insert(review.author.clone(), review.external_id, ());
 
         Self::deposit_event(RawEvent::ReviewCreated(account, review));
 
@@ -114,6 +105,9 @@ impl<T: Config> Module<T> {
         };
 
         ReviewVoteMap::<T>::insert((review_id, account.clone(), domain_id), vote);
+        VoteIdByReviewId::<T>::insert(review_id, (review_id, account.clone(), domain_id), ());
+        VoteIdByAccountId::<T>::insert(account.clone(), (review_id, account.clone(), domain_id), ());
+
         Self::deposit_event(RawEvent::ReviewUpvoted(review_id, account, domain_id));
 
         Ok(())

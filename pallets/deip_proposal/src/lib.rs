@@ -313,7 +313,17 @@ pub mod pallet {
         DeipProposal<T>,
         OptionQuery
     >;
-    
+
+    #[pallet::storage]
+    pub(super) type ProposalIdByAccountId<T: Config> = StorageDoubleMap<_,
+        Blake2_128Concat,
+        T::AccountId,
+        Blake2_128Concat,
+        ProposalId,
+        (),
+        OptionQuery
+    >;
+
     #[allow(type_alias_bounds)]
     pub type PendingProposalsMap<T: Config> = BTreeMap<ProposalId, T::AccountId>;
     

@@ -6,7 +6,7 @@ pub use pallet_deip_toolkit::storage_ops::*;
 
 use crate::proposal::DeipProposal;
 
-use super::{Config, Event, ProposalRepository, Pallet, PendingProposals};
+use super::{Config, Event, ProposalRepository, Pallet, PendingProposals, ProposalIdByAccountId};
 
 
 pub type StorageWrite<T> = StorageOpsTransaction<StorageOps<T>>;
@@ -36,7 +36,11 @@ impl<T: Config> StorageOp for StorageOps<T> {
                         x.insert(proposal.id, proposal.author.clone());
                     });
                 }
-                <ProposalRepository<T>>::insert(proposal.id, proposal);
+
+                let id = proposal.id;
+                let author = proposal.author.clone();
+                <ProposalRepository<T>>::insert(id, proposal);
+                ProposalIdByAccountId::<T>::insert(author, id, ());
             },
             StorageOps::UpdateProposal(proposal) => {
                 <ProposalRepository<T>>::insert(proposal.id, proposal)
@@ -45,6 +49,7 @@ impl<T: Config> StorageOp for StorageOps<T> {
                 let DeipProposal::<T> {
                     id: proposal_id,
                     decisions,
+                    author,
                     .. 
                 } = proposal;
                 let members = decisions.keys();
@@ -53,6 +58,8 @@ impl<T: Config> StorageOp for StorageOps<T> {
                         x.remove(&proposal_id);
                     });
                 }
+
+                ProposalIdByAccountId::<T>::remove(author, proposal_id);
                 <ProposalRepository<T>>::remove(proposal_id);
             },
         }

@@ -2,7 +2,6 @@ mod frame;
 mod events;
 mod types;
 mod runtime;
-mod call_serializer;
 mod actor;
 mod app;
 mod config;

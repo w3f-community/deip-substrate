@@ -21,6 +21,13 @@ pub type TermsOf<T> = Terms<DeipAssetOf<T>>;
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+pub enum IndexTerms {
+    TechnologyLicenseAgreement,
+}
+
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Agreement<AccountId, Hash, Moment, Asset> {
     None,
     TechnologyLicense(TechnologyLicenseStatus<AccountId, Hash, Moment, Asset>),
@@ -168,6 +175,7 @@ impl<T: Config> Module<T> {
             id,
             Agreement::TechnologyLicense(TechnologyLicenseStatus::Unsigned(license)),
         );
+        ContractAgreementIdByType::insert(IndexTerms::TechnologyLicenseAgreement, id, ());
 
         Self::deposit_event(RawEvent::ContractAgreementCreated(id));
 

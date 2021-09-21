@@ -83,6 +83,7 @@
   "NdaAccessRequestId": "H160",
   "NdaId": "H160",
   "InvestmentId": "H160",
+  "DeipInvestmentIdOf": "InvestmentId",
   "NdaOf": "Nda",
   "NdaAccessRequestOf": "NdaAccessRequest",
   "ProjectOf": "Project",
@@ -217,6 +218,7 @@
       }
     }
   },
+  "FundingModelOf": "FundingModel",
   "AssetsBalanceOf": "u64",
   "DeipAssetBalanceOf": "AssetsBalanceOf",
   "AssetBalance": {
@@ -281,6 +283,11 @@
     }
   },
   "ContractAgreementTermsOf": "ContractAgreementTerms",
+  "ContractAgreementIndexTerms": {
+    "_enum": [
+      "TechnologyLicenseAgreement"
+    ]
+  },
   "TechnologyLicense": {
     "id": "ContractAgreementId",
     "licenser": "AccountId",

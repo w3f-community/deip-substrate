@@ -202,18 +202,8 @@ fn cant_add_duplicate_domain() {
 #[test]
 fn add_project() {
     new_test_ext().execute_with(|| {
-        let (project_id ,project, ..) = create_ok_project(None);
+        let (project_id, project, _, team) = create_ok_project(None);
 
-        
-        // TODO Add event check
-        // let expected_event = mock::Event::pallet_deip(crate::Event::ProjectCreated(account_id, project)::<<Test as system::Config>::AccountId, ProjectOf<Test>>);
-
-        // assert_eq!(
-        //     System::events()[0].event,
-        //     expected_event,
-        // );
-
-        let projects = Projects::<Test>::get();
         let project_stored = ProjectMap::<Test>::get(project_id);
 
         assert!(
@@ -225,11 +215,10 @@ fn add_project() {
         assert_eq!(project, project_stored);
 
         assert!(
-            projects.binary_search_by_key(&project_id, |&(external_id, ..)| external_id).is_ok(),
-            "Projects did not contain project, value was `{}`",
+            ProjectIdByTeamId::<Test>::contains_key(team, project_id),
+            "ProjectIdByTeamId did not contain project, value was `{}`",
             project_id
         );
-
     })
 }
 
@@ -329,18 +318,16 @@ fn create_project_content() {
             vec![DEFAULT_ACCOUNT_ID],
             None));
 
-        let project_content_list = ProjectsContent::<Test>::get();
-
         assert!(
-            <ProjectContentMap<Test>>::contains_key(project_id, project_content_id),
-            "Project Content Map did not contain key, value was `{}{}`",
-            project_id,
+            <ProjectContentMap<Test>>::contains_key(project_content_id),
+            "Project Content Map did not contain key, value was `{}`",
             project_content_id
         );
 
         assert!(
-            project_content_list.binary_search_by_key(&project_content_id, |&(external_id, ..)| external_id).is_ok(),
-            "Projects Contntent List did not contain the content, value was `{}`",
+            ContentIdByProjectId::contains_key(project_id, project_content_id),
+            "ContentIdByProjectId does not contain the key: `{}`, `{}`",
+            project_id,
             project_content_id
         );
     })
@@ -377,18 +364,16 @@ fn create_project_content_with_references() {
             vec![DEFAULT_ACCOUNT_ID],
             Some(vec![project_content_id])));
 
-        let project_content_list = ProjectsContent::<Test>::get();
-
         assert!(
-            <ProjectContentMap<Test>>::contains_key(project_id, project_content_with_reference_id),
-            "Project Content Map did not contain key, value was `{}{}`",
-            project_id,
+            <ProjectContentMap<Test>>::contains_key(project_content_with_reference_id),
+            "Project Content Map did not contain key, value was `{}`",
             project_content_with_reference_id
         );
 
         assert!(
-            project_content_list.binary_search_by_key(&project_content_with_reference_id, |&(external_id, ..)| external_id).is_ok(),
-            "Projects Contntent List did not contain the content, value was `{}`",
+            ContentIdByProjectId::contains_key(project_id, project_content_with_reference_id),
+            "ContentIdByProjectId does not contain the key: `{}`, `{}`",
+            project_id,
             project_content_with_reference_id
         );
     })
