@@ -88,7 +88,7 @@ where
     ));
 
     let subscriptions = SubscriptionManager::new(Arc::new(task_executor.clone()));
-    let (state, _) = sc_rpc::state::new_full(client, subscriptions, deny_unsafe);
+    let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe);
 
     io.extend_with(deip_assets_rpc::DeipAssetsRpc::<
         <Block as traits::Block>::Hash,
@@ -100,6 +100,20 @@ where
         sc_rpc::state::State<Block, C>,
         Block,
     >::new(state)));
+
+    let subscriptions = SubscriptionManager::new(Arc::new(task_executor.clone()));
+    let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe);
+
+    io.extend_with(deip_proposal_rpc::DeipProposalRpcApi::<
+        <Block as traits::Block>::Hash,
+        AccountId,
+        Moment,
+        deip_proposal_rpc::Call<node_template_runtime::Call>
+    >::to_delegate(deip_proposal_rpc::DeipProposalRpcApiObj::<
+        C,
+        sc_rpc::state::State<Block, C>,
+        Block,
+    >::new(client, state)));
 
     // Extend this RPC with a custom API by using the following syntax.
     // `YourRpcStruct` should have a reference to a client, which is needed
