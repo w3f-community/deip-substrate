@@ -1093,31 +1093,6 @@
 <span id="1093">1093</span>
 <span id="1094">1094</span>
 <span id="1095">1095</span>
-<span id="1096">1096</span>
-<span id="1097">1097</span>
-<span id="1098">1098</span>
-<span id="1099">1099</span>
-<span id="1100">1100</span>
-<span id="1101">1101</span>
-<span id="1102">1102</span>
-<span id="1103">1103</span>
-<span id="1104">1104</span>
-<span id="1105">1105</span>
-<span id="1106">1106</span>
-<span id="1107">1107</span>
-<span id="1108">1108</span>
-<span id="1109">1109</span>
-<span id="1110">1110</span>
-<span id="1111">1111</span>
-<span id="1112">1112</span>
-<span id="1113">1113</span>
-<span id="1114">1114</span>
-<span id="1115">1115</span>
-<span id="1116">1116</span>
-<span id="1117">1117</span>
-<span id="1118">1118</span>
-<span id="1119">1119</span>
-<span id="1120">1120</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -1187,31 +1162,36 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">tests</span>;
 
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">api</span>;
+
 <span class="kw">mod</span> <span class="ident">investment_opportunity</span>;
-<span class="kw">use</span> <span class="ident">investment_opportunity</span>::{
-    <span class="ident">Status</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfundingStatus</span>,
-    <span class="ident">Info</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfunding</span>};
+<span class="kw">use</span> <span class="ident">investment_opportunity</span>::{<span class="ident">Status</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfundingStatus</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">investment_opportunity</span>::{
     <span class="ident">Id</span> <span class="kw">as</span> <span class="ident">InvestmentId</span>,
     <span class="ident">FundingModel</span>, <span class="ident">FundingModelOf</span>,
+    <span class="ident">Info</span> <span class="kw">as</span> <span class="ident">SimpleCrowdfunding</span>
 };
 
 <span class="kw">mod</span> <span class="ident">contribution</span>;
 <span class="kw">use</span> <span class="ident">contribution</span>::{<span class="ident">Contribution</span> <span class="kw">as</span> <span class="ident">Investment</span>};
 
 <span class="kw">mod</span> <span class="ident">review</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">review</span>::{<span class="ident">Id</span> <span class="kw">as</span> <span class="ident">ReviewId</span>, <span class="ident">Review</span> <span class="kw">as</span> <span class="ident">Review</span>};
-<span class="kw">use</span> <span class="ident">review::Vote</span> <span class="kw">as</span> <span class="ident">DeipReviewVote</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">review</span>::{
+    <span class="ident">Id</span> <span class="kw">as</span> <span class="ident">ReviewId</span>,
+    <span class="ident">Review</span> <span class="kw">as</span> <span class="ident">Review</span>,
+    <span class="ident">Vote</span> <span class="kw">as</span> <span class="ident">DeipReviewVote</span>
+};
 
 <span class="kw">mod</span> <span class="ident">asset</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">asset::Asset</span> <span class="kw">as</span> <span class="ident">DeipAsset</span>;
 
-<span class="kw">mod</span> <span class="ident">contract</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">contract</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">contract</span>::{
     <span class="ident">Id</span> <span class="kw">as</span> <span class="ident">ContractAgreementId</span>,
     <span class="ident">TermsOf</span> <span class="kw">as</span> <span class="ident">ContractAgreementTermsOf</span>,
+    <span class="ident">IndexTerms</span> <span class="kw">as</span> <span class="ident">ContractAgreementIndexTerms</span>,
+    <span class="ident">AgreementOf</span> <span class="kw">as</span> <span class="ident">ContractAgreementOf</span>,
 };
-<span class="kw">use</span> <span class="ident">contract::AgreementOf</span> <span class="kw">as</span> <span class="ident">ContractAgreementOf</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">traits</span>;
 
@@ -1574,20 +1554,17 @@
 
 <span class="macro">decl_storage!</span> {
     <span class="kw">trait</span> <span class="ident">Store</span> <span class="kw">for</span> <span class="ident">Module</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">Deip</span> {
-        <span class="doccomment">/// Map from ProjectID to Project Info</span>
-        <span class="ident">ProjectMap</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">project</span>): <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
-        <span class="doccomment">/// Project list, guarantees uniquest and provides Project listing</span>
-        <span class="ident">Projects</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">projects</span>): <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ProjectId</span>, <span class="ident">T::AccountId</span>)<span class="op">&gt;</span>;
+        <span class="ident">ProjectMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+
+        <span class="ident">ProjectIdByTeamId</span>: <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectId</span> <span class="op">=</span><span class="op">&gt;</span> ();
 
         <span class="ident">SimpleCrowdfundingMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">InvestmentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">SimpleCrowdfundingOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
 
         <span class="doccomment">/// Contains various contributions from DAOs</span>
         <span class="ident">InvestmentMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">InvestmentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">T::AccountId</span>, <span class="ident">InvestmentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>)<span class="op">&gt;</span>;
 
-        <span class="doccomment">/// Map to Project Content Info</span>
-        <span class="ident">ProjectContentMap</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">project_content_entity</span>): <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectId</span>, <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectContentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
-        <span class="doccomment">/// Project Content list, guarantees uniquest and provides Project Conent listing</span>
-        <span class="ident">ProjectsContent</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">project_content_list</span>): <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ProjectContentId</span>, <span class="ident">ProjectId</span>, <span class="ident">T::AccountId</span>)<span class="op">&gt;</span>;
+        <span class="ident">ProjectContentMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectContentId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+        <span class="ident">ContentIdByProjectId</span>: <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectId</span>, <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectContentId</span> <span class="op">=</span><span class="op">&gt;</span> ();
 
         <span class="doccomment">/// NDA list, guarantees uniquest and provides NDA listing</span>
         <span class="ident">Ndas</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">nda_list</span>): <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ProjectId</span>, <span class="ident">T::AccountId</span>)<span class="op">&gt;</span>;
@@ -1599,12 +1576,16 @@
         <span class="doccomment">/// Map to NDA Access Requests Info</span>
         <span class="ident">NdaAccessRequestMap</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">nda_request</span>): <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">NdaAccessRequestId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">NdaAccessRequestOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
 
-        <span class="doccomment">/// Map from ReviewID to Review Info</span>
-        <span class="ident">ReviewMap</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">review</span>): <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ReviewId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
-        <span class="doccomment">/// Review list, guarantees uniquest and provides Review listing</span>
-        <span class="ident">Reviews</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">reviews</span>): <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ReviewId</span>, <span class="ident">T::AccountId</span>)<span class="op">&gt;</span>;
+        <span class="ident">ReviewMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ReviewId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+
+        <span class="ident">ReviewIdByProjectId</span>: <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectId</span>, <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ReviewId</span> <span class="op">=</span><span class="op">&gt;</span> ();
+        <span class="ident">ReviewIdByContentId</span>: <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ProjectContentId</span>, <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ReviewId</span> <span class="op">=</span><span class="op">&gt;</span> ();
+        <span class="ident">ReviewIdByAccountId</span>: <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ReviewId</span> <span class="op">=</span><span class="op">&gt;</span> ();
 
         <span class="ident">ReviewVoteMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) (<span class="ident">ReviewId</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DomainId</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">DeipReviewVoteOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+
+        <span class="ident">VoteIdByReviewId</span>: <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ReviewId</span>, <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) (<span class="ident">ReviewId</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DomainId</span>) <span class="op">=</span><span class="op">&gt;</span> ();
+        <span class="ident">VoteIdByAccountId</span>: <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) (<span class="ident">ReviewId</span>, <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">DomainId</span>) <span class="op">=</span><span class="op">&gt;</span> ();
 
         <span class="comment">// The set of all Domains.</span>
         <span class="ident">Domains</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">domains</span>) <span class="ident">config</span>(): <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) <span class="ident">DomainId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Domain</span>;
@@ -1612,7 +1593,8 @@
         <span class="comment">// Because the map does not store its size, we must store it separately</span>
         <span class="ident">DomainCount</span> <span class="ident">get</span>(<span class="kw">fn</span> <span class="ident">domain_count</span>) <span class="ident">config</span>(): <span class="ident">u32</span>;
 
-        <span class="ident">ContractAgreementMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">identity</span>) <span class="ident">ContractAgreementId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ContractAgreementOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+        <span class="ident">ContractAgreementMap</span>: <span class="ident">map</span> <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) <span class="ident">ContractAgreementId</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ContractAgreementOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>;
+        <span class="ident">ContractAgreementIdByType</span>: <span class="ident">double_map</span> <span class="ident">hasher</span>(<span class="ident">twox_64_concat</span>) <span class="ident">ContractAgreementIndexTerms</span>, <span class="ident">hasher</span>(<span class="ident">blake2_128_concat</span>) <span class="ident">ContractAgreementId</span> <span class="op">=</span><span class="op">&gt;</span> ();
     }
 }
 
@@ -1659,26 +1641,11 @@
                 <span class="macro">ensure!</span>(<span class="ident">Domains::contains_key</span>(<span class="kw-2">&amp;</span><span class="ident">domain</span>), <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::DomainNotExists</span>);
             }
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">projects</span> <span class="op">=</span> <span class="ident">Projects</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>();
+            <span class="macro">ensure!</span>(<span class="op">!</span><span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::contains_key</span>(<span class="ident">project</span>.<span class="ident">external_id</span>), <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ProjectAlreadyExists</span>);
 
-            <span class="comment">// We don&#39;t want to add duplicate projects, so we check whether the potential new</span>
-            <span class="comment">// project is already present in the list. Because the list is always ordered, we can</span>
-            <span class="comment">// leverage the binary search which makes this check O(log n).</span>
-            <span class="kw">match</span> <span class="ident">projects</span>.<span class="ident">binary_search_by_key</span>(<span class="kw-2">&amp;</span><span class="ident">project</span>.<span class="ident">external_id</span>, <span class="op">|</span><span class="kw-2">&amp;</span>(<span class="ident">a</span>,<span class="kw">_</span>)<span class="op">|</span> <span class="ident">a</span>) {
-                <span class="comment">// If the search succeeds, the project is already a exists, so just return</span>
-                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ProjectAlreadyExists</span>.<span class="ident">into</span>()),
-                <span class="comment">// If the search fails, the project is not a exists and we learned the index where</span>
-                <span class="comment">// they should be inserted</span>
-                <span class="prelude-val">Err</span>(<span class="ident">index</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="ident">projects</span>.<span class="ident">insert</span>(<span class="ident">index</span>, (<span class="ident">project</span>.<span class="ident">external_id</span>, <span class="ident">project</span>.<span class="ident">team_id</span>.<span class="ident">clone</span>()));
-                    <span class="ident">Projects</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::put</span>(<span class="ident">projects</span>);
-                }
-            };
-
-            <span class="comment">// Store the projects related to account</span>
             <span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::insert</span>(<span class="ident">project</span>.<span class="ident">external_id</span>, <span class="ident">project</span>.<span class="ident">clone</span>());
+            <span class="ident">ProjectIdByTeamId</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::insert</span>(<span class="ident">project</span>.<span class="ident">team_id</span>.<span class="ident">clone</span>(), <span class="ident">project</span>.<span class="ident">external_id</span>, ());
 
-            <span class="comment">// Emit an event that the project was created.</span>
             <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectCreated</span>(<span class="ident">account</span>, <span class="ident">project</span>));
         }
 
@@ -1801,10 +1768,7 @@
                 <span class="ident">references</span>
             };
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">project_content</span> <span class="op">=</span> <span class="ident">ProjectsContent</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>();
-
-            <span class="kw">let</span> <span class="ident">index_to_insert_content</span> <span class="op">=</span> <span class="ident">project_content</span>.<span class="ident">binary_search_by_key</span>(<span class="kw-2">&amp;</span><span class="ident">content</span>.<span class="ident">external_id</span>, <span class="op">|</span><span class="kw-2">&amp;</span>(<span class="ident">a</span>,<span class="kw">_</span>, <span class="kw">_</span>)<span class="op">|</span> <span class="ident">a</span>)
-                .<span class="ident">err</span>().<span class="ident">ok_or</span>(<span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ProjectContentAlreadyExists</span>)<span class="question-mark">?</span>;
+            <span class="macro">ensure!</span>(<span class="op">!</span><span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::contains_key</span>(<span class="kw-2">&amp;</span><span class="ident">content</span>.<span class="ident">external_id</span>), <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ProjectContentAlreadyExists</span>);
 
             <span class="kw">let</span> <span class="ident">project</span> <span class="op">=</span> <span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">content</span>.<span class="ident">project_external_id</span>);
 
@@ -1812,22 +1776,17 @@
             <span class="macro">ensure!</span>(<span class="ident">project</span>.<span class="ident">team_id</span> <span class="op">=</span><span class="op">=</span> <span class="ident">content</span>.<span class="ident">team_id</span>, <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ProjectNotBelongToTeam</span>);
             <span class="macro">ensure!</span>(<span class="op">!</span><span class="self">Self</span><span class="ident">::is_project_finished</span>(<span class="kw-2">&amp;</span><span class="ident">project</span>.<span class="ident">external_id</span>), <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ProjectAlreadyFinished</span>);
 
-
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">references</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">content</span>.<span class="ident">references</span> {
                 <span class="kw">let</span> <span class="ident">is_all_references_exists</span> <span class="op">=</span> <span class="ident">references</span>
                     .<span class="ident">iter</span>()
-                    .<span class="ident">all</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">reference</span><span class="op">|</span> <span class="ident">project_content</span>.<span class="ident">binary_search_by_key</span>(<span class="kw-2">&amp;</span><span class="ident">reference</span>,<span class="op">|</span><span class="kw-2">&amp;</span>(<span class="ident">id</span>,<span class="kw">_</span>, <span class="kw">_</span>)<span class="op">|</span> <span class="ident">id</span>).<span class="ident">is_ok</span>());
+                    .<span class="ident">all</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">reference</span><span class="op">|</span> <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::contains_key</span>(<span class="ident">reference</span>));
 
                 <span class="macro">ensure!</span>(<span class="ident">is_all_references_exists</span>, <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::NoSuchReference</span>);
             }
 
-            <span class="ident">project_content</span>.<span class="ident">insert</span>(<span class="ident">index_to_insert_content</span>, (<span class="ident">content</span>.<span class="ident">external_id</span>, <span class="ident">content</span>.<span class="ident">project_external_id</span>,  <span class="ident">content</span>.<span class="ident">team_id</span>.<span class="ident">clone</span>()));
-            <span class="ident">ProjectsContent</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::put</span>(<span class="ident">project_content</span>);
+            <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::insert</span>(<span class="ident">content</span>.<span class="ident">external_id</span>, <span class="ident">content</span>.<span class="ident">clone</span>());
+            <span class="ident">ContentIdByProjectId::insert</span>(<span class="ident">content</span>.<span class="ident">project_external_id</span>, <span class="ident">content</span>.<span class="ident">external_id</span>, ());
 
-            <span class="comment">// Store the content</span>
-            <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::insert</span>(<span class="ident">project</span>.<span class="ident">external_id</span>, <span class="ident">content</span>.<span class="ident">external_id</span>, <span class="ident">content</span>.<span class="ident">clone</span>());
-
-            <span class="comment">// Emit an event that the content was created.</span>
             <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ProjectContnetCreated</span>(<span class="ident">account</span>, <span class="ident">content</span>.<span class="ident">external_id</span>));
         }
 
@@ -2185,43 +2144,30 @@
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Config</span><span class="op">&gt;</span> <span class="ident">Module</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">fn</span> <span class="ident">is_project_finished</span>(<span class="ident">project_id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::iter_prefix_values</span>(<span class="ident">project_id</span>)
-            .<span class="ident">any</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">content_type</span> <span class="op">=</span><span class="op">=</span> <span class="ident">ProjectContentType::FinalResult</span>)
+        <span class="ident">ContentIdByProjectId::iter_prefix</span>(<span class="ident">project_id</span>)
+            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">k</span>, <span class="kw">_</span>)<span class="op">|</span> <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">k</span>))
+            .<span class="ident">any</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="ident">content_type</span> <span class="op">=</span><span class="op">=</span> <span class="ident">ProjectContentType::FinalResult</span>)
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_projects</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ProjectId</span>, <span class="ident">T::AccountId</span>)<span class="op">&gt;</span>{
-        <span class="self">Self</span><span class="ident">::projects</span>()
-    }
+
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project</span>(<span class="ident">project_id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
         <span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">project_id</span>)
     }
+
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_get_project_team</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="kw-2">*</span><span class="ident">id</span>) {
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">None</span>,
             <span class="prelude-val">Ok</span>(<span class="ident">project</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Some</span>(<span class="ident">project</span>.<span class="ident">team_id</span>),
         }
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_domains</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Domain</span><span class="op">&gt;</span> {
-        <span class="op">&lt;</span><span class="ident">Domains</span> <span class="kw">as</span> <span class="ident">IterableStorageMap</span><span class="op">&lt;</span><span class="ident">DomainId</span>, <span class="ident">Domain</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_id</span>, <span class="ident">domain</span>)<span class="op">|</span> <span class="ident">domain</span>)
-            .<span class="ident">collect</span>()
-    }
+
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_domain</span>(<span class="ident">domain_id</span>: <span class="kw-2">&amp;</span><span class="ident">DomainId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Domain</span> {
         <span class="ident">Domains::get</span>(<span class="ident">domain_id</span>)
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project_content_list</span>(<span class="ident">content_ids</span>: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ProjectContentId</span><span class="op">&gt;</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>{
-        <span class="op">&lt;</span><span class="ident">ProjectContentMap</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">IterableStorageDoubleMap</span><span class="op">&lt;</span><span class="ident">ProjectId</span>, <span class="ident">ProjectContentId</span>, <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::iter</span>()
-            .<span class="ident">filter</span>(<span class="op">|</span>(<span class="ident">_project_id</span>, <span class="ident">project_content_id</span>, ..)<span class="op">|</span> {                
-                <span class="kw">match</span> <span class="ident">content_ids</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">ids</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ids</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">project_content_id</span>),
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="bool-val">true</span>
-                }
-            })
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_project_id</span>, <span class="ident">_project_content_id</span>, <span class="ident">content</span>)<span class="op">|</span> <span class="ident">content</span>)
-            .<span class="ident">collect</span>()
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project_content</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectContentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+        <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">id</span>)
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project_content</span>(<span class="ident">project_id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>, <span class="ident">project_content_id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectContentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">project_id</span>, <span class="ident">project_content_id</span>)
-    }
+
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_nda_list</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>{
         <span class="op">&lt;</span><span class="ident">NdaMap</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">IterableStorageMap</span><span class="op">&lt;</span><span class="ident">NdaId</span>, <span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::iter</span>()
             .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_id</span>, <span class="ident">nda</span>)<span class="op">|</span> <span class="ident">nda</span>)
@@ -2230,13 +2176,17 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_nda</span>(<span class="ident">nda_id</span>: <span class="kw-2">&amp;</span><span class="ident">NdaId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
         <span class="ident">NdaMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">nda_id</span>)
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_reviews</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>{
-        <span class="op">&lt;</span><span class="ident">ReviewMap</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">IterableStorageMap</span><span class="op">&lt;</span><span class="ident">ReviewId</span>, <span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_id</span>, <span class="ident">review</span>)<span class="op">|</span> <span class="ident">review</span>)
-            .<span class="ident">collect</span>()
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_review</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ReviewId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">ReviewMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">ok</span>()
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_review</span>(<span class="ident">review_id</span>: <span class="kw-2">&amp;</span><span class="ident">ReviewId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="ident">ReviewMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">review_id</span>)
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_investment_opportunity</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">InvestmentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">SimpleCrowdfundingOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">SimpleCrowdfundingMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">ok</span>()
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_contract_agreement</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ContractAgreementId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ContractAgreementOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">ContractAgreementMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">ok</span>()
     }
 }
 </pre></div>

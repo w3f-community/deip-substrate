@@ -345,6 +345,14 @@
 <span id="345">345</span>
 <span id="346">346</span>
 <span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::traits::DeipAssetSystem</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="kw-2">*</span>;
@@ -365,6 +373,13 @@
 }
 
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">TermsOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Terms</span><span class="op">&lt;</span><span class="ident">DeipAssetOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">serde</span>(<span class="ident">rename_all</span> <span class="op">=</span> <span class="string">&quot;camelCase&quot;</span>))]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">IndexTerms</span> {
+    <span class="ident">TechnologyLicenseAgreement</span>,
+}
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
 <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>))]</span>
@@ -516,6 +531,7 @@
             <span class="ident">id</span>,
             <span class="ident">Agreement::TechnologyLicense</span>(<span class="ident">TechnologyLicenseStatus::Unsigned</span>(<span class="ident">license</span>)),
         );
+        <span class="ident">ContractAgreementIdByType::insert</span>(<span class="ident">IndexTerms::TechnologyLicenseAgreement</span>, <span class="ident">id</span>, ());
 
         <span class="self">Self</span><span class="ident">::deposit_event</span>(<span class="ident">RawEvent::ContractAgreementCreated</span>(<span class="ident">id</span>));
 
