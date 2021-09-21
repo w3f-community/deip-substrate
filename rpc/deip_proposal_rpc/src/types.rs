@@ -14,13 +14,6 @@ impl GetError for ProposalIdError {
     }
 }
 
-pub struct ProposalError;
-impl GetError for ProposalError {
-    fn get_error() -> Error {
-        Error::ProposalDecodeFailed
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq, codec::Encode, Serialize, Deserialize)]
 #[serde(bound(serialize = "common_deip_call::WrappedCall<T>: Serialize"))]
 #[serde(bound(deserialize = "T: Deserialize<'de>"))]
@@ -43,6 +36,12 @@ pub struct DeipProposal<AccountId: Ord, Moment, CallT> {
     pub state: ProposalState,
     pub author: AccountId,
     pub created_at: Moment,
+}
+
+impl<AccountId: Ord, Moment, CallT> GetError for DeipProposal<AccountId, Moment, CallT> {
+    fn get_error() -> Error {
+        Error::ProposalDecodeFailed
+    }
 }
 
 pub struct ProposalKeyValue<AccountId, Moment, Call> {
@@ -68,7 +67,7 @@ where
     type Key = super::ProposalId;
     type KeyError = ProposalIdError;
     type Value = DeipProposal<AccountId, Moment, Call>;
-    type ValueError = ProposalError;
+    type ValueError = DeipProposal<AccountId, Moment, Call>;
 
     fn key(&self) -> &Self::Key {
         &self.id

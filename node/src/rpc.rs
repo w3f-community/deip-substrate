@@ -110,10 +110,9 @@ where
         Moment,
         deip_proposal_rpc::Call<node_template_runtime::Call>
     >::to_delegate(deip_proposal_rpc::DeipProposalRpcApiObj::<
-        C,
         sc_rpc::state::State<Block, C>,
         Block,
-    >::new(client, state)));
+    >::new(state)));
 
     // Extend this RPC with a custom API by using the following syntax.
     // `YourRpcStruct` should have a reference to a client, which is needed
