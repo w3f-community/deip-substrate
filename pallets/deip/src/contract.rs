@@ -10,10 +10,7 @@ pub type Id = H160;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Terms<Asset> {
-    TechnologyLicenseAgreementTerms {
-        source: ProjectId,
-        price: Asset,
-    },
+    TechnologyLicenseAgreementTerms { source: ProjectId, price: Asset },
 }
 
 pub type TermsOf<T> = Terms<DeipAssetOf<T>>;
@@ -35,9 +32,7 @@ pub enum Agreement<AccountId, Hash, Moment, Asset> {
 
 pub type AgreementOf<T> = Agreement<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>;
 
-impl<AccountId, Hash, Moment, Asset> Default
-    for Agreement<AccountId, Hash, Moment, Asset>
-{
+impl<AccountId, Hash, Moment, Asset> Default for Agreement<AccountId, Hash, Moment, Asset> {
     fn default() -> Self {
         Agreement::None
     }
@@ -48,6 +43,7 @@ impl<AccountId, Hash, Moment, Asset> Default
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct TechnologyLicense<AccountId, Hash, Moment, Asset> {
     id: Id,
+    creator: AccountId,
     licenser: AccountId,
     licensee: AccountId,
     hash: Hash,
@@ -136,11 +132,6 @@ impl<T: Config> Module<T> {
             ProjectMap::<T>::try_get(project_id).map_err(|_| Error::<T>::NoSuchProject)?;
 
         ensure!(
-            creator == project.team_id,
-            Error::<T>::ProjectNotBelongToTeam
-        );
-
-        ensure!(
             price.amount > Zero::zero(),
             Error::<T>::ContractAgreementFeeMustBePositive
         );
@@ -157,11 +148,12 @@ impl<T: Config> Module<T> {
         } else if second == project.team_id {
             (second, first)
         } else {
-            return Err(Error::<T>::ContractAgreementLicenseNoLicenser.into());
+            return Err(Error::<T>::ContractAgreementLicenseProjectTeamIsNotListedInParties.into());
         };
 
         let license = TechnologyLicense {
             id,
+            creator,
             licenser,
             licensee,
             hash,
@@ -193,23 +185,14 @@ impl<T: Config> Module<T> {
             .map_err(|_| Error::<T>::ContractAgreementNotFound)?;
 
         match agreement {
-            Agreement::TechnologyLicense(status) => {
-                Self::accept_project_license(party, status)
-            }
-            Agreement::None => {
-                Err(Error::<T>::ContractAgreementAcceptWrongAgreement.into())
-            }
+            Agreement::TechnologyLicense(status) => Self::accept_project_license(party, status),
+            Agreement::None => Err(Error::<T>::ContractAgreementAcceptWrongAgreement.into()),
         }
     }
 
     fn accept_project_license(
         party: AccountIdOf<T>,
-        status: TechnologyLicenseStatus<
-            AccountIdOf<T>,
-            HashOf<T>,
-            MomentOf<T>,
-            DeipAssetOf<T>,
-        >,
+        status: TechnologyLicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
     ) -> DispatchResult {
         match status {
             TechnologyLicenseStatus::Unsigned(license) => {
@@ -226,12 +209,7 @@ impl<T: Config> Module<T> {
 
     fn accept_project_license_by_licenser(
         licenser: AccountIdOf<T>,
-        license: TechnologyLicense<
-            AccountIdOf<T>,
-            HashOf<T>,
-            MomentOf<T>,
-            DeipAssetOf<T>,
-        >,
+        license: TechnologyLicense<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
     ) -> DispatchResult {
         ensure!(
             licenser == license.licenser,
@@ -257,12 +235,7 @@ impl<T: Config> Module<T> {
 
     fn accept_project_license_by_licensee(
         licensee: AccountIdOf<T>,
-        license: TechnologyLicense<
-            AccountIdOf<T>,
-            HashOf<T>,
-            MomentOf<T>,
-            DeipAssetOf<T>,
-        >,
+        license: TechnologyLicense<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
     ) -> DispatchResult {
         ensure!(
             licensee == license.licensee,
@@ -321,7 +294,7 @@ impl<T: Config> Module<T> {
             let token_balances = if let Some(balances) = T::AssetSystem::get_nft_balances(token) {
                 balances
             } else {
-                continue
+                continue;
             };
 
             for token_balance in &token_balances {
