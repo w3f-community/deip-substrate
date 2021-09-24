@@ -276,7 +276,7 @@
   "ContractAgreementId": "H160",
   "ContractAgreementTerms": {
     "_enum": {
-      "TechnologyLicenseAgreementTerms": {
+      "LicenseAgreement": {
         "source": "ProjectId",
         "price": "DeipAsset"
       }
@@ -285,10 +285,10 @@
   "ContractAgreementTermsOf": "ContractAgreementTerms",
   "ContractAgreementIndexTerms": {
     "_enum": [
-      "TechnologyLicenseAgreement"
+      "LicenseAgreement"
     ]
   },
-  "TechnologyLicense": {
+  "License": {
     "id": "ContractAgreementId",
     "creator": "AccountId",
     "licenser": "AccountId",
@@ -299,16 +299,16 @@
     "project_id": "ProjectId",
     "price": "DeipAsset"
   },
-  "TechnologyLicenseStatus": {
+  "LicenseStatus": {
     "_enum": {
       "Unsigned": {
-        "0": "TechnologyLicense"
+        "0": "License"
       },
       "SignedByLicenser": {
-        "0": "TechnologyLicense"
+        "0": "License"
       },
       "Signed": {
-        "0": "TechnologyLicense"
+        "0": "License"
       }
     }
   },
@@ -316,8 +316,8 @@
     "_enum": {
       "None": {
       },
-      "TechnologyLicense": {
-        "0": "TechnologyLicenseStatus"
+      "License": {
+        "0": "LicenseStatus"
       }
     }
   },

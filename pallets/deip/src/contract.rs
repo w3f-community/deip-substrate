@@ -10,7 +10,7 @@ pub type Id = H160;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Terms<Asset> {
-    TechnologyLicenseAgreementTerms { source: ProjectId, price: Asset },
+    LicenseAgreement { source: ProjectId, price: Asset },
 }
 
 pub type TermsOf<T> = Terms<DeipAssetOf<T>>;
@@ -19,7 +19,7 @@ pub type TermsOf<T> = Terms<DeipAssetOf<T>>;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum IndexTerms {
-    TechnologyLicenseAgreement,
+    LicenseAgreement,
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
@@ -27,7 +27,7 @@ pub enum IndexTerms {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Agreement<AccountId, Hash, Moment, Asset> {
     None,
-    TechnologyLicense(TechnologyLicenseStatus<AccountId, Hash, Moment, Asset>),
+    License(LicenseStatus<AccountId, Hash, Moment, Asset>),
 }
 
 pub type AgreementOf<T> = Agreement<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>;
@@ -41,7 +41,7 @@ impl<AccountId, Hash, Moment, Asset> Default for Agreement<AccountId, Hash, Mome
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct TechnologyLicense<AccountId, Hash, Moment, Asset> {
+pub struct License<AccountId, Hash, Moment, Asset> {
     id: Id,
     creator: AccountId,
     licenser: AccountId,
@@ -56,10 +56,10 @@ pub struct TechnologyLicense<AccountId, Hash, Moment, Asset> {
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum TechnologyLicenseStatus<AccountId, Hash, Moment, Asset> {
-    Unsigned(TechnologyLicense<AccountId, Hash, Moment, Asset>),
-    SignedByLicenser(TechnologyLicense<AccountId, Hash, Moment, Asset>),
-    Signed(TechnologyLicense<AccountId, Hash, Moment, Asset>),
+pub enum LicenseStatus<AccountId, Hash, Moment, Asset> {
+    Unsigned(License<AccountId, Hash, Moment, Asset>),
+    SignedByLicenser(License<AccountId, Hash, Moment, Asset>),
+    Signed(License<AccountId, Hash, Moment, Asset>),
 }
 
 impl<T: Config> Module<T> {
@@ -110,7 +110,7 @@ impl<T: Config> Module<T> {
             Error::<T>::ContractAgreementAlreadyExists
         );
         match terms {
-            Terms::TechnologyLicenseAgreementTerms { source, price } => {
+            Terms::LicenseAgreement { source, price } => {
                 Self::create_project_license(
                     id, creator, parties, hash, start_time, end_time, source, price,
                 )
@@ -151,7 +151,7 @@ impl<T: Config> Module<T> {
             return Err(Error::<T>::ContractAgreementLicenseProjectTeamIsNotListedInParties.into());
         };
 
-        let license = TechnologyLicense {
+        let license = License {
             id,
             creator,
             licenser,
@@ -165,9 +165,9 @@ impl<T: Config> Module<T> {
 
         ContractAgreementMap::<T>::insert(
             id,
-            Agreement::TechnologyLicense(TechnologyLicenseStatus::Unsigned(license)),
+            Agreement::License(LicenseStatus::Unsigned(license)),
         );
-        ContractAgreementIdByType::insert(IndexTerms::TechnologyLicenseAgreement, id, ());
+        ContractAgreementIdByType::insert(IndexTerms::LicenseAgreement, id, ());
 
         Self::deposit_event(RawEvent::ContractAgreementCreated(id));
 
@@ -185,23 +185,23 @@ impl<T: Config> Module<T> {
             .map_err(|_| Error::<T>::ContractAgreementNotFound)?;
 
         match agreement {
-            Agreement::TechnologyLicense(status) => Self::accept_project_license(party, status),
+            Agreement::License(status) => Self::accept_project_license(party, status),
             Agreement::None => Err(Error::<T>::ContractAgreementAcceptWrongAgreement.into()),
         }
     }
 
     fn accept_project_license(
         party: AccountIdOf<T>,
-        status: TechnologyLicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+        status: LicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
     ) -> DispatchResult {
         match status {
-            TechnologyLicenseStatus::Unsigned(license) => {
+            LicenseStatus::Unsigned(license) => {
                 Self::accept_project_license_by_licenser(party, license)
             }
-            TechnologyLicenseStatus::SignedByLicenser(license) => {
+            LicenseStatus::SignedByLicenser(license) => {
                 Self::accept_project_license_by_licensee(party, license)
             }
-            TechnologyLicenseStatus::Signed(_) => {
+            LicenseStatus::Signed(_) => {
                 Err(Error::<T>::ContractAgreementLicenseAlreadyAccepted.into())
             }
         }
@@ -209,7 +209,7 @@ impl<T: Config> Module<T> {
 
     fn accept_project_license_by_licenser(
         licenser: AccountIdOf<T>,
-        license: TechnologyLicense<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
     ) -> DispatchResult {
         ensure!(
             licenser == license.licenser,
@@ -225,8 +225,8 @@ impl<T: Config> Module<T> {
         }
 
         let id = license.id;
-        let status = TechnologyLicenseStatus::SignedByLicenser(license);
-        ContractAgreementMap::<T>::insert(id, Agreement::TechnologyLicense(status));
+        let status = LicenseStatus::SignedByLicenser(license);
+        ContractAgreementMap::<T>::insert(id, Agreement::License(status));
 
         Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licenser));
 
@@ -235,7 +235,7 @@ impl<T: Config> Module<T> {
 
     fn accept_project_license_by_licensee(
         licensee: AccountIdOf<T>,
-        license: TechnologyLicense<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
     ) -> DispatchResult {
         ensure!(
             licensee == license.licensee,
@@ -261,8 +261,8 @@ impl<T: Config> Module<T> {
         )?;
 
         let id = license.id;
-        let status = TechnologyLicenseStatus::Signed(license);
-        ContractAgreementMap::<T>::insert(id, Agreement::TechnologyLicense(status));
+        let status = LicenseStatus::Signed(license);
+        ContractAgreementMap::<T>::insert(id, Agreement::License(status));
 
         Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licensee));
 
