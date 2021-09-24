@@ -444,7 +444,7 @@ decl_error! {
         ContractAgreementAlreadyExists,
         ContractAgreementFeeMustBePositive,
         ContractAgreementLicenseTwoPartiesRequired,
-        ContractAgreementLicenseNoLicenser,
+        ContractAgreementLicenseProjectTeamIsNotListedInParties,
         ContractAgreementNotFound,
         ContractAgreementAcceptWrongAgreement,
         ContractAgreementLicenseAlreadyAccepted,

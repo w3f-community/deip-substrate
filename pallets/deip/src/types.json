@@ -290,6 +290,7 @@
   },
   "TechnologyLicense": {
     "id": "ContractAgreementId",
+    "creator": "AccountId",
     "licenser": "AccountId",
     "licensee": "AccountId",
     "hash": "Hash",
