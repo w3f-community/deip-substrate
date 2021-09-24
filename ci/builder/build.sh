@@ -3,28 +3,14 @@
 set -e
 
 BUILDER_IMAGE=${BUILDER_IMAGE:-deip-rust-builder}
-revision=$(git rev-parse --short HEAD)
 
-if [ -z "$BUILD_SOURCE" ]; then
-  echo "Please specify BUILD_SOURCE directory"
-  exit 1
-fi
-if [ -z "$BUILD_CACHE" ]; then
-  echo "Please specify BUILD_CACHE directory"
-  exit 1
-fi
-if [ -z "$BUILD_SCRIPT" ]; then
-  echo "Please specify BUILD_SCRIPT file (relative to BUILD_SOURCE)"
-  exit 1
-fi
-if [ -z "$BUILD_WORKDIR" ]; then
-  echo "Please specify BUILD_WORKDIR directory (relative to BUILD_SOURCE)"
-  exit 1
-fi
-if [ -z "$BINARY_NAME" ]; then
-  echo "Please specify BINARY_NAME (build artifact)"
-  exit 1
-fi
+REVISION=${REVISION?Please specify vcs REVISION}
+BUILD_SOURCE=${BUILD_SOURCE?Please specify BUILD_SOURCE directory}
+BUILD_CACHE=${BUILD_CACHE?Please specify BUILD_CACHE directory}
+BUILD_SCRIPT=${BUILD_SCRIPT?Please specify BUILD_SCRIPT file (relative to BUILD_SOURCE)}
+BUILD_WORKDIR=${BUILD_WORKDIR?Please specify BUILD_WORKDIR directory (relative to BUILD_SOURCE)}
+BINARY_NAME=${BINARY_NAME?Please specify BINARY_NAME (build artifact)}
+APP_IMAGE=${APP_IMAGE?Please specify APP_IMAGE tag}
 
 echo "+------------------------------------------------+"
 echo "|    Prepare builder-image                       |"
@@ -51,11 +37,10 @@ docker run --rm -ti -v "$BUILD_SOURCE":"$build_source" -v "$BUILD_CACHE":"$build
   "$BUILDER_IMAGE" ./"$BUILD_SCRIPT"
 
 artifact="$BUILD_CACHE/$cargo_target_dir/$build_mode/$BINARY_NAME"
-ctx="$BUILD_CACHE"/ctx/"$BINARY_NAME_$revision"
+ctx="$BUILD_CACHE"/ctx/"$BINARY_NAME_$REVISION"
 mkdir -p ctx
 cp $artifact ctx
-echo $revision
-docker build -f Dockerfile -t "$BINARY_NAME:$revision" \
+docker build -f Dockerfile -t "$APP_IMAGE" \
   --build-arg=ARTIFACT=$BINARY_NAME \
   ctx
 rm -rf ctx

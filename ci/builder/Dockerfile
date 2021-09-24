@@ -1,3 +1,3 @@
-FROM alpine:3.14
+FROM ubuntu:20.04
 ARG ARTIFACT
-COPY $ARTIFACT /usr/local/bin
+COPY $ARTIFACT /usr/bin
