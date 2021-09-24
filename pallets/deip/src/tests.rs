@@ -1297,15 +1297,15 @@ fn create_license_agreement_well_known_cases() {
             BOB_ACCOUNT_ID,
             ContractAgreementId::random(),
             BOB_ACCOUNT_ID,
-            vec![BOB_ACCOUNT_ID.into()],
+            vec![BOB_ACCOUNT_ID.into(), DEFAULT_ACCOUNT_ID.into()],
             HashOf::<Test>::random(),
             None,
             None,
-            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement{
                 source: *project_id,
                 price: DeipAsset::new(Default::default(), One::one()),
             }),
-            Error::<Test>::ProjectNotBelongToTeam);
+            Error::<Test>::ContractAgreementLicenseProjectTeamIsNotListedInParties);
 
         assert_noop!(Deip::create_contract_agreement_impl(
             *account_id,
