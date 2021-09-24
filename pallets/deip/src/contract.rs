@@ -265,6 +265,7 @@ impl<T: Config> Module<T> {
         ContractAgreementMap::<T>::insert(id, Agreement::License(status));
 
         Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licensee));
+        Self::deposit_event(RawEvent::ContractAgreementFinalized(id));
 
         Ok(())
     }

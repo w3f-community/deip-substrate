@@ -338,6 +338,7 @@ decl_event! {
 
         ContractAgreementCreated(ContractAgreementId),
         ContractAgreementAccepted(ContractAgreementId, AccountId),
+        ContractAgreementFinalized(ContractAgreementId),
     }
 }
 
