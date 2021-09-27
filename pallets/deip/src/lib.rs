@@ -448,12 +448,14 @@ decl_error! {
         ContractAgreementLicenseProjectTeamIsNotListedInParties,
         ContractAgreementNotFound,
         ContractAgreementAcceptWrongAgreement,
-        ContractAgreementLicenseAlreadyAccepted,
+        ContractAgreementAlreadyAccepted,
         ContractAgreementLicensePartyIsNotLicenser,
         ContractAgreementLicensePartyIsNotLicensee,
         ContractAgreementLicenseExpired,
         ContractAgreementLicenseNotEnoughBalance,
         ContractAgreementLicenseFailedToChargeFee,
+        ContractAgreementPartyIsNotListed,
+        ContractAgreementAlreadyAcceptedByParty,
     }
 }
 

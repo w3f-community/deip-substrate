@@ -279,13 +279,16 @@
       "LicenseAgreement": {
         "source": "ProjectId",
         "price": "DeipAsset"
+      },
+      "GeneralContractAgreement": {
       }
     }
   },
   "ContractAgreementTermsOf": "ContractAgreementTerms",
   "ContractAgreementIndexTerms": {
     "_enum": [
-      "LicenseAgreement"
+      "LicenseAgreement",
+      "GeneralContractAgreement"
     ]
   },
   "License": {
@@ -318,8 +321,30 @@
       },
       "License": {
         "0": "LicenseStatus"
+      },
+      "GeneralContract": {
+        "0": "GeneralContractStatus"
       }
     }
   },
-  "ContractAgreementOf": "ContractAgreement"
+  "ContractAgreementOf": "ContractAgreement",
+  "GeneralContract": {
+    "id": "ContractAgreementId",
+    "creator": "AccountId",
+    "parties": "Vec<AccountId>",
+    "hash": "Hash",
+    "start_time": "Option<Moment>",
+    "end_time": "Option<Moment>"
+  },
+  "GeneralContractStatus": {
+    "_enum": {
+      "PartiallyAccepted": {
+        "contract": "GeneralContract",
+        "accepted_by": "Vec<AccountId>"
+      },
+      "Accepted": {
+        "0": "GeneralContract"
+      }
+    }
+  }
 }
