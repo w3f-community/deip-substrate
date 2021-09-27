@@ -10,7 +10,8 @@ pub const GROUP_ID: &str = "offchain";
 #[tokio::main]
 async fn main() {
     let mut config = rdkafka::ClientConfig::new();
-    config.set("bootstrap.servers", BOOTSTRAP_SERVERS);
+    let bootstrap_servers = std::env::var("KAFKA_BOOTSTRAP_SERVERS").unwrap_or(BOOTSTRAP_SERVERS.into());
+    config.set("bootstrap.servers", bootstrap_servers);
     config.set("group.id", GROUP_ID);
     let consumer = config.create::<rdkafka::consumer::StreamConsumer>().unwrap();
     consumer.subscribe(&[TOPIC]).unwrap();

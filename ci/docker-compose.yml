@@ -36,6 +36,13 @@ services:
         -l=txpool=trace,runtime=trace,offchain=trace
     ports:
       - "9944:9944"
+  deip-event-proxy-client:
+    image: "$EVENT_PROXY_CLIENT_IMG"
+    command: event-proxy-client
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    depends_on:
+      - kafka
 
 volumes:
   zookeeper_data:

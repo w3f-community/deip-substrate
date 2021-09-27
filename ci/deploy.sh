@@ -23,4 +23,11 @@ export APP_IMAGE="$BINARY_NAME:$REVISION"
 cd ./builder && ./build.sh && cd ..
 echo "BLOCKCHAIN_NODE_IMG=$APP_IMAGE" >> .env
 
+export BUILD_SCRIPT="event-proxy-client/build.sh"
+export BUILD_WORKDIR="event-proxy-client"
+export BINARY_NAME="event-proxy-client"
+export APP_IMAGE="$BINARY_NAME:$REVISION"
+cd ./builder && ./build.sh && cd ..
+echo "EVENT_PROXY_CLIENT_IMG=$APP_IMAGE" >> .env
+
 docker-compose up -d --no-build
