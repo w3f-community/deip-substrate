@@ -119,6 +119,7 @@ impl<T: DeipProposal + Deip + DeipOrg + DeipAssets> Serialize for DomainEventDat
             Invested(e) => e.serialize(serializer),
             ContractAgreementCreated(e) => e.serialize(serializer),
             ContractAgreementAccepted(e) => e.serialize(serializer),
+            ContractAgreementFinalized(e) => e.serialize(serializer),
             // =============== DeipOrg:
             OrgCreate(e) => e.serialize(serializer),
             OrgAlterAuthority(e) => e.serialize(serializer),
@@ -171,6 +172,7 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg + DeipAssets> {
     Invested(deip::InvestedEvent<T>),
     ContractAgreementCreated(deip::ContractAgreementCreatedEvent<T>),
     ContractAgreementAccepted(deip::ContractAgreementAcceptedEvent<T>),
+    ContractAgreementFinalized(deip::ContractAgreementFinalizedEvent<T>),
     // DeipOrg:
     OrgCreate(deip_org::OrgCreateEvent<T>),
     OrgAlterAuthority(deip_org::OrgAlterAuthorityEvent<T>),
@@ -388,6 +390,14 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + DeipAssets + Debug
         ) => DomainEvent {
             name: "deip_contractAgreementAccepted".to_string(),
             data: decode_event_data(raw).map(ContractAgreementAccepted)?,
+            meta,
+        },
+        (
+            deip::ContractAgreementFinalizedEvent::<T>::MODULE,
+            deip::ContractAgreementFinalizedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "deip_contractAgreementFinalized".to_string(),
+            data: decode_event_data(raw).map(ContractAgreementFinalized)?,
             meta,
         },
         // =========== DeipOrg:
