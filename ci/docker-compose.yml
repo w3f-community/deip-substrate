@@ -30,7 +30,7 @@ services:
   deip-blockchain-node:
     image: "$BLOCKCHAIN_NODE_IMG"
     command: |
-      node-template --dev --tmp 
+      node-template --dev --tmp --ws-external 
         -lpallet_deip_proposal=debug 
         -lpallet_deip_org=debug 
         -l=txpool=trace,runtime=trace,offchain=trace
