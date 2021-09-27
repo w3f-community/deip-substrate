@@ -1282,11 +1282,11 @@ fn create_license_agreement_well_known_cases() {
             BOB_ACCOUNT_ID,
             ContractAgreementId::random(),
             BOB_ACCOUNT_ID,
-            vec![BOB_ACCOUNT_ID.into()],
+            vec![BOB_ACCOUNT_ID.into(), DEFAULT_ACCOUNT_ID.into()],
             HashOf::<Test>::random(),
             None,
             None,
-            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement{
                 source: ProjectId::random(),
                 price: DeipAsset::new(Default::default(), One::one()),
             }),
@@ -1297,15 +1297,15 @@ fn create_license_agreement_well_known_cases() {
             BOB_ACCOUNT_ID,
             ContractAgreementId::random(),
             BOB_ACCOUNT_ID,
-            vec![BOB_ACCOUNT_ID.into()],
+            vec![BOB_ACCOUNT_ID.into(), DEFAULT_ACCOUNT_ID.into()],
             HashOf::<Test>::random(),
             None,
             None,
-            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement{
                 source: *project_id,
                 price: DeipAsset::new(Default::default(), One::one()),
             }),
-            Error::<Test>::ProjectNotBelongToTeam);
+            Error::<Test>::ContractAgreementLicenseProjectTeamIsNotListedInParties);
 
         assert_noop!(Deip::create_contract_agreement_impl(
             *account_id,
@@ -1315,7 +1315,7 @@ fn create_license_agreement_well_known_cases() {
             HashOf::<Test>::random(),
             None,
             None,
-            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement{
                 source: *project_id,
                 price: DeipAsset::new(Default::default(), Zero::zero()),
             }),
@@ -1329,7 +1329,7 @@ fn create_license_agreement_well_known_cases() {
             HashOf::<Test>::random(),
             Some(pallet_timestamp::Module::<Test>::get()),
             Some(pallet_timestamp::Module::<Test>::get()),
-            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement{
                 source: *project_id,
                 price: DeipAsset::new(Default::default(), Zero::zero()),
             }),
@@ -1343,7 +1343,7 @@ fn create_license_agreement_well_known_cases() {
             HashOf::<Test>::random(),
             None,
             Some(pallet_timestamp::Module::<Test>::get()),
-            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement{
                 source: *project_id,
                 price: DeipAsset::new(Default::default(), Zero::zero()),
             }),
@@ -1358,7 +1358,7 @@ fn create_license_agreement_well_known_cases() {
             HashOf::<Test>::random(),
             None,
             None,
-            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement{
                 source: *project_id,
                 price: DeipAsset::new(Default::default(), One::one()),
             }).is_ok());
@@ -1371,7 +1371,7 @@ fn create_license_agreement_well_known_cases() {
             HashOf::<Test>::random(),
             None,
             None,
-            ContractAgreementTermsOf::<Test>::TechnologyLicenseAgreementTerms{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement{
                 source: *project_id,
                 price: DeipAsset::new(Default::default(), One::one()),
             }),

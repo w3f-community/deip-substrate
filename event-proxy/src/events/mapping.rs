@@ -246,5 +246,9 @@ where
             /* deip::ContractAgreementAcceptedEvent */
             unimplemented!()
         }
+        ContractAgreementFinalized(..) => {
+            /* deip::ContractAgreementFinalizedEvent */
+            unimplemented!()
+        }
     }
 }

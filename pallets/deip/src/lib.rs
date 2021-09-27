@@ -338,6 +338,7 @@ decl_event! {
 
         ContractAgreementCreated(ContractAgreementId),
         ContractAgreementAccepted(ContractAgreementId, AccountId),
+        ContractAgreementFinalized(ContractAgreementId),
     }
 }
 
@@ -447,12 +448,14 @@ decl_error! {
         ContractAgreementLicenseProjectTeamIsNotListedInParties,
         ContractAgreementNotFound,
         ContractAgreementAcceptWrongAgreement,
-        ContractAgreementLicenseAlreadyAccepted,
+        ContractAgreementAlreadyAccepted,
         ContractAgreementLicensePartyIsNotLicenser,
         ContractAgreementLicensePartyIsNotLicensee,
         ContractAgreementLicenseExpired,
         ContractAgreementLicenseNotEnoughBalance,
         ContractAgreementLicenseFailedToChargeFee,
+        ContractAgreementPartyIsNotListed,
+        ContractAgreementAlreadyAcceptedByParty,
     }
 }
 

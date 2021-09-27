@@ -260,3 +260,16 @@ impl<T: Deip> Serialize for ContractAgreementAcceptedEvent<T> {
         s.end()
     }
 }
+
+
+#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+pub struct ContractAgreementFinalizedEvent<T: Deip>(T::ContractAgreementId);
+impl<T: Deip> Serialize for ContractAgreementFinalizedEvent<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+        where S: Serializer
+    {
+        let mut s = serializer.serialize_struct("ContractAgreementFinalizedEvent", 1)?;
+        s.serialize_field(CONTRACTAGREEMENT_ID_KEY, &self.0)?;
+        s.end()
+    }
+}
