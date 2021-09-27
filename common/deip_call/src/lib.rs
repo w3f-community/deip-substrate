@@ -45,8 +45,8 @@ impl Serialize for WrappedCall<Call> {
                 Self::serialize_deip_proposal_call(deip_proposal_call, serializer)
             }
 
-            Call::DeipOrg(deip_org_call) => {
-                Self::serialize_deip_org_call(deip_org_call, serializer)
+            Call::DeipDao(deip_dao_call) => {
+                Self::serialize_deip_dao_call(deip_dao_call, serializer)
             }
 
             Call::DeipAssets(deip_assets_call) => {
@@ -342,34 +342,34 @@ impl WrappedCall<Call> {
         }
     }
 
-    fn serialize_deip_org_call<S>(
-        deip_org_call: &pallet_deip_org::Call<Runtime>,
+    fn serialize_deip_dao_call<S>(
+        deip_dao_call: &pallet_deip_dao::Call<Runtime>,
         serializer: S,
     ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
         S: Serializer,
     {
-        use pallet_deip_org::Call::*;
+        use pallet_deip_dao::Call::*;
 
-        match deip_org_call {
+        match deip_dao_call {
             create(name, authority, metadata) => CallObject {
-                module: "deip_org",
+                module: "deip_dao",
                 call: "create",
-                args: &DeipOrgCreateCallArgs { name, authority, metadata },
+                args: &DeipDaoCreateCallArgs { name, authority, metadata },
             }
             .serialize(serializer),
 
             alter_authority(alter_authority_) => CallObject {
-                module: "deip_org",
+                module: "deip_dao",
                 call: "alter_authority",
-                args: &DeipOrgAlterAuthorityCallArgs {
+                args: &DeipDaoAlterAuthorityCallArgs {
                     alter_authority: alter_authority_,
                 },
             }
             .serialize(serializer),
 
             update_dao(metadata) => CallObject {
-                module: "deip_org",
+                module: "deip_dao",
                 call: "update_dao",
                 args: &DeipDaoUpdateCallArgs {
                     metadata: metadata,
@@ -378,9 +378,9 @@ impl WrappedCall<Call> {
             .serialize(serializer),
 
             on_behalf(name, call) => CallObject {
-                module: "deip_org",
+                module: "deip_dao",
                 call: "on_behalf",
-                args: &DeipOrgOnBehalfCallArgs {
+                args: &DeipDaoOnBehalfCallArgs {
                     name,
                     call: &WrappedCall::wrap(call.borrow()),
                 },
@@ -623,13 +623,13 @@ struct DeipAssetsCreateAssetCallArgs<A, B, C, D, E> {
 }
 
 #[derive(Serialize)]
-struct DeipOrgOnBehalfCallArgs<A, B> {
+struct DeipDaoOnBehalfCallArgs<A, B> {
     name: A,
     call: B,
 }
 
 #[derive(Serialize)]
-struct DeipOrgAlterAuthorityCallArgs<A> {
+struct DeipDaoAlterAuthorityCallArgs<A> {
     alter_authority: A,
 }
 
@@ -639,7 +639,7 @@ struct DeipDaoUpdateCallArgs<A> {
 }
 
 #[derive(Serialize)]
-struct DeipOrgCreateCallArgs<A, B, C> {
+struct DeipDaoCreateCallArgs<A, B, C> {
     name: A,
     authority: B,
     metadata: C,

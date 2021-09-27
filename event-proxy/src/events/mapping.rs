@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use super::{Deip, DeipAssets, DeipOrg, DeipProposal, DomainEventData};
+use super::{Deip, DeipAssets, DeipDao, DeipProposal, DomainEventData};
 
 use node_template_runtime::{Event, Runtime};
 
@@ -21,10 +21,10 @@ use node_template_runtime::{Event, Runtime};
 
 fn match_event<T>(e: &Event) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipOrg + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + DeipAssets,
 {
     match e {
-        Event::pallet_deip_org(deip_org_event) => match_event_deip_org(deip_org_event),
+        Event::pallet_deip_dao(deip_dao_event) => match_event_deip_dao(deip_dao_event),
 
         Event::pallet_deip(deip_event) => match_event_deip(deip_event),
 
@@ -44,23 +44,23 @@ where
     }
 }
 
-fn match_event_deip_org<T>(e: &pallet_deip_org::Event<Runtime>) -> DomainEventData<T>
+fn match_event_deip_dao<T>(e: &pallet_deip_dao::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipOrg + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + DeipAssets,
 {
-    use pallet_deip_org::Event::*;
+    use pallet_deip_dao::Event::*;
 
     match e {
-        OrgCreate(_) => {
-            /* deip_org::OrgCreateEvent */
+        DaoCreate(_) => {
+            /* deip_dao::DaoCreateEvent */
             unimplemented!()
         }
-        OrgAlterAuthority(_) => {
-            /* deip_org::OrgTransferOwnershipEvent */
+        DaoAlterAuthority(_) => {
+            /* deip_dao::DaoTransferOwnershipEvent */
             unimplemented!()
         }
         DaoMetadataUpdated(_) => {
-            /* deip_org::DaoMetadataUpdatedEvent */
+            /* deip_dao::DaoMetadataUpdatedEvent */
             unimplemented!()
         }
         __Ignore(..) => unreachable!(),
@@ -69,7 +69,7 @@ where
 
 fn match_event_deip_proposal<T>(e: &pallet_deip_proposal::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipOrg + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + DeipAssets,
 {
     use pallet_deip_proposal::Event::*;
 
@@ -102,7 +102,7 @@ fn match_event_deip_assets<T>(
     e: &pallet_deip_assets::pallet_assets::Event<Runtime>,
 ) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipOrg + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + DeipAssets,
 {
     use pallet_deip_assets::pallet_assets::Event::*;
 
@@ -173,7 +173,7 @@ where
 
 fn match_event_deip<T>(e: &pallet_deip::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipOrg + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + DeipAssets,
 {
     use pallet_deip::RawEvent::*;
 

@@ -11,9 +11,9 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 
-pub use pallet_deip_org::api::DeipOrgRuntimeApi;
-use pallet_deip_org::api::{GetMultiResult, GetResult};
-use pallet_deip_org::org::{Org, OrgName};
+pub use pallet_deip_dao::api::DeipDaoRuntimeApi;
+use pallet_deip_dao::api::{GetMultiResult, GetResult};
+use pallet_deip_dao::dao::{Dao, DaoId};
 
 use frame_support::Blake2_128Concat;
 
@@ -22,15 +22,15 @@ use common_rpc::{FutureResult, HashOf, ListResult, StorageMap};
 mod types;
 
 #[rpc]
-pub trait DeipOrgRpcApi<BlockHash, AccountId> {
+pub trait DeipDaoRpcApi<BlockHash, AccountId> {
     #[rpc(name = "deipDao_get")]
-    fn get(&self, at: Option<BlockHash>, name: OrgName) -> RpcResult<GetResult<AccountId>>;
+    fn get(&self, at: Option<BlockHash>, id: DaoId) -> RpcResult<GetResult<AccountId>>;
 
     #[rpc(name = "deipDao_getMulti")]
     fn get_multi(
         &self,
         at: Option<BlockHash>,
-        names: Vec<OrgName>,
+        ids: Vec<DaoId>,
     ) -> RpcResult<GetMultiResult<AccountId>>;
 
     #[rpc(name = "deipDao_getList")]
@@ -38,17 +38,17 @@ pub trait DeipOrgRpcApi<BlockHash, AccountId> {
         &self,
         at: Option<BlockHash>,
         count: u32,
-        start_id: Option<OrgName>,
-    ) -> FutureResult<Vec<ListResult<OrgName, Org<AccountId, OrgName>>>>;
+        start_id: Option<DaoId>,
+    ) -> FutureResult<Vec<ListResult<DaoId, Dao<AccountId, DaoId>>>>;
 }
 
-pub struct DeipOrgRpcApiObj<C, State, Block> {
+pub struct DeipDaoRpcApiObj<C, State, Block> {
     client: Arc<C>,
     state: State,
     _marker: std::marker::PhantomData<Block>,
 }
 
-impl<C, State, Block> DeipOrgRpcApiObj<C, State, Block> {
+impl<C, State, Block> DeipDaoRpcApiObj<C, State, Block> {
     pub fn new(client: Arc<C>, state: State) -> Self {
         Self {
             client,
@@ -58,21 +58,21 @@ impl<C, State, Block> DeipOrgRpcApiObj<C, State, Block> {
     }
 }
 
-impl<C, State, Block, AccountId> DeipOrgRpcApi<HashOf<Block>, AccountId>
-    for DeipOrgRpcApiObj<C, State, Block>
+impl<C, State, Block, AccountId> DeipDaoRpcApi<HashOf<Block>, AccountId>
+    for DeipDaoRpcApiObj<C, State, Block>
 where
     Block: BlockT,
     C: Send + Sync + 'static,
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block>,
-    C::Api: DeipOrgRuntimeApi<Block, AccountId>,
+    C::Api: DeipDaoRuntimeApi<Block, AccountId>,
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
     AccountId: 'static + Codec + std::marker::Send,
 {
     fn get(
         &self,
         at: Option<<Block as BlockT>::Hash>,
-        name: OrgName,
+        name: DaoId,
     ) -> RpcResult<GetResult<AccountId>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
@@ -86,7 +86,7 @@ where
     fn get_multi(
         &self,
         at: Option<<Block as BlockT>::Hash>,
-        names: Vec<OrgName>,
+        names: Vec<DaoId>,
     ) -> RpcResult<GetMultiResult<AccountId>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
@@ -104,13 +104,13 @@ where
         &self,
         at: Option<HashOf<Block>>,
         count: u32,
-        start_id: Option<OrgName>,
-    ) -> FutureResult<Vec<ListResult<OrgName, Org<AccountId, OrgName>>>> {
+        start_id: Option<DaoId>,
+    ) -> FutureResult<Vec<ListResult<DaoId, Dao<AccountId, DaoId>>>> {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
             at,
-            b"DeipOrg",
-            b"OrgRepository",
+            b"DeipDao",
+            b"DaoRepository",
             count,
             start_id.map(types::DaoKeyValue::new),
         )

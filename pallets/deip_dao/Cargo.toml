@@ -4,7 +4,7 @@ description = 'FRAME pallet defined DAO developed by DEIP'
 edition = '2018'
 homepage = 'https://deip.world/'
 license = 'Apache-2.0'
-name = 'pallet-deip-org'
+name = 'pallet-deip-dao'
 repository = 'https://github.com/DEIPworld/deip-polkadot'
 version = '3.0.0'
 

@@ -836,7 +836,7 @@ dependencies = [
  "node-template-runtime",
  "pallet-deip",
  "pallet-deip-assets",
- "pallet-deip-org",
+ "pallet-deip-dao",
  "pallet-deip-proposal",
  "parity-scale-codec",
  "serde",
@@ -1202,7 +1202,7 @@ dependencies = [
  "frame-system",
  "node-template-runtime",
  "pallet-balances",
- "pallet-deip-org",
+ "pallet-deip-dao",
  "pallet-sudo",
  "pallet-transaction-payment",
  "parity-scale-codec",
@@ -1264,7 +1264,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "deip-org-rpc"
+name = "deip-dao-rpc"
 version = "3.0.0"
 dependencies = [
  "common-deip-rpc",
@@ -1272,7 +1272,7 @@ dependencies = [
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
- "pallet-deip-org",
+ "pallet-deip-dao",
  "parity-scale-codec",
  "sc-rpc-api",
  "serde",
@@ -3709,7 +3709,7 @@ name = "node-template"
 version = "3.0.0"
 dependencies = [
  "deip-assets-rpc",
- "deip-org-rpc",
+ "deip-dao-rpc",
  "deip-proposal-rpc",
  "deip-rpc",
  "frame-benchmarking",
@@ -3764,7 +3764,7 @@ dependencies = [
  "pallet-balances",
  "pallet-deip",
  "pallet-deip-assets",
- "pallet-deip-org",
+ "pallet-deip-dao",
  "pallet-deip-proposal",
  "pallet-grandpa",
  "pallet-multisig",
@@ -4045,7 +4045,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-deip-org"
+name = "pallet-deip-dao"
 version = "3.0.0"
 dependencies = [
  "frame-support",

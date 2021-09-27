@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use crate as pallet_deip_org;
+use crate as pallet_deip_dao;
 use super::{*, Event as RawEvent, Call as RawCall};
 
 use sp_std::prelude::*;
@@ -17,7 +17,7 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        DeipOrg: pallet_deip_org::{Module, Call, Storage, Event<T>, Config},
+        DeipDao: pallet_deip_dao::{Module, Call, Storage, Event<T>, Config},
     }
 );
 
@@ -71,7 +71,7 @@ fn with_test_ext<R>(t: impl FnOnce() -> R) -> R {
 }
 
 use frame_support::{assert_noop, assert_ok};
-use crate::org::*;
+use crate::dao::*;
 use sp_std::str::FromStr;
 use frame_system::RawOrigin;
 
@@ -96,102 +96,102 @@ fn fake_test_example() {
 }
 
 #[test]
-fn org_create() {
+fn dao_create() {
     with_test_ext(|| {
         System::set_block_number(1);
         let who = 1;
-        let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-        assert_ok!(DeipOrg::create(Origin::signed(who), name, plain_key_source(who)));
+        let id = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+        assert_ok!(DeipDao::create(Origin::signed(who), id, plain_key_source(who)));
         assert!(matches!(
             last_event(),
-            Event::pallet_deip_org(RawEvent::OrgCreate(org))
-            if org.key() == &who && org.name() == &name
+            Event::pallet_deip_dao(RawEvent::DaoCreate(dao))
+            if dao.dao_key() == &who && dao.id() == &id
         ));
     })
 }
 
 #[test]
-fn org_create_exists() {
+fn dao_create_exists() {
     with_test_ext(|| {
         let who = 1;
-        let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-        DeipOrg::create(Origin::signed(who), name, plain_key_source(who)).expect("create OK");
+        let name = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+        DeipDao::create(Origin::signed(who), name, plain_key_source(who)).expect("create OK");
         assert_noop!(
-            DeipOrg::create(Origin::signed(who), name, plain_key_source(who)),
+            DeipDao::create(Origin::signed(who), name, plain_key_source(who)),
             Error::<TestRuntime>::Exists,
         );
     })
 }
 
 #[test]
-fn org_transfer_ownership() {
+fn dao_transfer_ownership() {
     with_test_ext(|| {
         System::set_block_number(1);
         let who = 1;
-        let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-        DeipOrg::create(Origin::signed(who), name, plain_key_source(who)).expect("create OK");
+        let id = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+        DeipDao::create(Origin::signed(who), id, plain_key_source(who)).expect("create OK");
         let transfer_to = 2;
-        assert_ok!(DeipOrg::transfer_ownership(Origin::signed(who), name, transfer_to, plain_key_source(transfer_to)));
+        assert_ok!(DeipDao::transfer_ownership(Origin::signed(who), id, transfer_to, plain_key_source(transfer_to)));
         assert!(matches!(
             last_event(),
-            Event::pallet_deip_org(RawEvent::OrgTransferOwnership(org))
-            if org.key() == &transfer_to && org.name() == &name
+            Event::pallet_deip_dao(RawEvent::DaoTransferOwnership(dao))
+            if dao.dao_key() == &transfer_to && dao.id() == &id
         ));
     })
 }
 
 #[test]
-fn org_transfer_ownership_not_found() {
+fn dao_transfer_ownership_not_found() {
     with_test_ext(|| {
         System::set_block_number(1);
         let who = 1;
-        let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+        let id = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
         let transfer_to = 2;
         assert_noop!(
-            DeipOrg::transfer_ownership(Origin::signed(who), name, transfer_to, plain_key_source(who)),
+            DeipDao::transfer_ownership(Origin::signed(who), id, transfer_to, plain_key_source(who)),
             Error::<TestRuntime>::NotFound,
         );
     })
 }
 
 #[test]
-fn org_transfer_ownership_forbidden() {
+fn dao_transfer_ownership_forbidden() {
     with_test_ext(|| {
         System::set_block_number(1);
         let owner = 1;
-        let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-        DeipOrg::create(Origin::signed(owner), name, plain_key_source(owner)).expect("create OK");
+        let id = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+        DeipDao::create(Origin::signed(owner), id, plain_key_source(owner)).expect("create OK");
         let transfer_to = 2;
         let other = 3;
         assert_noop!(
-            DeipOrg::transfer_ownership(Origin::signed(transfer_to), name, transfer_to, plain_key_source(transfer_to)),
+            DeipDao::transfer_ownership(Origin::signed(transfer_to), id, transfer_to, plain_key_source(transfer_to)),
             Error::<TestRuntime>::Forbidden,
         );
         assert_noop!(
-            DeipOrg::transfer_ownership(Origin::signed(other), name, transfer_to, plain_key_source(transfer_to)),
+            DeipDao::transfer_ownership(Origin::signed(other), id, transfer_to, plain_key_source(transfer_to)),
             Error::<TestRuntime>::Forbidden,
         );
     })
 }
 
 #[test]
-fn org_on_behalf() {
+fn dao_on_behalf() {
     with_test_ext(|| {
         System::set_block_number(1);
         let who = 1;
-        let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-        DeipOrg::create(
+        let id = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+        DeipDao::create(
             Origin::signed(who),
-            name,
+            id,
             plain_key_source(who)
         ).expect("create OK");
         let transfer_to = 2;
         assert_ok!(
-            DeipOrg::on_behalf(
+            DeipDao::on_behalf(
                 Origin::signed(who),
-                name,
-                Box::new(Call::DeipOrg(RawCall::transfer_ownership(
-                    name,
+                id,
+                Box::new(Call::DeipDao(RawCall::transfer_ownership(
+                    id,
                     transfer_to,
                     plain_key_source(transfer_to)
                 )))
@@ -201,18 +201,18 @@ fn org_on_behalf() {
 }
 
 #[test]
-fn org_on_behalf_not_found() {
+fn dao_on_behalf_not_found() {
     with_test_ext(|| {
         System::set_block_number(1);
         let who = 1;
-        let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+        let id = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
         let transfer_to = 2;
         assert_noop!(
-            DeipOrg::on_behalf(
+            DeipDao::on_behalf(
                 Origin::signed(who),
-                name,
-                Box::new(Call::DeipOrg(RawCall::transfer_ownership(
-                    name,
+                id,
+                Box::new(Call::DeipDao(RawCall::transfer_ownership(
+                    id,
                     transfer_to,
                     plain_key_source(transfer_to)
                 )))
@@ -223,22 +223,22 @@ fn org_on_behalf_not_found() {
 }
 
 #[test]
-fn org_on_behalf_forbidden() {
+fn dao_on_behalf_forbidden() {
     with_test_ext(|| {
         System::set_block_number(1);
         let who = 1;
-        let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-        DeipOrg::create(
+        let name = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+        DeipDao::create(
             Origin::signed(who),
             name,
             plain_key_source(who)
         ).expect("create OK");
         let transfer_to = 2;
         assert_noop!(
-            DeipOrg::on_behalf(
+            DeipDao::on_behalf(
                 Origin::signed(transfer_to),
                 name,
-                Box::new(Call::DeipOrg(RawCall::transfer_ownership(
+                Box::new(Call::DeipDao(RawCall::transfer_ownership(
                     name,
                     transfer_to,
                     plain_key_source(transfer_to)

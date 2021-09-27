@@ -26,7 +26,7 @@ sp-std = "3.0.0"
 sp-runtime = "3.0.0"
 
 pallet-deip-proposal = { path = "../pallets/deip_proposal" }
-pallet-deip-org = { path = "../pallets/deip_org" }
+pallet-deip-dao = { path = "../pallets/deip_dao" }
 pallet-deip = { path = "../pallets/deip"}
 pallet-deip-assets = { path = "../pallets/deip_assets"}
 node-template-runtime = { path = '../runtime'}

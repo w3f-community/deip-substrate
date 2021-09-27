@@ -1,19 +1,19 @@
-//! # DEIP Org Module
-//! A module for manage virtual organisations and perform actions on behalf of it
+//! # DEIP DAO Module
+//! A module for manage DAO and perform actions on behalf of it
 //! 
 //! - [`Config`](./trait.Config.html)
 //! - [`Call`](./enum.Call.html)
 //!
 //! ## Overview
-//! A module for manage virtual organisations and perform actions on behalf of it
+//! A module for manage DAO and perform actions on behalf of it
 //!
 //! ## Interface
 //!
 //! ### Dispatchable Functions
 //!
-//! * `create` - Create an Org.
-//! * `transfer_ownership` - Transfer ownership of an Org to another account.
-//! * `on_behalf` - Perform action on behalf of an Org.
+//! * `create` - Create a DAO.
+//! * `alter_authority` - Alter DAO's authority.
+//! * `on_behalf` - Perform action on behalf of a DAO.
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -95,11 +95,11 @@ pub mod pallet {
     #[pallet::metadata(u32 = "SpecialU32")]
     #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Emits when organisation created
-        OrgCreate(OrgOf<T>),
+        /// Emits when DAO created
+        DaoCreate(DaoOf<T>),
         /// Emits when authority alteration
-        OrgAlterAuthority(OrgOf<T>),
-        DaoMetadataUpdated(OrgOf<T>),
+        DaoAlterAuthority(DaoOf<T>),
+        DaoMetadataUpdated(DaoOf<T>),
     }
     
     #[doc(hidden)]
@@ -112,11 +112,11 @@ pub mod pallet {
         fn build(&self) {}
     }
     
-    use org::*;
-    pub mod org {
+    use dao::*;
+    pub mod dao {
         use sp_std::prelude::*;
         use frame_support::pallet_prelude::*;
-        use super::{Config, OrgRepository, Error, OrgLookup};
+        use super::{Config, DaoRepository, Error, DaoLookup};
         
         #[cfg(feature = "std")]
         use serde::{Serialize, Deserialize};
@@ -125,8 +125,8 @@ pub mod pallet {
         use sp_core::H256;
 
         #[allow(type_alias_bounds)]
-        pub type OrgOf<T: Config> = Org<T::AccountId, OrgName>;
-        pub type OrgName = sp_core::H160;
+        pub type DaoOf<T: Config> = Dao<T::AccountId, DaoId>;
+        pub type DaoId = sp_core::H160;
         
         pub enum KeyType<'a, K> {
             Members(&'a K),
@@ -137,47 +137,47 @@ pub mod pallet {
             pub fn own(k: &'a K) -> Self { Self::Own(k) }
         }
         pub trait MatchKey<T: Config> {
-            fn match_key(&self, org: &OrgOf<T>) -> bool;
+            fn match_key(&self, dao: &DaoOf<T>) -> bool;
         }
         impl<T: Config> MatchKey<T> for KeyType<'_, T::AccountId> {
-            fn match_key(&self, org: &OrgOf<T>) -> bool {
+            fn match_key(&self, dao: &DaoOf<T>) -> bool {
                 match self {
                     Self::Members(k) => {
-                        *k == org.authority_key()
+                        *k == dao.authority_key()
                     },
                     Self::Own(k) => {
-                        *k == org.org_key()
+                        *k == dao.dao_key()
                     },
                 }
             }
         }
         
         pub enum LoadBy<'a, AccountId> {
-            Name { name: &'a OrgName, who: KeyType<'a, AccountId> },
-            OrgKey { org_key: &'a AccountId }
+            DaoId { id: &'a DaoId, who: KeyType<'a, AccountId> },
+            DaoKey { dao_key: &'a AccountId }
         }
         
-        pub fn load_org<T: Config>(
+        pub fn load_dao<T: Config>(
             q: LoadBy<'_, T::AccountId>,
         )
-            -> Result<OrgOf<T>, Error<T>>
+            -> Result<DaoOf<T>, Error<T>>
         {
-            let (org, who) = match q {
-                LoadBy::Name { name, who } => {
-                    let org = OrgRepository::<T>::get(name)
+            let (dao, who) = match q {
+                LoadBy::DaoId { id: name, who } => {
+                    let dao = DaoRepository::<T>::get(name)
                         .ok_or(Error::<T>::NotFound)?;
-                    (org, who)
+                    (dao, who)
                 },
-                LoadBy::OrgKey { org_key } => {
-                    let name = OrgLookup::<T>::get(org_key)
+                LoadBy::DaoKey { dao_key } => {
+                    let dao_id = DaoLookup::<T>::get(dao_key)
                         .ok_or(Error::<T>::NotFound)?;
-                    let org = OrgRepository::<T>::get(&name)
+                    let dao = DaoRepository::<T>::get(&dao_id)
                         .ok_or(Error::<T>::NotFound)?;
-                    (org, KeyType::Own(org_key))
-                },
+                    (dao, KeyType::Own(dao_key))
+                }
             };
-            ensure!(MatchKey::<T>::match_key(&who, &org), Error::<T>::Forbidden);
-            Ok(org)
+            ensure!(MatchKey::<T>::match_key(&who, &dao), Error::<T>::Forbidden);
+            Ok(dao)
         }
         
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
@@ -265,37 +265,37 @@ pub mod pallet {
         
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-        pub struct Org<AccountId, Name> {
+        pub struct Dao<AccountId, Id> {
             /// Authority aka "control" key. Not fixed, may changes in future
             authority_key: AccountId,
             /// Details of control key: multi-sig or plain account
             authority: Authority<AccountId>,
-            /// Unique organisation name aka ID
-            name: Name,
-            /// Own key of organization for keeping assets,
-            /// to signing of an extrinsics calls dispatched on behalf of organization etc ..
-            /// Must be generated internally when organisation will be created,
+            /// Unique DAO ID
+            id: Id,
+            /// Own key of DAO for keeping assets,
+            /// to signing of an extrinsics calls dispatched on behalf of DAO etc ..
+            /// Must be generated internally when DAO will be created,
             /// nobody knows private half of this key
-            org_key: AccountId,
+            dao_key: AccountId,
             metadata: Option<H256>
         }
-        impl<AccountId, Name> Org<AccountId, Name> {
+        impl<AccountId, Id> Dao<AccountId, Id> {
             pub fn new(
-                members_key: AccountId,
-                members_key_source: Authority<AccountId>,
-                name: Name,
-                org_key: AccountId,
+                authority_key: AccountId,
+                authority: Authority<AccountId>,
+                id: Id,
+                dao_key: AccountId,
                 metadata: Option<H256>,
             )
                 -> Self
             {
-                Self { authority_key: members_key, authority: members_key_source, name, org_key, metadata }
+                Self { authority_key, authority, id, dao_key, metadata }
             }
             
             pub fn authority_key(&self) -> &AccountId { &self.authority_key }
             pub fn authority(&self) -> &Authority<AccountId>{ &self.authority }
-            pub fn name(&self) -> &Name { &self.name }
-            pub fn org_key(&self) -> &AccountId { &self.org_key }
+            pub fn id(&self) -> &Id { &self.id }
+            pub fn dao_key(&self) -> &AccountId { &self.dao_key }
             
             pub fn alter_authoriry(self, op: AlterAuthority<AccountId>) -> Result<Self, AuthorityAssert>
                 where
@@ -303,8 +303,8 @@ pub mod pallet {
                 let Self {
                     authority_key: _,
                     mut authority,
-                    name,
-                    org_key,
+                    id,
+                    dao_key,
                     metadata
                 } = self;
                 match op {
@@ -318,7 +318,7 @@ pub mod pallet {
                         authority = new_authority.assert(&new_authority_key)?;
                     },
                 }
-                Ok(Self::new(authority.authority_key(), authority, name, org_key, metadata))
+                Ok(Self::new(authority.authority_key(), authority, id, dao_key, metadata))
             }
 
             pub fn update_metadata(mut self, new_metadata: Option<H256>,) -> Self {
@@ -338,16 +338,16 @@ pub mod pallet {
     }
     
     impl<T: Config> Pallet<T> {
-        pub fn org_key(org_name: &OrgName) -> T::AccountId {
-            org_key::<T::AccountId>(org_name)
+        pub fn dao_key(dao_id: &DaoId) -> T::AccountId {
+            dao_key::<T::AccountId>(dao_id)
         }
     }
-    pub fn org_key<T: Decode + Default>(org_name: &OrgName) -> T {
-        let entropy = (b"deip/DAOs/", org_name.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
+    pub fn dao_key<T: Decode + Default>(dao_id: &DaoId) -> T {
+        let entropy = (b"deip/DAOs/", dao_id.as_bytes()).using_encoded(sp_io::hashing::blake2_256);
         T::decode(&mut &entropy[..]).unwrap_or_default()
     }
-    pub fn org_key2<T: frame_system::Config>(org_name: &OrgName) -> T::AccountId {
-        org_key::<T::AccountId>(org_name)
+    pub fn dao_key2<T: frame_system::Config>(dao_id: &DaoId) -> T::AccountId {
+        dao_key::<T::AccountId>(dao_id)
     }
     
     #[pallet::call]
@@ -356,7 +356,7 @@ pub mod pallet {
         #[pallet::weight(10_000)]
         pub fn create(
             origin: OriginFor<T>,
-            name: OrgName,
+            name: DaoId,
             authority: InputAuthority<T::AccountId>,
             metadata: Option<H256>,
         )
@@ -364,19 +364,19 @@ pub mod pallet {
         {
             let authority_key = ensure_signed(origin)?;
             let authority = authority.assert(&authority_key).map_err::<Error<T>, _>(Into::into)?;
-            ensure!(!OrgRepository::<T>::contains_key(&name), Error::<T>::Exists);
-            let org_key = Self::org_key(&name);
-            let org = OrgOf::<T>::new(
+            ensure!(!DaoRepository::<T>::contains_key(&name), Error::<T>::Exists);
+            let dao_key = Self::dao_key(&name);
+            let dao = DaoOf::<T>::new(
                 authority_key,
                 authority,
                 name,
-                org_key,
+                dao_key,
                 metadata,
             );
             StorageOpsTransaction::<StorageOps<T>>::new()
                 .commit(move |ops| {
-                    ops.push_op(StorageOps::CreateOrg(org.clone()));
-                    ops.push_op(StorageOps::DepositEvent(Event::<T>::OrgCreate(org)));
+                    ops.push_op(StorageOps::CreateDao(dao.clone()));
+                    ops.push_op(StorageOps::DepositEvent(Event::<T>::DaoCreate(dao)));
                 });
             Ok(Some(0).into())
         }
@@ -389,12 +389,12 @@ pub mod pallet {
             -> DispatchResultWithPostInfo
         {
             let who = ensure_signed(origin)?;
-            let mut org = load_org::<T>(LoadBy::OrgKey { org_key: &who })?;
-            org = org.alter_authoriry(alter_authority).map_err::<Error<T>, _>(Into::into)?;
+            let mut dao = load_dao::<T>(LoadBy::DaoKey { dao_key: &who })?;
+            dao = dao.alter_authoriry(alter_authority).map_err::<Error<T>, _>(Into::into)?;
             StorageOpsTransaction::<StorageOps<T>>::new()
                 .commit(move |ops| {
-                    ops.push_op(StorageOps::UpdateOrg(org.clone()));
-                    ops.push_op(StorageOps::DepositEvent(Event::<T>::OrgAlterAuthority(org)));
+                    ops.push_op(StorageOps::UpdateDao(dao.clone()));
+                    ops.push_op(StorageOps::DepositEvent(Event::<T>::DaoAlterAuthority(dao)));
                 });
             Ok(Some(0).into())
         }
@@ -405,12 +405,12 @@ pub mod pallet {
             new_metadata: Option<H256>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            let mut org = load_org::<T>(LoadBy::OrgKey { org_key: &who })?;
-            org = org.update_metadata(new_metadata);
+            let mut dao = load_dao::<T>(LoadBy::DaoKey { dao_key: &who })?;
+            dao = dao.update_metadata(new_metadata);
             StorageOpsTransaction::<StorageOps<T>>::new()
                 .commit(move |ops| {
-                    ops.push_op(StorageOps::UpdateOrg(org.clone()));
-                    ops.push_op(StorageOps::DepositEvent(Event::<T>::DaoMetadataUpdated(org)));
+                    ops.push_op(StorageOps::UpdateDao(dao.clone()));
+                    ops.push_op(StorageOps::DepositEvent(Event::<T>::DaoMetadataUpdated(dao)));
                 });
 
             Ok(None.into())
@@ -419,36 +419,36 @@ pub mod pallet {
         #[pallet::weight(10_000)]
         pub fn on_behalf(
             origin: OriginFor<T>,
-            name: OrgName,
+            name: DaoId,
             call: Box<<T as Config>::Call>,
         ) -> DispatchResultWithPostInfo
         {
             let who = ensure_signed(origin)?;
-            let org = load_org::<T>(LoadBy::Name {
-                name: &name,
+            let dao = load_dao::<T>(LoadBy::DaoId {
+                id: &name,
                 who: KeyType::Members(&who)
             })?;
-            call.dispatch(RawOrigin::Signed(org.org_key().clone()).into())
+            call.dispatch(RawOrigin::Signed(dao.dao_key().clone()).into())
         }
     }
     
     // ==== Storage ====:
     
     #[pallet::storage]
-    #[pallet::getter(fn get_org)]
-    pub(super) type OrgRepository<T: Config> = StorageMap<_,
+    #[pallet::getter(fn get_dao)]
+    pub(super) type DaoRepository<T: Config> = StorageMap<_,
         Blake2_128Concat,
-        OrgName,
-        OrgOf<T>,
+        DaoId,
+        DaoOf<T>,
         OptionQuery
     >;
     
     #[pallet::storage]
-    #[pallet::getter(fn lookup_org)]
-    pub(super) type OrgLookup<T: Config> = StorageMap<_,
+    #[pallet::getter(fn lookup_dao)]
+    pub(super) type DaoLookup<T: Config> = StorageMap<_,
         Blake2_128Concat,
         T::AccountId,
-        OrgName,
+        DaoId,
         OptionQuery
     >;
     
@@ -459,16 +459,16 @@ pub mod pallet {
         use sp_std::prelude::*;
         use pallet_deip_toolkit::storage_ops::StorageOp;
         use super::{Config, Event, Pallet};
-        use super::{OrgOf, OrgRepository, OrgLookup};
+        use super::{DaoOf, DaoRepository, DaoLookup};
 
         /// Storage operations
         pub enum StorageOps<T: Config> {
             /// Deposit event
             DepositEvent(Event<T>),
-            /// Create org
-            CreateOrg(OrgOf<T>),
-            /// Update org
-            UpdateOrg(OrgOf<T>),
+            /// Create DAO
+            CreateDao(DaoOf<T>),
+            /// Update DAO
+            UpdateDao(DaoOf<T>),
             
         }
         impl<T: Config> StorageOp for StorageOps<T> {
@@ -477,12 +477,12 @@ pub mod pallet {
                     Self::DepositEvent(e) => {
                         Pallet::<T>::deposit_event(e)
                     },
-                    Self::CreateOrg(org) => {
-                        OrgLookup::<T>::insert(org.org_key().clone(), org.name().clone());
-                        OrgRepository::<T>::insert(*org.name(), org);
+                    Self::CreateDao(dao) => {
+                        DaoLookup::<T>::insert(dao.dao_key().clone(), dao.id().clone());
+                        DaoRepository::<T>::insert(*dao.id(), dao);
                     }
-                    Self::UpdateOrg(org) => {
-                        OrgRepository::<T>::insert(*org.name(), org);
+                    Self::UpdateDao(dao) => {
+                        DaoRepository::<T>::insert(*dao.id(), dao);
                     }
                 }
             }

@@ -32,7 +32,7 @@ services:
     command: |
       node-template --dev --tmp --ws-external 
         -lpallet_deip_proposal=debug 
-        -lpallet_deip_org=debug 
+        -lpallet_deip_dao=debug 
         -l=txpool=trace,runtime=trace,offchain=trace
     ports:
       - "9944:9944"

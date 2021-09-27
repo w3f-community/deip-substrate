@@ -49,8 +49,8 @@ impl frame::deip::Deip for RuntimeT {
     type ContractAgreementTerms = pallet_deip::ContractAgreementTermsOf<RealRuntime>;
 }
 
-impl frame::deip_org::DeipOrg for RuntimeT {
-    type Org = pallet_deip_org::org::OrgOf<RealRuntime>;
+impl frame::deip_dao::DeipDao for RuntimeT {
+    type Dao = pallet_deip_dao::dao::DaoOf<RealRuntime>;
 }
 
 type AssetId = <RealRuntime as pallet_assets::Config>::AssetId;

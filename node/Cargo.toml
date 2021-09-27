@@ -26,7 +26,7 @@ structopt = '0.3.8'
 node-template-runtime = { path = '../runtime', version = '3.0.0' }
 pallet-deip = { path = "../pallets/deip" }
 pallet-deip-assets = { path = "../pallets/deip_assets" }
-deip-org-rpc = { path = "../rpc/deip_org_rpc" }
+deip-dao-rpc = { path = "../rpc/deip_dao_rpc" }
 deip-rpc = { path = "../rpc/deip_rpc" }
 deip-assets-rpc = { path = "../rpc/deip_assets_rpc" }
 deip-proposal-rpc = { path = "../rpc/deip_proposal_rpc" }

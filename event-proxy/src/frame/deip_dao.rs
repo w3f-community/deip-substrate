@@ -10,37 +10,37 @@ use sp_runtime::traits::Member;
 use serde::{Serialize, ser::{Serializer, SerializeStruct}};
 
 #[module]
-pub trait DeipOrg: System {
-    type Org: Parameter + Member + Serialize;
+pub trait DeipDao: System {
+    type Dao: Parameter + Member + Serialize;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct OrgCreateEvent<T: DeipOrg>(T::Org);
-impl<T: DeipOrg> Serialize for OrgCreateEvent<T> {
+pub struct DaoCreateEvent<T: DeipDao>(T::Dao);
+impl<T: DeipDao> Serialize for DaoCreateEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("OrgCreateEvent", 1)?;
+        let mut s = serializer.serialize_struct("DaoCreateEvent", 1)?;
         s.serialize_field("dao", &self.0)?;
         s.end()
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct OrgAlterAuthorityEvent<T: DeipOrg>(T::Org);
-impl<T: DeipOrg> Serialize for OrgAlterAuthorityEvent<T> {
+pub struct DaoAlterAuthorityEvent<T: DeipDao>(T::Dao);
+impl<T: DeipDao> Serialize for DaoAlterAuthorityEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
-        let mut s = serializer.serialize_struct("OrgAlterAuthorityEvent", 1)?;
+        let mut s = serializer.serialize_struct("DaoAlterAuthorityEvent", 1)?;
         s.serialize_field("dao", &self.0)?;
         s.end()
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct DaoMetadataUpdatedEvent<T: DeipOrg>(T::Org);
-impl<T: DeipOrg> Serialize for DaoMetadataUpdatedEvent<T> {
+pub struct DaoMetadataUpdatedEvent<T: DeipDao>(T::Dao);
+impl<T: DeipDao> Serialize for DaoMetadataUpdatedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {

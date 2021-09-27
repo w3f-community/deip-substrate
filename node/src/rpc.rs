@@ -45,7 +45,7 @@ where
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: deip_rpc::DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash>,
-    C::Api: deip_org_rpc::DeipOrgRuntimeApi<Block, AccountId>,
+    C::Api: deip_dao_rpc::DeipDaoRuntimeApi<Block, AccountId>,
     C::Api: BlockBuilder<Block>,
     C::Api: Metadata<Block, Error = BlockChainError>,
     P: TransactionPool + 'static,
@@ -83,8 +83,8 @@ where
     let subscriptions = SubscriptionManager::new(Arc::new(task_executor.clone()));
     let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe);
 
-    io.extend_with(deip_org_rpc::DeipOrgRpcApi::to_delegate(
-        deip_org_rpc::DeipOrgRpcApiObj::new(client.clone(), state),
+    io.extend_with(deip_dao_rpc::DeipDaoRpcApi::to_delegate(
+        deip_dao_rpc::DeipDaoRpcApiObj::new(client.clone(), state),
     ));
 
     let subscriptions = SubscriptionManager::new(Arc::new(task_executor.clone()));

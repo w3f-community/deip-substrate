@@ -12,7 +12,7 @@ use codec::Encode;
 use node_template_runtime::app_tag_ext::{TagApp, AppTag};
 use node_template_runtime::{Runtime, Call, Address, AccountId, Signature, Hash};
 
-use pallet_deip_org::{Call as DeipOrgCall, org::{OrgName, InputAuthority}};
+use pallet_deip_dao::{Call as DeipDaoCall, dao::{DaoId, InputAuthority}};
 
 use sp_core::crypto::{Ss58Codec, Pair, AccountId32};
 use sp_core::ed25519;
@@ -43,7 +43,7 @@ fn genesis_hash() -> Hash {
 }
 
 fn main() {
-    let name = OrgName::from_slice("test_org\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+    let name = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
     
     let tag = AppTag::from_slice("test_tag\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
     
@@ -63,7 +63,7 @@ fn main() {
     
     let account = MultiSigner::from(pair.public()).into_account();
     
-    let function = Call::DeipOrg(DeipOrgCall::create(
+    let function = Call::DeipDao(DeipDaoCall::create(
         name,
         InputAuthority { signatories: vec![account.clone()], threshold: 0 },
         None

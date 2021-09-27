@@ -10,7 +10,7 @@ use sp_runtime::traits::{Block as _Block, Header as _Header};
 use super::frame::{
     deip_proposal::{self, DeipProposal},
     deip::{self, Deip},
-    deip_org::{self, DeipOrg},
+    deip_dao::{self, DeipDao},
     deip_assets::{self, DeipAssets},
 };
 
@@ -78,18 +78,18 @@ pub struct DomainEventMeta<Block> {
 pub type DomainEvent<T> = BaseEvent<DomainEventData<T>, DomainEventMeta<BlockMetadata<T>>>;
 
 impl<T> From<DomainEvent<T>> for SpecializedEvent<T>
-    where T: Deip + DeipProposal + DeipOrg + DeipAssets
+    where T: Deip + DeipProposal + DeipDao + DeipAssets
 {
     fn from(source: DomainEvent<T>) -> Self { Self::Domain(source) }
 }
 
 impl<T> From<InfrastructureEvent<T>> for SpecializedEvent<T>
-    where T: Deip + DeipProposal + DeipOrg + DeipAssets
+    where T: Deip + DeipProposal + DeipDao + DeipAssets
 {
     fn from(source: InfrastructureEvent<T>) -> Self { Self::Infrastructure(source) }
 }
 
-impl<T: DeipProposal + Deip + DeipOrg + DeipAssets> Serialize for DomainEventData<T> {
+impl<T: DeipProposal + Deip + DeipDao + DeipAssets> Serialize for DomainEventData<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
@@ -120,9 +120,9 @@ impl<T: DeipProposal + Deip + DeipOrg + DeipAssets> Serialize for DomainEventDat
             ContractAgreementCreated(e) => e.serialize(serializer),
             ContractAgreementAccepted(e) => e.serialize(serializer),
             ContractAgreementFinalized(e) => e.serialize(serializer),
-            // =============== DeipOrg:
-            OrgCreate(e) => e.serialize(serializer),
-            OrgAlterAuthority(e) => e.serialize(serializer),
+            // =============== DeipDao:
+            DaoCreate(e) => e.serialize(serializer),
+            DaoAlterAuthority(e) => e.serialize(serializer),
             DaoMetadataUpdated(e) => e.serialize(serializer),
             // =============== DeipAssets:
             AssetClassCreated(e) => e.serialize(serializer),
@@ -147,7 +147,7 @@ impl<T: DeipProposal + Deip + DeipOrg + DeipAssets> Serialize for DomainEventDat
 pub use DomainEventData::*;
 
 #[derive(Debug)]
-pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg + DeipAssets> {
+pub enum DomainEventData<T: DeipProposal + Deip + DeipDao + DeipAssets> {
     // DeipProposal:
     ProposalProposed(deip_proposal::ProposedEvent<T>),
     ProposalApproved(deip_proposal::ApprovedEvent<T>),
@@ -174,10 +174,10 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg + DeipAssets> {
     ContractAgreementCreated(deip::ContractAgreementCreatedEvent<T>),
     ContractAgreementAccepted(deip::ContractAgreementAcceptedEvent<T>),
     ContractAgreementFinalized(deip::ContractAgreementFinalizedEvent<T>),
-    // DeipOrg:
-    OrgCreate(deip_org::OrgCreateEvent<T>),
-    OrgAlterAuthority(deip_org::OrgAlterAuthorityEvent<T>),
-    DaoMetadataUpdated(deip_org::DaoMetadataUpdatedEvent<T>),
+    // DeipDao:
+    DaoCreate(deip_dao::DaoCreateEvent<T>),
+    DaoAlterAuthority(deip_dao::DaoAlterAuthorityEvent<T>),
+    DaoMetadataUpdated(deip_dao::DaoMetadataUpdatedEvent<T>),
     // DeipAssets:
     AssetClassCreated(deip_assets::CreatedEvent<T>),
     AssetIssued(deip_assets::IssuedEvent<T>),
@@ -196,7 +196,7 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg + DeipAssets> {
     AssetMetadataSet(deip_assets::MetadataSetEvent<T>),
 }
 
-pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + DeipAssets + Debug>(
+pub fn known_domain_events<T: DeipProposal + Deip + DeipDao + DeipAssets + Debug>(
     raw: &(u32, RawEvent),
     block: &Block<<T as System>::Header, <T as System>::Extrinsic>
 )
@@ -402,26 +402,26 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + DeipAssets + Debug
             data: decode_event_data(raw).map(ContractAgreementFinalized)?,
             meta,
         },
-        // =========== DeipOrg:
+        // =========== DeipDao:
         (                               
-            deip_org::OrgCreateEvent::<T>::MODULE,
-            deip_org::OrgCreateEvent::<T>::EVENT
+            deip_dao::DaoCreateEvent::<T>::MODULE,
+            deip_dao::DaoCreateEvent::<T>::EVENT
         ) => DomainEvent {
             name: "dao_create".to_string(),
-            data: decode_event_data(raw).map(OrgCreate)?,
+            data: decode_event_data(raw).map(DaoCreate)?,
             meta,
         },
         (                               
-            deip_org::OrgAlterAuthorityEvent::<T>::MODULE,
-            deip_org::OrgAlterAuthorityEvent::<T>::EVENT
+            deip_dao::DaoAlterAuthorityEvent::<T>::MODULE,
+            deip_dao::DaoAlterAuthorityEvent::<T>::EVENT
         ) => DomainEvent {
             name: "dao_alterAuthority".to_string(),
-            data: decode_event_data(raw).map(OrgAlterAuthority)?,
+            data: decode_event_data(raw).map(DaoAlterAuthority)?,
             meta,
         },
         (
-            deip_org::DaoMetadataUpdatedEvent::<T>::MODULE,
-            deip_org::DaoMetadataUpdatedEvent::<T>::EVENT
+            deip_dao::DaoMetadataUpdatedEvent::<T>::MODULE,
+            deip_dao::DaoMetadataUpdatedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "dao_metadataUpdated".to_string(),
             data: decode_event_data(raw).map(DaoMetadataUpdated)?,

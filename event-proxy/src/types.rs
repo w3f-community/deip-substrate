@@ -1,11 +1,11 @@
 use substrate_subxt::{Runtime, ClientBuilder, system::System};
 
-use super::frame::{DeipProposal, Deip, DeipOrg};
+use super::frame::{DeipProposal, Deip, DeipDao};
 
 
 pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
     where
-        T: System + DeipProposal + Deip + DeipOrg
+        T: System + DeipProposal + Deip + DeipDao
 {
     c
         // System:
@@ -27,6 +27,6 @@ pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
         .register_type_size::<<T as Deip>::InvestmentId>("InvestmentId")
         .register_type_size::<<T as Deip>::ContractAgreementId>("ContractAgreementId")
         .register_type_size::<<T as Deip>::ContractAgreementTerms>("ContractAgreementTerms")
-        // DeipOrg:
-        .register_type_size::<<T as DeipOrg>::Org>("OrgOf<T>")
+        // DeipDao:
+        .register_type_size::<<T as DeipDao>::Dao>("DaoOf<T>")
 }

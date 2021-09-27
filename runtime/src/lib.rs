@@ -373,7 +373,7 @@ impl pallet_deip_proposal::pallet::Config for Runtime {
     type ExpirePeriod = ProposalExpirePeriod;
 }
 
-impl pallet_deip_org::Config for Runtime {
+impl pallet_deip_dao::Config for Runtime {
     type Event = Event;
     type Call = Call;
 }
@@ -464,7 +464,7 @@ construct_runtime!(
         TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
         Deip: pallet_deip::{Module, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipProposal: pallet_deip_proposal::{Module, Call, Storage, Event<T>, Config, ValidateUnsigned},
-        DeipOrg: pallet_deip_org::{Module, Call, Storage, Event<T>, Config},
+        DeipDao: pallet_deip_dao::{Module, Call, Storage, Event<T>, Config},
         Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
         Assets: pallet_assets::{Module, Storage, Event<T>},
         DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>, ValidateUnsigned},
@@ -567,12 +567,12 @@ impl_runtime_apis! {
         }
     }
     
-    impl pallet_deip_org::api::DeipOrgRuntimeApi<Block, AccountId> for Runtime {
-        fn get(name: pallet_deip_org::org::OrgName) -> pallet_deip_org::api::GetResult<AccountId> {
-            DeipOrg::rpc_get(name)
+    impl pallet_deip_dao::api::DeipDaoRuntimeApi<Block, AccountId> for Runtime {
+        fn get(name: pallet_deip_dao::dao::DaoId) -> pallet_deip_dao::api::GetResult<AccountId> {
+            DeipDao::rpc_get(name)
         }
-        fn get_multi(names: Vec<pallet_deip_org::org::OrgName>) -> pallet_deip_org::api::GetMultiResult<AccountId> {
-            DeipOrg::rpc_get_multi(names)
+        fn get_multi(names: Vec<pallet_deip_dao::dao::DaoId>) -> pallet_deip_dao::api::GetMultiResult<AccountId> {
+            DeipDao::rpc_get_multi(names)
         }
     }
     

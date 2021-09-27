@@ -4,7 +4,7 @@ description = 'RPC for DEIP DAO pallet'
 edition = '2018'
 homepage = 'https://deip.world/'
 license = 'Apache-2.0'
-name = 'deip-org-rpc'
+name = 'deip-dao-rpc'
 repository = 'https://github.com/DEIPworld/deip-substrate'
 version = '3.0.0'
 
@@ -30,7 +30,7 @@ sp-std = { default-features = false, version = '3.0.0' }
 sp-runtime = { version = '3.0.0', default-features = false }
 sp-core = { default-features = false, version = '3.0.0' }
 serde = { version = "1.0.123", optional = true, features = ["derive"]}
-pallet-deip-org = { path = "../../pallets/deip_org", default-features = false }
+pallet-deip-dao = { path = "../../pallets/deip_dao", default-features = false }
 
 # RPC deps:
 jsonrpc-core = "15.0"
@@ -49,5 +49,5 @@ std = [
     'codec/std',
     'sp-std/std', 
     'serde',
-    'pallet-deip-org/std'
+    'pallet-deip-dao/std'
 ]

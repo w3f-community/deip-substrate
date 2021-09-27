@@ -3,7 +3,7 @@ use std::{str::FromStr};
 use node_template_runtime::{
     AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
     SudoConfig, SystemConfig, WASM_BINARY, Signature, DeipConfig, DeipProposalConfig,
-    DeipOrgConfig,
+    DeipDaoConfig,
     DeipAssetsConfig,
 };
 use pallet_deip::{ DomainId, Domain };
@@ -176,7 +176,7 @@ fn testnet_genesis(
         pallet_deip_proposal: Some(DeipProposalConfig {
             // _myfield: Default::default()
         }),
-        pallet_deip_org: Some(DeipOrgConfig {
+        pallet_deip_dao: Some(DeipDaoConfig {
         }),
         pallet_aura: Some(AuraConfig {
             authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
