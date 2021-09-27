@@ -99,6 +99,7 @@ pub mod pallet {
         OrgCreate(OrgOf<T>),
         /// Emits when authority alteration
         OrgAlterAuthority(OrgOf<T>),
+        DaoMetadataUpdated(OrgOf<T>),
     }
     
     #[doc(hidden)]
@@ -319,6 +320,11 @@ pub mod pallet {
                 }
                 Ok(Self::new(authority.authority_key(), authority, name, org_key, metadata))
             }
+
+            pub fn update_metadata(mut self, new_metadata: Option<H256>,) -> Self {
+                self.metadata = new_metadata;
+                self
+            }
         }
         
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
@@ -392,7 +398,24 @@ pub mod pallet {
                 });
             Ok(Some(0).into())
         }
-        
+
+        #[pallet::weight(10_000)]
+        pub fn update_dao(
+            origin: OriginFor<T>,
+            new_metadata: Option<H256>,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let mut org = load_org::<T>(LoadBy::OrgKey { org_key: &who })?;
+            org = org.update_metadata(new_metadata);
+            StorageOpsTransaction::<StorageOps<T>>::new()
+                .commit(move |ops| {
+                    ops.push_op(StorageOps::UpdateOrg(org.clone()));
+                    ops.push_op(StorageOps::DepositEvent(Event::<T>::DaoMetadataUpdated(org)));
+                });
+
+            Ok(None.into())
+        }
+
         #[pallet::weight(10_000)]
         pub fn on_behalf(
             origin: OriginFor<T>,

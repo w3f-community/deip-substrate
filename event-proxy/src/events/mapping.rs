@@ -59,6 +59,10 @@ where
             /* deip_org::OrgTransferOwnershipEvent */
             unimplemented!()
         }
+        DaoMetadataUpdated(_) => {
+            /* deip_org::DaoMetadataUpdatedEvent */
+            unimplemented!()
+        }
         __Ignore(..) => unreachable!(),
     }
 }
