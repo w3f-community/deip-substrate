@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Agreement",""],["IndexTerms",""],["TechnologyLicenseStatus",""],["Terms",""]],"struct":[["TechnologyLicense",""]],"type":[["AgreementOf",""],["Id",""],["TermsOf",""]]});
+initSidebarItems({"enum":[["Agreement",""],["GeneralContractStatus",""],["IndexTerms",""],["LicenseStatus",""],["Terms",""]],"struct":[["GeneralContract",""],["License",""]],"type":[["AgreementOf",""],["Id",""],["TermsOf",""]]});

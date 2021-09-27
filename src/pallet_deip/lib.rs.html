@@ -1093,6 +1093,9 @@
 <span id="1093">1093</span>
 <span id="1094">1094</span>
 <span id="1095">1095</span>
+<span id="1096">1096</span>
+<span id="1097">1097</span>
+<span id="1098">1098</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -1434,6 +1437,7 @@
 
         <span class="ident">ContractAgreementCreated</span>(<span class="ident">ContractAgreementId</span>),
         <span class="ident">ContractAgreementAccepted</span>(<span class="ident">ContractAgreementId</span>, <span class="ident">AccountId</span>),
+        <span class="ident">ContractAgreementFinalized</span>(<span class="ident">ContractAgreementId</span>),
     }
 }
 
@@ -1543,12 +1547,14 @@
         <span class="ident">ContractAgreementLicenseProjectTeamIsNotListedInParties</span>,
         <span class="ident">ContractAgreementNotFound</span>,
         <span class="ident">ContractAgreementAcceptWrongAgreement</span>,
-        <span class="ident">ContractAgreementLicenseAlreadyAccepted</span>,
+        <span class="ident">ContractAgreementAlreadyAccepted</span>,
         <span class="ident">ContractAgreementLicensePartyIsNotLicenser</span>,
         <span class="ident">ContractAgreementLicensePartyIsNotLicensee</span>,
         <span class="ident">ContractAgreementLicenseExpired</span>,
         <span class="ident">ContractAgreementLicenseNotEnoughBalance</span>,
         <span class="ident">ContractAgreementLicenseFailedToChargeFee</span>,
+        <span class="ident">ContractAgreementPartyIsNotListed</span>,
+        <span class="ident">ContractAgreementAlreadyAcceptedByParty</span>,
     }
 }
 
