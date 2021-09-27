@@ -368,6 +368,15 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
+            update_dao(metadata) => CallObject {
+                module: "deip_org",
+                call: "update_dao",
+                args: &DeipDaoUpdateCallArgs {
+                    metadata: metadata,
+                },
+            }
+            .serialize(serializer),
+
             on_behalf(name, call) => CallObject {
                 module: "deip_org",
                 call: "on_behalf",
@@ -622,6 +631,11 @@ struct DeipOrgOnBehalfCallArgs<A, B> {
 #[derive(Serialize)]
 struct DeipOrgAlterAuthorityCallArgs<A> {
     alter_authority: A,
+}
+
+#[derive(Serialize)]
+struct DeipDaoUpdateCallArgs<A> {
+    metadata: A,
 }
 
 #[derive(Serialize)]

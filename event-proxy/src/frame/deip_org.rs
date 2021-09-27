@@ -37,3 +37,15 @@ impl<T: DeipOrg> Serialize for OrgAlterAuthorityEvent<T> {
         s.end()
     }
 }
+
+#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+pub struct DaoMetadataUpdatedEvent<T: DeipOrg>(T::Org);
+impl<T: DeipOrg> Serialize for DaoMetadataUpdatedEvent<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+        where S: Serializer
+    {
+        let mut s = serializer.serialize_struct("DaoMetadataUpdatedEvent", 1)?;
+        s.serialize_field("dao", &self.0)?;
+        s.end()
+    }
+}

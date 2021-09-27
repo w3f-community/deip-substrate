@@ -123,6 +123,7 @@ impl<T: DeipProposal + Deip + DeipOrg + DeipAssets> Serialize for DomainEventDat
             // =============== DeipOrg:
             OrgCreate(e) => e.serialize(serializer),
             OrgAlterAuthority(e) => e.serialize(serializer),
+            DaoMetadataUpdated(e) => e.serialize(serializer),
             // =============== DeipAssets:
             AssetClassCreated(e) => e.serialize(serializer),
             AssetIssued(e) => e.serialize(serializer),
@@ -176,6 +177,7 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipOrg + DeipAssets> {
     // DeipOrg:
     OrgCreate(deip_org::OrgCreateEvent<T>),
     OrgAlterAuthority(deip_org::OrgAlterAuthorityEvent<T>),
+    DaoMetadataUpdated(deip_org::DaoMetadataUpdatedEvent<T>),
     // DeipAssets:
     AssetClassCreated(deip_assets::CreatedEvent<T>),
     AssetIssued(deip_assets::IssuedEvent<T>),
@@ -415,6 +417,14 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipOrg + DeipAssets + Debug
         ) => DomainEvent {
             name: "dao_alterAuthority".to_string(),
             data: decode_event_data(raw).map(OrgAlterAuthority)?,
+            meta,
+        },
+        (
+            deip_org::DaoMetadataUpdatedEvent::<T>::MODULE,
+            deip_org::DaoMetadataUpdatedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "dao_metadataUpdated".to_string(),
+            data: decode_event_data(raw).map(DaoMetadataUpdated)?,
             meta,
         },
         // =========== DeipAssets:
