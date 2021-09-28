@@ -401,13 +401,12 @@ impl WrappedCall<Call> {
         use pallet_deip_assets::Call::*;
 
         match deip_assets_call {
-            create_asset(id, admin, max_zombies, min_balance, project_id) => CallObject {
+            create_asset(id, admin, min_balance, project_id) => CallObject {
                 module: "deip_assets",
                 call: "create_asset",
                 args: &DeipAssetsCreateAssetCallArgs {
                     id,
                     admin,
-                    max_zombies,
                     min_balance,
                     project_id,
                 },
@@ -496,13 +495,6 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            set_max_zombies(id, max_zombies) => CallObject {
-                module: "deip_assets",
-                call: "set_max_zombies",
-                args: &DeipAssetsSetMaxZombiesCallArgs { id, max_zombies },
-            }
-            .serialize(serializer),
-
             set_metadata(id, name, symbol, decimals) => CallObject {
                 module: "deip_assets",
                 call: "set_metadata",
@@ -542,12 +534,6 @@ struct DeipAssetsSetMetadataCallArgs<A, B, C, D> {
 struct DeipAssetsWipeZeroBalanceCallArgs<A, B> {
     asset: A,
     account: B,
-}
-
-#[derive(Serialize)]
-struct DeipAssetsSetMaxZombiesCallArgs<A, B> {
-    id: A,
-    max_zombies: B,
 }
 
 #[derive(Serialize)]
@@ -614,10 +600,9 @@ struct DeipAssetsDestroyCallArgs<A, B> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsCreateAssetCallArgs<A, B, C, D, E> {
+struct DeipAssetsCreateAssetCallArgs<A, B, D, E> {
     id: A,
     admin: B,
-    max_zombies: C,
     min_balance: D,
     project_id: E,
 }

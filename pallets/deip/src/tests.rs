@@ -119,7 +119,6 @@ fn create_issue_asset(
     let call = pallet_deip_assets::Call::<Test>::create_asset(
         id,
         account_id,
-        100u32,
         1u32.into(),
         project_id,
     );

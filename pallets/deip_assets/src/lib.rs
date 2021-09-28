@@ -22,7 +22,6 @@
 //! * [`thaw_asset`](./enum.Call.html#variant.thaw_asset)
 //! * [`transfer_ownership`](./enum.Call.html#variant.transfer_ownership)
 //! * [`set_team`](./enum.Call.html#variant.set_team)
-//! * [`set_max_zombies`](./enum.Call.html#variant.set_max_zombies)
 //! * [`set_metadata`](./enum.Call.html#variant.set_metadata)
 //!
 //! [`Config`]: ./trait.Config.html
@@ -529,7 +528,6 @@ pub mod pallet {
             origin: OriginFor<T>,
             #[pallet::compact] id: T::AssetId,
             admin: T::DeipAccountId,
-            max_zombies: u32,
             min_balance: AssetsBalanceOf<T>,
             project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
@@ -544,7 +542,7 @@ pub mod pallet {
             }
 
             let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
-            let call = pallet_assets::Call::<T>::create(id, admin_source, max_zombies, min_balance);
+            let call = pallet_assets::Call::<T>::create(id, admin_source, 0u32, min_balance);
             let result = call.dispatch_bypass_filter(origin);
             if result.is_err() {
                 return result;
@@ -722,16 +720,6 @@ pub mod pallet {
             let freezer_source = <T::Lookup as StaticLookup>::unlookup(freezer.into());
             let call =
                 pallet_assets::Call::<T>::set_team(id, issuer_source, admin_source, freezer_source);
-            call.dispatch_bypass_filter(origin)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::set_max_zombies())]
-        pub(super) fn set_max_zombies(
-            origin: OriginFor<T>,
-            #[pallet::compact] id: T::AssetId,
-            #[pallet::compact] max_zombies: u32,
-        ) -> DispatchResultWithPostInfo {
-            let call = pallet_assets::Call::<T>::set_max_zombies(id, max_zombies);
             call.dispatch_bypass_filter(origin)
         }
 
