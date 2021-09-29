@@ -119,7 +119,6 @@ fn create_issue_asset(
     let call = pallet_deip_assets::Call::<Test>::create_asset(
         id,
         account_id,
-        100u32,
         1u32.into(),
         project_id,
     );
@@ -1048,12 +1047,12 @@ fn simple_crowdfunding_expired() {
 
         let balance_before = Assets::balance(base_asset_id, *account_id);
         let bob_balance_before = Assets::balance(base_asset_id, BOB_ACCOUNT_ID);
-        let alice_balance_before = Assets::balance(base_asset_id, ALICE_ACCOUNT_ID);
 
         let start_time_in_blocks = 5;
         let start_time = pallet_timestamp::Module::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
         let sale_id = H160::random();
         let soft_cap = 100_000u64;
+        let alice_investing = soft_cap / 2;
         let hard_cap = base_asset_total;
         let usd_to_sale = 80_000u64;
         let eur_to_sale = 75_000u64;
@@ -1097,8 +1096,16 @@ fn simple_crowdfunding_expired() {
         assert_ok!(Deip::invest_to_crowdfunding_impl(
             ALICE_ACCOUNT_ID,
             sale_id,
-            DeipAsset::new(base_asset_id, soft_cap / 2),
+            DeipAsset::new(base_asset_id, alice_investing),
         ));
+
+        // make alice zombie
+        let alice_remainder = Assets::balance(base_asset_id, ALICE_ACCOUNT_ID);
+        let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, alice_remainder);
+        let result = call.dispatch_bypass_filter(Origin::signed(ALICE_ACCOUNT_ID));
+        assert_ok!(result);
+
+        let _a = Balances::slash(&ALICE_ACCOUNT_ID, Balances::total_balance(&ALICE_ACCOUNT_ID));
 
         // since the sale expired the tokens should be transfered back to
         // the seller doesn't matter if assets/accounts frozen or not
@@ -1124,8 +1131,8 @@ fn simple_crowdfunding_expired() {
             _ => unreachable!(),
         };
 
-        assert_eq!(Assets::balance(base_asset_id, BOB_ACCOUNT_ID), bob_balance_before);
-        assert_eq!(Assets::balance(base_asset_id, ALICE_ACCOUNT_ID), alice_balance_before);
+        assert_eq!(Assets::balance(base_asset_id, BOB_ACCOUNT_ID), bob_balance_before + alice_remainder);
+        assert_eq!(Assets::balance(base_asset_id, ALICE_ACCOUNT_ID), alice_investing);
         assert_eq!(Assets::balance(base_asset_id, *account_id), balance_before);
 
         assert_eq!(Assets::balance(usd_id, BOB_ACCOUNT_ID), 0);

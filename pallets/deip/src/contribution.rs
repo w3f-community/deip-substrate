@@ -46,6 +46,10 @@ impl<T: Config> Module<T> {
         InvestmentMap::<T>::mutate_exists(sale_id, |contributions| {
             let mut_contributions = match contributions.as_mut() {
                 None => {
+                    // If the account executes the extrinsic then it exists, so it should have at least one provider
+                    // so this cannot fail... but being defensive anyway.
+                    let _ = system::pallet::Pallet::<T>::inc_consumers(&account);
+
                     *contributions = Some(vec![(
                         account.clone(),
                         Contribution {
@@ -62,6 +66,9 @@ impl<T: Config> Module<T> {
 
             match mut_contributions.binary_search_by_key(&&account, |&(ref a, _)| a) {
                 Err(i) => {
+                    // see comment above
+                    let _ = system::pallet::Pallet::<T>::inc_consumers(&account);
+
                     mut_contributions.insert(
                         i,
                         (
