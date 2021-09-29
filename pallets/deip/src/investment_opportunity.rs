@@ -318,6 +318,8 @@ impl<T: Config> Module<T> {
                     contribution.amount,
                 )
                 .unwrap_or_else(|_| panic!("user's asset should be reserved earlier"));
+
+                system::pallet::Pallet::<T>::dec_consumers(&contribution.owner);
             }
             InvestmentMap::<T>::remove(sale.external_id);
         }
@@ -377,6 +379,9 @@ impl<T: Config> Module<T> {
         T::AssetSystem::transactionally_unreserve(sale.external_id)
             .unwrap_or_else(|_| panic!("remaining assets should be reserved earlier"));
 
+        for (_, ref contribution) in contributions {
+            system::pallet::Pallet::<T>::dec_consumers(&contribution.owner);
+        }
         InvestmentMap::<T>::remove(sale.external_id);
 
         Self::deposit_event(RawEvent::SimpleCrowdfundingFinished(sale.external_id));
