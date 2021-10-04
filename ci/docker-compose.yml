@@ -30,12 +30,13 @@ services:
   deip-blockchain-node:
     image: "$LOCAL_REPO/$BLOCKCHAIN_NODE_IMG"
     command: |
-      node-template --dev --tmp --ws-external 
+      node-template --dev --tmp --ws-external --rpc-external 
         -lpallet_deip_proposal=debug 
         -lpallet_deip_dao=debug 
         -l=txpool=trace,runtime=trace,offchain=trace
     ports:
       - "9944:9944"
+      - "9933:9933"
   deip-event-proxy-client:
     image: "$LOCAL_REPO/$EVENT_PROXY_CLIENT_IMG"
     command: event-proxy-client
