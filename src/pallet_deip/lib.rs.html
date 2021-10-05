@@ -1091,11 +1091,6 @@
 <span id="1091">1091</span>
 <span id="1092">1092</span>
 <span id="1093">1093</span>
-<span id="1094">1094</span>
-<span id="1095">1095</span>
-<span id="1096">1096</span>
-<span id="1097">1097</span>
-<span id="1098">1098</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -2155,8 +2150,8 @@
             .<span class="ident">any</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="ident">content_type</span> <span class="op">=</span><span class="op">=</span> <span class="ident">ProjectContentType::FinalResult</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project</span>(<span class="ident">project_id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">project_id</span>)
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project</span>(<span class="ident">project_id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ProjectOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">ProjectMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">project_id</span>).<span class="ident">ok</span>()
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_get_project_team</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
@@ -2166,21 +2161,16 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_domain</span>(<span class="ident">domain_id</span>: <span class="kw-2">&amp;</span><span class="ident">DomainId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Domain</span> {
-        <span class="ident">Domains::get</span>(<span class="ident">domain_id</span>)
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_domain</span>(<span class="ident">domain_id</span>: <span class="kw-2">&amp;</span><span class="ident">DomainId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Domain</span><span class="op">&gt;</span> {
+        <span class="ident">Domains::try_get</span>(<span class="ident">domain_id</span>).<span class="ident">ok</span>()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project_content</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectContentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">id</span>)
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project_content</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ProjectContentId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ProjectContentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">ProjectContentMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">id</span>).<span class="ident">ok</span>()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_nda_list</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>{
-        <span class="op">&lt;</span><span class="ident">NdaMap</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">IterableStorageMap</span><span class="op">&lt;</span><span class="ident">NdaId</span>, <span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_id</span>, <span class="ident">nda</span>)<span class="op">|</span> <span class="ident">nda</span>)
-            .<span class="ident">collect</span>()
-    }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_nda</span>(<span class="ident">nda_id</span>: <span class="kw-2">&amp;</span><span class="ident">NdaId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="ident">NdaMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>(<span class="ident">nda_id</span>)
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_nda</span>(<span class="ident">nda_id</span>: <span class="kw-2">&amp;</span><span class="ident">NdaId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NdaOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">NdaMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::try_get</span>(<span class="ident">nda_id</span>).<span class="ident">ok</span>()
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_review</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ReviewId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ReviewOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
