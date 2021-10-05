@@ -1056,8 +1056,8 @@ impl<T: Config> Module<T> {
             .any(|c| c.content_type == ProjectContentType::FinalResult)
     }
 
-    pub fn get_project(project_id: &ProjectId) -> ProjectOf<T> {
-        ProjectMap::<T>::get(project_id)
+    pub fn get_project(project_id: &ProjectId) -> Option<ProjectOf<T>> {
+        ProjectMap::<T>::try_get(project_id).ok()
     }
 
     pub fn try_get_project_team(id: &ProjectId) -> Option<AccountIdOf<T>> {
@@ -1067,12 +1067,12 @@ impl<T: Config> Module<T> {
         }
     }
 
-    pub fn get_domain(domain_id: &DomainId) -> Domain {
-        Domains::get(domain_id)
+    pub fn get_domain(domain_id: &DomainId) -> Option<Domain> {
+        Domains::try_get(domain_id).ok()
     }
 
-    pub fn get_project_content(id: &ProjectContentId) -> ProjectContentOf<T> {
-        ProjectContentMap::<T>::get(id)
+    pub fn get_project_content(id: &ProjectContentId) -> Option<ProjectContentOf<T>> {
+        ProjectContentMap::<T>::try_get(id).ok()
     }
 
     pub fn get_nda(nda_id: &NdaId) -> Option<NdaOf<T>> {

@@ -577,15 +577,15 @@ impl_runtime_apis! {
     }
 
     impl pallet_deip::api::DeipApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash> for Runtime {
-        fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
+        fn get_project(project_id: &ProjectId) -> Option<ProjectOf<crate::Runtime>> {
             Deip::get_project(project_id)
         }
 
-        fn get_project_content(id: &ProjectContentId) -> ProjectContentOf<crate::Runtime> {
+        fn get_project_content(id: &ProjectContentId) -> Option<ProjectContentOf<crate::Runtime>> {
             Deip::get_project_content(id)
         }
 
-        fn get_domain(domain_id: &DomainId) -> Domain {
+        fn get_domain(domain_id: &DomainId) -> Option<Domain> {
             Deip::get_domain(domain_id)
         }
 

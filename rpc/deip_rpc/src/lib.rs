@@ -24,14 +24,14 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<ProjectId>,
-    ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>>;
+    ) -> FutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getProject")]
     fn get_project(
         &self,
         at: Option<BlockHash>,
         project_id: ProjectId,
-    ) -> Result<Project<H256, AccountId>>;
+    ) -> Result<Option<Project<Hash, AccountId>>>;
 
     #[rpc(name = "deip_getProjectListByTeam")]
     fn get_project_list_by_team(
@@ -40,7 +40,7 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
         team_id: AccountId,
         count: u32,
         start_id: Option<ProjectId>,
-    ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>>;
+    ) -> FutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getProjectContentList")]
     fn get_project_content_list(
@@ -64,7 +64,7 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
         &self,
         at: Option<BlockHash>,
         id: ProjectContentId,
-    ) -> Result<ProjectContent<Hash, AccountId>>;
+    ) -> Result<Option<ProjectContent<Hash, AccountId>>>;
 
     #[rpc(name = "deip_getDomainList")]
     fn get_domains(
@@ -75,7 +75,7 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
     ) -> FutureResult<Vec<ListResult<DomainId, Domain>>>;
 
     #[rpc(name = "deip_getDomain")]
-    fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Domain>;
+    fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Option<Domain>>;
 
     #[rpc(name = "deip_getNdaList")]
     fn get_nda_list(
@@ -247,7 +247,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<ProjectId>,
-    ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>> {
+    ) -> FutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>> {
         StorageMap::<Identity>::get_list(
             &self.state,
             at,
@@ -262,7 +262,7 @@ where
         &self,
         at: Option<<Block as BlockT>::Hash>,
         project_id: ProjectId,
-    ) -> Result<Project<H256, AccountId>> {
+    ) -> Result<Option<Project<Hash, AccountId>>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
@@ -277,7 +277,7 @@ where
         key: AccountId,
         count: u32,
         start_id: Option<ProjectId>,
-    ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>> {
+    ) -> FutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>> {
         get_list_by_index::<Blake2_128Concat, Identity, _, _, _, _>(
             &self.state,
             at,
@@ -310,7 +310,7 @@ where
         &self,
         at: Option<<Block as BlockT>::Hash>,
         domain_id: DomainId,
-    ) -> Result<Domain> {
+    ) -> Result<Option<Domain>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
@@ -358,7 +358,7 @@ where
         &self,
         at: Option<HashOf<Block>>,
         id: ProjectContentId,
-    ) -> Result<ProjectContent<Hash, AccountId>> {
+    ) -> Result<Option<ProjectContent<Hash, AccountId>>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
