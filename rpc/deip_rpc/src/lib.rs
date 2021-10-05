@@ -1,5 +1,5 @@
 use codec::Codec;
-use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
+use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
 use pallet_deip::*;
@@ -26,7 +26,7 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
         start_id: Option<ProjectId>,
     ) -> FutureResult<Vec<ListResult<ProjectId, Project<H256, AccountId>>>>;
 
-    #[rpc(name = "deipStorage_getProject")]
+    #[rpc(name = "deip_getProject")]
     fn get_project(
         &self,
         at: Option<BlockHash>,
@@ -77,10 +77,11 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
     #[rpc(name = "deip_getDomain")]
     fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Domain>;
 
-    #[rpc(name = "deipStorage_getNdaList")]
-    fn get_nda_list(&self, at: Option<BlockHash>) -> Result<Vec<Nda<H256, AccountId, u64>>>;
-    #[rpc(name = "deipStorage_getNda")]
-    fn get_nda(&self, at: Option<BlockHash>, nda_id: NdaId) -> Result<Nda<H256, AccountId, u64>>;
+    // #[rpc(name = "deipStorage_getNdaList")]
+    // fn get_nda_list(&self, at: Option<BlockHash>) -> Result<Vec<Nda<H256, AccountId, u64>>>;
+
+    #[rpc(name = "deip_getNda")]
+    fn get_nda(&self, at: Option<BlockHash>, nda_id: NdaId) -> Result<Option<Nda<Hash, AccountId, Moment>>>;
 
     #[rpc(name = "deip_getReviewList")]
     fn get_review_list(
@@ -361,38 +362,16 @@ where
             .map_err(|e| to_rpc_error(Error::ProjectContentApiGetFailed, Some(format!("{:?}", e))))
     }
 
-    fn get_nda_list(
-        &self,
-        at: Option<<Block as BlockT>::Hash>,
-    ) -> Result<Vec<Nda<H256, AccountId, u64>>> {
-        let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
-
-        let runtime_api_result = api.get_nda_list(&at);
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
-    }
     fn get_nda(
         &self,
-        at: Option<<Block as BlockT>::Hash>,
+        at: Option<HashOf<Block>>,
         nda_id: NdaId,
-    ) -> Result<Nda<H256, AccountId, u64>> {
+    ) -> Result<Option<Nda<Hash, AccountId, Moment>>> {
         let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(||
-            // If the block hash is not supplied assume the best block.
-            self.client.info().best_hash));
+        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
         let runtime_api_result = api.get_nda(&at, &nda_id);
-        runtime_api_result.map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // No real reason for this value
-            message: "Something wrong".into(),
-            data: Some(format!("{:?}", e).into()),
-        })
+        runtime_api_result.map_err(|e| to_rpc_error(Error::NdaApiGetFailed, Some(format!("{:?}", e))))
     }
 
     fn get_review_list(

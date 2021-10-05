@@ -1075,13 +1075,8 @@ impl<T: Config> Module<T> {
         ProjectContentMap::<T>::get(id)
     }
 
-    pub fn get_nda_list() -> Vec<NdaOf<T>>{
-        <NdaMap<T> as IterableStorageMap<NdaId, NdaOf<T>>>::iter()
-            .map(|(_id, nda)| nda)
-            .collect()
-    }
-    pub fn get_nda(nda_id: &NdaId) -> NdaOf<T> {
-        NdaMap::<T>::get(nda_id)
+    pub fn get_nda(nda_id: &NdaId) -> Option<NdaOf<T>> {
+        NdaMap::<T>::try_get(nda_id).ok()
     }
 
     pub fn get_review(id: &ReviewId) -> Option<ReviewOf<T>> {

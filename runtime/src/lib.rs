@@ -575,8 +575,7 @@ impl_runtime_apis! {
             DeipDao::rpc_get_multi(names)
         }
     }
-    
-    // Here we implement our custom runtime API.
+
     impl pallet_deip::api::DeipApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash> for Runtime {
         fn get_project(project_id: &ProjectId) -> Project<Hash, AccountId> {
             Deip::get_project(project_id)
@@ -589,10 +588,8 @@ impl_runtime_apis! {
         fn get_domain(domain_id: &DomainId) -> Domain {
             Deip::get_domain(domain_id)
         }
-        fn get_nda_list() -> Vec<Nda<H256, AccountId, u64>> {
-            Deip::get_nda_list()
-        }
-        fn get_nda(nda_id: &NdaId) -> Nda<H256, AccountId, u64> {
+
+        fn get_nda(nda_id: &NdaId) -> Option<NdaOf<crate::Runtime>> {
             Deip::get_nda(nda_id)
         }
 
