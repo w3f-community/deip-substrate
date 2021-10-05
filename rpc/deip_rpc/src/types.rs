@@ -317,3 +317,49 @@ where
         &self.id
     }
 }
+
+// Ndas
+
+pub struct NdaIdError;
+impl GetError for NdaIdError {
+    fn get_error() -> Error {
+        Error::NdaIdDecodeFailed
+    }
+}
+
+pub struct NdaError;
+impl GetError for NdaError {
+    fn get_error() -> Error {
+        Error::NdaDecodeFailed
+    }
+}
+
+pub struct NdaKeyValue<Hash, AccountId, Moment> {
+    pub id: super::NdaId,
+    _m: std::marker::PhantomData<(Hash, AccountId, Moment)>,
+}
+
+impl<Hash, AccountId, Moment> NdaKeyValue<Hash, AccountId, Moment> {
+    pub fn new(id: super::NdaId) -> Self {
+        Self {
+            id,
+            _m: Default::default(),
+        }
+    }
+}
+
+impl<Hash, AccountId, Moment> KeyValueInfo for NdaKeyValue<Hash, AccountId, Moment>
+where
+    AccountId: 'static + Decode + Send,
+    Moment: 'static + Decode + Send,
+    Hash: 'static + Decode + Send,
+{
+    type Key = super::NdaId;
+    type KeyError = NdaIdError;
+    type Value = super::Nda<Hash, AccountId, Moment>;
+    type ValueError = NdaError;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
+}
