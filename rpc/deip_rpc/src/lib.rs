@@ -77,8 +77,13 @@ pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Ha
     #[rpc(name = "deip_getDomain")]
     fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Domain>;
 
-    // #[rpc(name = "deipStorage_getNdaList")]
-    // fn get_nda_list(&self, at: Option<BlockHash>) -> Result<Vec<Nda<H256, AccountId, u64>>>;
+    #[rpc(name = "deip_getNdaList")]
+    fn get_nda_list(
+        &self,
+        at: Option<BlockHash>,
+        count: u32,
+        start_id: Option<NdaId>,
+    ) -> FutureResult<Vec<ListResult<NdaId, Nda<Hash, AccountId, Moment>>>>;
 
     #[rpc(name = "deip_getNda")]
     fn get_nda(&self, at: Option<BlockHash>, nda_id: NdaId) -> Result<Option<Nda<Hash, AccountId, Moment>>>;
@@ -360,6 +365,22 @@ where
         let runtime_api_result = api.get_project_content(&at, &id);
         runtime_api_result
             .map_err(|e| to_rpc_error(Error::ProjectContentApiGetFailed, Some(format!("{:?}", e))))
+    }
+
+    fn get_nda_list(
+        &self,
+        at: Option<HashOf<Block>>,
+        count: u32,
+        start_id: Option<NdaId>,
+    ) -> FutureResult<Vec<ListResult<NdaId, Nda<Hash, AccountId, Moment>>>> {
+        StorageMap::<Identity>::get_list(
+            &self.state,
+            at,
+            b"Deip",
+            b"NdaMap",
+            count,
+            start_id.map(types::NdaKeyValue::new),
+        )
     }
 
     fn get_nda(

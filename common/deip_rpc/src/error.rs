@@ -38,6 +38,8 @@ pub enum Error {
     ProposalIdDecodeFailed,
     ProposalDecodeFailed,
     NdaApiGetFailed,
+    NdaIdDecodeFailed,
+    NdaDecodeFailed,
 }
 
 impl Into<RpcErrorCode> for Error {
@@ -80,6 +82,8 @@ impl Into<RpcErrorCode> for Error {
             ProposalIdDecodeFailed => BASE + 30,
             ProposalDecodeFailed => BASE + 31,
             NdaApiGetFailed => BASE + 32,
+            NdaIdDecodeFailed => BASE + 33,
+            NdaDecodeFailed => BASE + 34,
         })
     }
 }
