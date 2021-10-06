@@ -456,6 +456,7 @@ decl_error! {
         ContractAgreementLicenseExpired,
         ContractAgreementLicenseNotEnoughBalance,
         ContractAgreementLicenseFailedToChargeFee,
+        ContractAgreementLicenseIsNotActive,
         ContractAgreementPartyIsNotListed,
         ContractAgreementAlreadyAcceptedByParty,
         ContractAgreementRejected,

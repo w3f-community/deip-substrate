@@ -260,12 +260,14 @@ impl<T: Config> Module<T> {
         );
 
         let now = pallet_timestamp::Module::<T>::get();
-        match license.end_time {
-            Some(end_time) => {
-                ensure!(now <= end_time, Error::<T>::ContractAgreementLicenseExpired)
-            }
-            None => (),
-        }
+        ensure!(
+            license.start_time.unwrap_or(now) <= now,
+            Error::<T>::ContractAgreementLicenseIsNotActive
+        );
+        ensure!(
+            now <= license.end_time.unwrap_or(now),
+            Error::<T>::ContractAgreementLicenseExpired
+        );
 
         let id = license.id;
         let status = LicenseStatus::SignedByLicenser(license);
@@ -286,12 +288,14 @@ impl<T: Config> Module<T> {
         );
 
         let now = pallet_timestamp::Module::<T>::get();
-        match license.end_time {
-            Some(end_time) => {
-                ensure!(now <= end_time, Error::<T>::ContractAgreementLicenseExpired)
-            }
-            None => (),
-        }
+        ensure!(
+            license.start_time.unwrap_or(now) <= now,
+            Error::<T>::ContractAgreementLicenseIsNotActive
+        );
+        ensure!(
+            now <= license.end_time.unwrap_or(now),
+            Error::<T>::ContractAgreementLicenseExpired
+        );
 
         // this percent should be specified in the corresponding revenue stream
         let distribute_percent = Percent::from_percent(100);
@@ -498,6 +502,50 @@ impl<T: Config> Module<T> {
         party: AccountIdOf<T>,
         status: LicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
     ) -> DispatchResult {
-        todo!()
+        match status {
+            LicenseStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
+            LicenseStatus::Signed(_) => Err(Error::<T>::ContractAgreementAlreadyAccepted.into()),
+
+            LicenseStatus::SignedByLicenser(license) => {
+                ensure!(
+                    party == license.licensee,
+                    Error::<T>::ContractAgreementLicensePartyIsNotLicensee
+                );
+
+                Self::reject_license_common(party, license)
+            }
+
+            LicenseStatus::Unsigned(license) => {
+                ensure!(
+                    party == license.licensee || party == license.licenser,
+                    Error::<T>::ContractAgreementPartyIsNotListed
+                );
+
+                Self::reject_license_common(party, license)
+            }
+        }
+    }
+
+    fn reject_license_common(
+        party: AccountIdOf<T>,
+        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+    ) -> DispatchResult {
+        let now = pallet_timestamp::Module::<T>::get();
+        ensure!(
+            license.start_time.unwrap_or(now) <= now,
+            Error::<T>::ContractAgreementLicenseIsNotActive
+        );
+        ensure!(
+            now <= license.end_time.unwrap_or(now),
+            Error::<T>::ContractAgreementLicenseExpired
+        );
+
+        let id = license.id;
+        let status = LicenseStatus::Rejected(license);
+        ContractAgreementMap::<T>::insert(id, Agreement::License(status));
+
+        Self::deposit_event(RawEvent::ContractAgreementRejected(id, party));
+
+        Ok(())
     }
 }
