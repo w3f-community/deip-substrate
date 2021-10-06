@@ -63,6 +63,7 @@ pub enum LicenseStatus<AccountId, Hash, Moment, Asset> {
     Unsigned(License<AccountId, Hash, Moment, Asset>),
     SignedByLicenser(License<AccountId, Hash, Moment, Asset>),
     Signed(License<AccountId, Hash, Moment, Asset>),
+    Rejected(License<AccountId, Hash, Moment, Asset>),
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
@@ -86,6 +87,7 @@ pub enum GeneralContractStatus<AccountId, Hash, Moment> {
         accepted_by: Vec<AccountId>,
     },
     Accepted(GeneralContract<AccountId, Hash, Moment>),
+    Rejected(GeneralContract<AccountId, Hash, Moment>),
 }
 
 impl<T: Config> Module<T> {
@@ -211,7 +213,24 @@ impl<T: Config> Module<T> {
         match agreement {
             Agreement::License(status) => Self::accept_project_license(party, status),
             Agreement::GeneralContract(status) => Self::accept_general_contract(party, status),
-            Agreement::None => Err(Error::<T>::ContractAgreementAcceptWrongAgreement.into()),
+            Agreement::None => Err(Error::<T>::ContractAgreementWrongAgreement.into()),
+        }
+    }
+
+    pub(super) fn reject_contract_agreement_impl(
+        account: AccountIdOf<T>,
+        id: Id,
+        party: AccountIdOf<T>,
+    ) -> DispatchResult {
+        ensure!(account == party, Error::<T>::NoPermission);
+
+        let agreement = ContractAgreementMap::<T>::try_get(id)
+            .map_err(|_| Error::<T>::ContractAgreementNotFound)?;
+
+        match agreement {
+            Agreement::None => Err(Error::<T>::ContractAgreementWrongAgreement.into()),
+            Agreement::License(status) => Self::reject_license(party, status),
+            Agreement::GeneralContract(status) => Self::reject_general_contract(party, status),
         }
     }
 
@@ -227,6 +246,7 @@ impl<T: Config> Module<T> {
                 Self::accept_project_license_by_licensee(party, license)
             }
             LicenseStatus::Signed(_) => Err(Error::<T>::ContractAgreementAlreadyAccepted.into()),
+            LicenseStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
         }
     }
 
@@ -386,6 +406,7 @@ impl<T: Config> Module<T> {
         status: GeneralContractStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
     ) -> DispatchResult {
         match status {
+            GeneralContractStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
             GeneralContractStatus::Accepted(_) => {
                 Err(Error::<T>::ContractAgreementAlreadyAccepted.into())
             }
@@ -434,5 +455,49 @@ impl<T: Config> Module<T> {
         }
 
         Ok(())
+    }
+
+    fn reject_general_contract(
+        party: AccountIdOf<T>,
+        status: GeneralContractStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
+    ) -> DispatchResult {
+        match status {
+            GeneralContractStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
+            GeneralContractStatus::Accepted(_) => {
+                Err(Error::<T>::ContractAgreementAlreadyAccepted.into())
+            }
+
+            GeneralContractStatus::PartiallyAccepted {
+                contract,
+                accepted_by,
+            } => {
+                ensure!(
+                    !accepted_by.contains(&party),
+                    Error::<T>::ContractAgreementAlreadyAcceptedByParty
+                );
+
+                ensure!(
+                    contract.parties.contains(&party),
+                    Error::<T>::ContractAgreementPartyIsNotListed
+                );
+
+                let id = contract.id;
+                ContractAgreementMap::<T>::insert(
+                    id,
+                    Agreement::GeneralContract(GeneralContractStatus::Rejected(contract)),
+                );
+
+                Self::deposit_event(RawEvent::ContractAgreementRejected(id, party));
+
+                Ok(())
+            }
+        }
+    }
+
+    fn reject_license(
+        party: AccountIdOf<T>,
+        status: LicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+    ) -> DispatchResult {
+        todo!()
     }
 }
