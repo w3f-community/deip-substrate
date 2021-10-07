@@ -1091,6 +1091,26 @@
 <span id="1091">1091</span>
 <span id="1092">1092</span>
 <span id="1093">1093</span>
+<span id="1094">1094</span>
+<span id="1095">1095</span>
+<span id="1096">1096</span>
+<span id="1097">1097</span>
+<span id="1098">1098</span>
+<span id="1099">1099</span>
+<span id="1100">1100</span>
+<span id="1101">1101</span>
+<span id="1102">1102</span>
+<span id="1103">1103</span>
+<span id="1104">1104</span>
+<span id="1105">1105</span>
+<span id="1106">1106</span>
+<span id="1107">1107</span>
+<span id="1108">1108</span>
+<span id="1109">1109</span>
+<span id="1110">1110</span>
+<span id="1111">1111</span>
+<span id="1112">1112</span>
+<span id="1113">1113</span>
 </pre><pre class="rust">
 <span class="doccomment">//! # Deip Module</span>
 <span class="doccomment">//! A module for managing digital assets.</span>
@@ -1128,6 +1148,7 @@
 <span class="doccomment">//! * [`upvote_review`](./enum.Call.html#variant.upvote_review)</span>
 <span class="doccomment">//! * [`create_contract_agreement`](./enum.Call.html#variant.create_contract_agreement)</span>
 <span class="doccomment">//! * [`accept_contract_agreement`](./enum.Call.html#variant.accept_contract_agreement)</span>
+<span class="doccomment">//! * [`reject_contract_agreement`](./enum.Call.html#variant.reject_contract_agreement)</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [`Call`]: ./enum.Call.html</span>
 <span class="doccomment">//! [`Config`]: ./trait.Config.html</span>
@@ -1433,6 +1454,7 @@
         <span class="ident">ContractAgreementCreated</span>(<span class="ident">ContractAgreementId</span>),
         <span class="ident">ContractAgreementAccepted</span>(<span class="ident">ContractAgreementId</span>, <span class="ident">AccountId</span>),
         <span class="ident">ContractAgreementFinalized</span>(<span class="ident">ContractAgreementId</span>),
+        <span class="ident">ContractAgreementRejected</span>(<span class="ident">ContractAgreementId</span>, <span class="ident">AccountId</span>),
     }
 }
 
@@ -1541,15 +1563,17 @@
         <span class="ident">ContractAgreementLicenseTwoPartiesRequired</span>,
         <span class="ident">ContractAgreementLicenseProjectTeamIsNotListedInParties</span>,
         <span class="ident">ContractAgreementNotFound</span>,
-        <span class="ident">ContractAgreementAcceptWrongAgreement</span>,
+        <span class="ident">ContractAgreementWrongAgreement</span>,
         <span class="ident">ContractAgreementAlreadyAccepted</span>,
         <span class="ident">ContractAgreementLicensePartyIsNotLicenser</span>,
         <span class="ident">ContractAgreementLicensePartyIsNotLicensee</span>,
         <span class="ident">ContractAgreementLicenseExpired</span>,
         <span class="ident">ContractAgreementLicenseNotEnoughBalance</span>,
         <span class="ident">ContractAgreementLicenseFailedToChargeFee</span>,
+        <span class="ident">ContractAgreementLicenseIsNotActive</span>,
         <span class="ident">ContractAgreementPartyIsNotListed</span>,
         <span class="ident">ContractAgreementAlreadyAcceptedByParty</span>,
+        <span class="ident">ContractAgreementRejected</span>,
     }
 }
 
@@ -2070,6 +2094,22 @@
         ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
             <span class="self">Self</span><span class="ident">::accept_contract_agreement_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">party</span>.<span class="ident">into</span>())
+        }
+
+        <span class="doccomment">/// Allows a party to reject the contract agreement created earlier.</span>
+        <span class="doccomment">/// Contract makes a transition to the `Rejected` state and cannot be</span>
+        <span class="doccomment">/// accepted by remaining parties anymore.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// The origin for this call must be _Signed_.</span>
+        <span class="doccomment">/// - `id` - identifies the contract to accept. Check [`ContractAgreementTerms`] for</span>
+        <span class="doccomment">///     supported types</span>
+        <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
+        <span class="kw">fn</span> <span class="ident">reject_contract_agreement</span>(<span class="ident">origin</span>,
+            <span class="ident">id</span>: <span class="ident">ContractAgreementId</span>,
+            <span class="ident">party</span>: <span class="ident">T::DeipAccountId</span>,
+        ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
+            <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
+            <span class="self">Self</span><span class="ident">::reject_contract_agreement_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">party</span>.<span class="ident">into</span>())
         }
 
         <span class="kw">fn</span> <span class="ident">offchain_worker</span>(<span class="ident">_n</span>: <span class="ident">T::BlockNumber</span>) {
