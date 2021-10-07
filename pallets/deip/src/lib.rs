@@ -34,6 +34,7 @@
 //! * [`upvote_review`](./enum.Call.html#variant.upvote_review)
 //! * [`create_contract_agreement`](./enum.Call.html#variant.create_contract_agreement)
 //! * [`accept_contract_agreement`](./enum.Call.html#variant.accept_contract_agreement)
+//! * [`reject_contract_agreement`](./enum.Call.html#variant.reject_contract_agreement)
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -339,6 +340,7 @@ decl_event! {
         ContractAgreementCreated(ContractAgreementId),
         ContractAgreementAccepted(ContractAgreementId, AccountId),
         ContractAgreementFinalized(ContractAgreementId),
+        ContractAgreementRejected(ContractAgreementId, AccountId),
     }
 }
 
@@ -447,15 +449,17 @@ decl_error! {
         ContractAgreementLicenseTwoPartiesRequired,
         ContractAgreementLicenseProjectTeamIsNotListedInParties,
         ContractAgreementNotFound,
-        ContractAgreementAcceptWrongAgreement,
+        ContractAgreementWrongAgreement,
         ContractAgreementAlreadyAccepted,
         ContractAgreementLicensePartyIsNotLicenser,
         ContractAgreementLicensePartyIsNotLicensee,
         ContractAgreementLicenseExpired,
         ContractAgreementLicenseNotEnoughBalance,
         ContractAgreementLicenseFailedToChargeFee,
+        ContractAgreementLicenseIsNotActive,
         ContractAgreementPartyIsNotListed,
         ContractAgreementAlreadyAcceptedByParty,
+        ContractAgreementRejected,
     }
 }
 
@@ -976,6 +980,22 @@ decl_module! {
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             Self::accept_contract_agreement_impl(account, id, party.into())
+        }
+
+        /// Allows a party to reject the contract agreement created earlier.
+        /// Contract makes a transition to the `Rejected` state and cannot be
+        /// accepted by remaining parties anymore.
+        ///
+        /// The origin for this call must be _Signed_.
+        /// - `id` - identifies the contract to accept. Check [`ContractAgreementTerms`] for
+        ///     supported types
+        #[weight = 10_000]
+        fn reject_contract_agreement(origin,
+            id: ContractAgreementId,
+            party: T::DeipAccountId,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::reject_contract_agreement_impl(account, id, party.into())
         }
 
         fn offchain_worker(_n: T::BlockNumber) {

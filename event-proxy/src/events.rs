@@ -120,6 +120,7 @@ impl<T: DeipProposal + Deip + DeipDao + DeipAssets> Serialize for DomainEventDat
             ContractAgreementCreated(e) => e.serialize(serializer),
             ContractAgreementAccepted(e) => e.serialize(serializer),
             ContractAgreementFinalized(e) => e.serialize(serializer),
+            ContractAgreementRejected(e) => e.serialize(serializer),
             // =============== DeipDao:
             DaoCreate(e) => e.serialize(serializer),
             DaoAlterAuthority(e) => e.serialize(serializer),
@@ -174,6 +175,7 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipDao + DeipAssets> {
     ContractAgreementCreated(deip::ContractAgreementCreatedEvent<T>),
     ContractAgreementAccepted(deip::ContractAgreementAcceptedEvent<T>),
     ContractAgreementFinalized(deip::ContractAgreementFinalizedEvent<T>),
+    ContractAgreementRejected(deip::ContractAgreementRejectedEvent<T>),
     // DeipDao:
     DaoCreate(deip_dao::DaoCreateEvent<T>),
     DaoAlterAuthority(deip_dao::DaoAlterAuthorityEvent<T>),
@@ -400,6 +402,14 @@ pub fn known_domain_events<T: DeipProposal + Deip + DeipDao + DeipAssets + Debug
         ) => DomainEvent {
             name: "deip_contractAgreementFinalized".to_string(),
             data: decode_event_data(raw).map(ContractAgreementFinalized)?,
+            meta,
+        },
+        (
+            deip::ContractAgreementRejectedEvent::<T>::MODULE,
+            deip::ContractAgreementRejectedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "deip_contractAgreementRejected".to_string(),
+            data: decode_event_data(raw).map(ContractAgreementRejected)?,
             meta,
         },
         // =========== DeipDao:

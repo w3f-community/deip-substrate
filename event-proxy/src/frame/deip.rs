@@ -261,7 +261,6 @@ impl<T: Deip> Serialize for ContractAgreementAcceptedEvent<T> {
     }
 }
 
-
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
 pub struct ContractAgreementFinalizedEvent<T: Deip>(T::ContractAgreementId);
 impl<T: Deip> Serialize for ContractAgreementFinalizedEvent<T> {
@@ -270,6 +269,19 @@ impl<T: Deip> Serialize for ContractAgreementFinalizedEvent<T> {
     {
         let mut s = serializer.serialize_struct("ContractAgreementFinalizedEvent", 1)?;
         s.serialize_field(CONTRACTAGREEMENT_ID_KEY, &self.0)?;
+        s.end()
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+pub struct ContractAgreementRejectedEvent<T: Deip>(T::ContractAgreementId, T::AccountId);
+impl<T: Deip> Serialize for ContractAgreementRejectedEvent<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+        where S: Serializer
+    {
+        let mut s = serializer.serialize_struct("ContractAgreementRejectedEvent", 2)?;
+        s.serialize_field(CONTRACTAGREEMENT_ID_KEY, &self.0)?;
+        s.serialize_field(ACCOUNT_ID_KEY, &self.1)?;
         s.end()
     }
 }

@@ -312,6 +312,9 @@
       },
       "Signed": {
         "0": "License"
+      },
+      "Rejected": {
+        "0": "License"
       }
     }
   },
@@ -343,6 +346,9 @@
         "accepted_by": "Vec<AccountId>"
       },
       "Accepted": {
+        "0": "GeneralContract"
+      },
+      "Rejected": {
         "0": "GeneralContract"
       }
     }

@@ -297,6 +297,13 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
+            reject_contract_agreement(id, party) => CallObject {
+                module: "deip",
+                call: "reject_contract_agreement",
+                args: &DeipRejectContractAgreementCallArgs { id, party },
+            }
+            .serialize(serializer),
+
             __PhantomItem(..) => unreachable!(),
         }
     }
@@ -665,6 +672,12 @@ struct DeipCreateContractAgreementCallArgs<A, B, C, D, E, F, G> {
 
 #[derive(Serialize)]
 struct DeipAcceptContractAgreementCallArgs<A, B> {
+    id: A,
+    party: B,
+}
+
+#[derive(Serialize)]
+struct DeipRejectContractAgreementCallArgs<A, B> {
     id: A,
     party: B,
 }
