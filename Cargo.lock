@@ -1208,6 +1208,7 @@ dependencies = [
  "parity-scale-codec",
  "rustc-hex",
  "sp-core",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
 ]

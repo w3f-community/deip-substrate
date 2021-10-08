@@ -19,6 +19,7 @@ version = '2.0.0'
 
 [dependencies]
 sp-runtime = { default-features = false, version = '3.0.0' }
+sp-keyring = { default-features = false, version = '3.0.0' }
 frame-system = { default-features = false, version = '3.0.0' }
 node-template-runtime = { default-features = false, version = '3.0.0', path = '../../runtime' }
 pallet-deip-dao = { default-features = false, version = '3.0.0', path = '../../pallets/deip_dao' }

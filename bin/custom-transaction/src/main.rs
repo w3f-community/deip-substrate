@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 
-use sp_runtime::traits::{SignedExtension, IdentifyAccount};
+use sp_runtime::traits::{SignedExtension, IdentifyAccount, Verify};
 use sp_runtime::MultiSigner;
 use sp_runtime::generic::{self, SignedPayload};
 
@@ -15,7 +15,7 @@ use node_template_runtime::{Runtime, Call, Address, AccountId, Signature, Hash};
 use pallet_deip_dao::{Call as DeipDaoCall, dao::{DaoId, InputAuthority}};
 
 use sp_core::crypto::{Ss58Codec, Pair, AccountId32};
-use sp_core::ed25519;
+use sp_core::{ed25519, sr25519};
 
 use rustc_hex::{ToHex, FromHex};
 
@@ -42,6 +42,8 @@ fn genesis_hash() -> Hash {
     Hash::from_slice(genesis.as_slice())
 }
 
+pub const DEV_PHRASE: &str = "//Alice";
+
 fn main() {
     let name = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
     
@@ -55,13 +57,13 @@ fn main() {
         CheckNonce::from(0),
         frame_system::CheckWeight::new(),
         pallet_transaction_payment::ChargeTransactionPayment::from(<Runtime as pallet_transaction_payment::Config>::TransactionByteFee::get()),
-        TagApp::from(tag)
+        // TagApp::from(tag)
     );
     
-    let (pair, _) = ed25519::Pair::generate();
-    println!("{}", pair.public());
+    let pair = sr25519::Pair::from_string(DEV_PHRASE, None).unwrap();
     
     let account = MultiSigner::from(pair.public()).into_account();
+    println!("{}", &account);
     
     let function = Call::DeipDao(DeipDaoCall::create(
         name,
