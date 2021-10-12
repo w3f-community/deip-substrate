@@ -29,6 +29,7 @@ pallet-template = { path = '../pallets/template', default-features = false, vers
 pallet-deip = { path = "../pallets/deip", default-features = false }
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
 pallet-deip-dao = { path = "../pallets/deip_dao", default-features = false }
+pallet-deip-portal = { path = "../pallets/deip_portal", default-features = false }
 pallet-deip-assets = { path = "../pallets/deip_assets", default-features = false }
 deip-assets-error = { path = "../common/deip_assets_error", default-features = false }
 
@@ -92,6 +93,7 @@ std = [
     'pallet-deip/std',
     'pallet-deip-proposal/std',
     'pallet-deip-dao/std',
+    'pallet-deip-portal/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment/std',
     'pallet-transaction-payment-rpc-runtime-api/std',

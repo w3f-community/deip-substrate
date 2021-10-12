@@ -9,7 +9,6 @@ use frame_system::Config;
 use frame_system::Origin;
 use codec::Encode;
 
-use node_template_runtime::app_tag_ext::{TagApp, AppTag};
 use node_template_runtime::{Runtime, Call, Address, AccountId, Signature, Hash};
 
 use pallet_deip_dao::{Call as DeipDaoCall, dao::{DaoId, InputAuthority}};
@@ -33,7 +32,7 @@ pub type SignedExtra = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    TagApp<Runtime>
+    pallet_deip_portal::CheckPortalExt<Runtime>,
 );
 type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
 
@@ -47,8 +46,6 @@ pub const DEV_PHRASE: &str = "//Alice";
 fn main() {
     let name = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
     
-    let tag = AppTag::from_slice("test_tag\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-    
     let extra = (
         frame_system::CheckSpecVersion::new(),
         frame_system::CheckTxVersion::new(),
@@ -57,7 +54,7 @@ fn main() {
         CheckNonce::from(0),
         frame_system::CheckWeight::new(),
         pallet_transaction_payment::ChargeTransactionPayment::from(<Runtime as pallet_transaction_payment::Config>::TransactionByteFee::get()),
-        // TagApp::from(tag)
+        pallet_deip_portal::CheckPortalExt::from(name),
     );
     
     let pair = sr25519::Pair::from_string(DEV_PHRASE, None).unwrap();

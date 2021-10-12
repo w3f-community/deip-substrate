@@ -47,8 +47,6 @@ use constants::{ currency::*};
 /// Weights for pallets used in the runtime.
 mod weights;
 
-pub mod app_tag_ext;
-
 pub mod deip_account;
 
 mod compact_h160;
@@ -208,6 +206,12 @@ impl frame_system::Config for Runtime {
     type SystemWeightInfo = ();
     /// This is used as an identifier of the chain. 42 is the generic substrate prefix.
     type SS58Prefix = SS58Prefix;
+}
+
+impl pallet_deip_portal::Config for Runtime {
+    type PortalId = <Runtime as pallet_deip_dao::Config>::DaoId;
+    type Portal = ();
+    type PortalProvider = ();
 }
 
 impl pallet_aura::Config for Runtime {
@@ -376,6 +380,7 @@ impl pallet_deip_proposal::pallet::Config for Runtime {
 impl pallet_deip_dao::Config for Runtime {
     type Event = Event;
     type Call = Call;
+    type DaoId = pallet_deip_dao::DaoId;
 }
 
 impl pallet_utility::Config for Runtime {
@@ -468,6 +473,7 @@ construct_runtime!(
         Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
         Assets: pallet_assets::{Module, Storage, Event<T>},
         DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>, ValidateUnsigned},
+        DeipPortal: pallet_deip_portal::{Module, Storage, Config},
     }
 );
 
@@ -490,7 +496,7 @@ pub type SignedExtra = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    // app_tag_ext::TagApp<Runtime>
+    pallet_deip_portal::CheckPortalExt<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;

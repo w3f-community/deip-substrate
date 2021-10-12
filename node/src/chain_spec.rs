@@ -3,8 +3,7 @@ use std::{str::FromStr};
 use node_template_runtime::{
     AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
     SudoConfig, SystemConfig, WASM_BINARY, Signature, DeipConfig, DeipProposalConfig,
-    DeipDaoConfig,
-    DeipAssetsConfig,
+    DeipDaoConfig, DeipAssetsConfig, DeipPortalConfig,
 };
 use pallet_deip::{ DomainId, Domain };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -192,6 +191,8 @@ fn testnet_genesis(
             core_asset_admin: root_key,
             balances: endowed_accounts.iter().cloned().map(|k|(k, SerializableAssetBalance((1u64 << 60).into()))).collect(),
             ..Default::default()
+        }),
+        pallet_deip_portal: Some(DeipPortalConfig {
         }),
     }
 }

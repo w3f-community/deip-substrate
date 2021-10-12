@@ -1203,6 +1203,7 @@ dependencies = [
  "node-template-runtime",
  "pallet-balances",
  "pallet-deip-dao",
+ "pallet-deip-portal",
  "pallet-sudo",
  "pallet-transaction-payment",
  "parity-scale-codec",
@@ -3766,6 +3767,7 @@ dependencies = [
  "pallet-deip",
  "pallet-deip-assets",
  "pallet-deip-dao",
+ "pallet-deip-portal",
  "pallet-deip-proposal",
  "pallet-grandpa",
  "pallet-multisig",
@@ -4047,6 +4049,22 @@ dependencies = [
 
 [[package]]
 name = "pallet-deip-dao"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-deip-toolkit",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-portal"
 version = "3.0.0"
 dependencies = [
  "frame-support",
