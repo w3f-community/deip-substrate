@@ -952,7 +952,7 @@ decl_module! {
         /// - `parties` - signatures from all parties must be collected in order
         ///     to consider the contract as approved
         /// - `hash` - hash of contract agreement offchain metadata
-        /// - `start_time`/`end_time`
+        /// - `activation_time`/`expiration_time`
         /// - `terms` - specifies type of the contract agreement. For details see [`ContractAgreementTerms`].
         #[weight = 10_000]
         fn create_contract_agreement(origin,
@@ -960,12 +960,12 @@ decl_module! {
             creator: T::DeipAccountId,
             parties: Vec<T::DeipAccountId>,
             hash: HashOf<T>,
-            start_time: Option<MomentOf<T>>,
-            end_time: Option<MomentOf<T>>,
+            activation_time: Option<MomentOf<T>>,
+            expiration_time: Option<MomentOf<T>>,
             terms: ContractAgreementTermsOf<T>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            Self::create_contract_agreement_impl(account, id, creator.into(), parties, hash, start_time, end_time, terms)
+            Self::create_contract_agreement_impl(account, id, creator.into(), parties, hash, activation_time, expiration_time, terms)
         }
 
         /// Allows a party to sign the contract agreement created earlier.

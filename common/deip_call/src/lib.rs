@@ -273,7 +273,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            create_contract_agreement(id, creator, parties, hash, start_time, end_time, terms) => {
+            create_contract_agreement(id, creator, parties, hash, activation_time, expiration_time, terms) => {
                 CallObject {
                     module: "deip",
                     call: "create_contract_agreement",
@@ -282,8 +282,8 @@ impl WrappedCall<Call> {
                         creator,
                         parties,
                         hash,
-                        start_time,
-                        end_time,
+                        activation_time,
+                        expiration_time,
                         terms,
                     },
                 }
@@ -665,8 +665,8 @@ struct DeipCreateContractAgreementCallArgs<A, B, C, D, E, F, G> {
     creator: B,
     parties: C,
     hash: D,
-    start_time: E,
-    end_time: F,
+    activation_time: E,
+    expiration_time: F,
     terms: G,
 }
 

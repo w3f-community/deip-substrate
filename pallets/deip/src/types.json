@@ -297,8 +297,8 @@
     "licenser": "AccountId",
     "licensee": "AccountId",
     "hash": "Hash",
-    "start_time": "Option<Moment>",
-    "end_time": "Option<Moment>",
+    "activation_time": "Option<Moment>",
+    "expiration_time": "Option<Moment>",
     "project_id": "ProjectId",
     "price": "DeipAsset"
   },
@@ -336,8 +336,8 @@
     "creator": "AccountId",
     "parties": "Vec<AccountId>",
     "hash": "Hash",
-    "start_time": "Option<Moment>",
-    "end_time": "Option<Moment>"
+    "activation_time": "Option<Moment>",
+    "expiration_time": "Option<Moment>"
   },
   "GeneralContractStatus": {
     "_enum": {
