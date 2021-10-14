@@ -50,8 +50,8 @@ pub struct License<AccountId, Hash, Moment, Asset> {
     licenser: AccountId,
     licensee: AccountId,
     hash: Hash,
-    start_time: Option<Moment>,
-    end_time: Option<Moment>,
+    activation_time: Option<Moment>,
+    expiration_time: Option<Moment>,
     project_id: ProjectId,
     price: Asset,
 }
@@ -74,8 +74,8 @@ pub struct GeneralContract<AccountId, Hash, Moment> {
     creator: AccountId,
     parties: Vec<AccountId>,
     hash: Hash,
-    start_time: Option<Moment>,
-    end_time: Option<Moment>,
+    activation_time: Option<Moment>,
+    expiration_time: Option<Moment>,
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
@@ -97,8 +97,8 @@ impl<T: Config> Module<T> {
         creator: AccountIdOf<T>,
         parties: Vec<T::DeipAccountId>,
         hash: HashOf<T>,
-        start_time: Option<MomentOf<T>>,
-        end_time: Option<MomentOf<T>>,
+        activation_time: Option<MomentOf<T>>,
+        expiration_time: Option<MomentOf<T>>,
         terms: TermsOf<T>,
     ) -> DispatchResult {
         ensure!(account == creator, Error::<T>::NoPermission);
@@ -114,21 +114,21 @@ impl<T: Config> Module<T> {
         }
 
         let now = pallet_timestamp::Module::<T>::get();
-        if let Some(s) = start_time {
+        if let Some(s) = activation_time {
             ensure!(
                 now <= s,
                 Error::<T>::ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment
             );
         }
 
-        if let Some(e) = end_time {
-            let start_time = match start_time {
+        if let Some(e) = expiration_time {
+            let activation_time = match activation_time {
                 None => now,
                 Some(s) => s,
             };
 
             ensure!(
-                start_time < e,
+                activation_time < e,
                 Error::<T>::ContractAgreementEndTimeMustBeLaterStartTime
             );
         }
@@ -139,10 +139,10 @@ impl<T: Config> Module<T> {
         );
         match terms {
             Terms::LicenseAgreement { source, price } => Self::create_project_license(
-                id, creator, parties, hash, start_time, end_time, source, price,
+                id, creator, parties, hash, activation_time, expiration_time, source, price,
             ),
             Terms::GeneralContractAgreement => {
-                Self::create_general_contract(id, creator, parties, hash, start_time, end_time)
+                Self::create_general_contract(id, creator, parties, hash, activation_time, expiration_time)
             }
         }
     }
@@ -152,8 +152,8 @@ impl<T: Config> Module<T> {
         creator: AccountIdOf<T>,
         mut parties: Vec<T::DeipAccountId>,
         hash: HashOf<T>,
-        start_time: Option<MomentOf<T>>,
-        end_time: Option<MomentOf<T>>,
+        activation_time: Option<MomentOf<T>>,
+        expiration_time: Option<MomentOf<T>>,
         project_id: ProjectId,
         price: DeipAssetOf<T>,
     ) -> DispatchResult {
@@ -186,8 +186,8 @@ impl<T: Config> Module<T> {
             licenser,
             licensee,
             hash,
-            start_time,
-            end_time,
+            activation_time,
+            expiration_time,
             project_id,
             price,
         };
@@ -261,11 +261,11 @@ impl<T: Config> Module<T> {
 
         let now = pallet_timestamp::Module::<T>::get();
         ensure!(
-            license.start_time.unwrap_or(now) <= now,
+            license.activation_time.unwrap_or(now) <= now,
             Error::<T>::ContractAgreementLicenseIsNotActive
         );
         ensure!(
-            now <= license.end_time.unwrap_or(now),
+            now <= license.expiration_time.unwrap_or(now),
             Error::<T>::ContractAgreementLicenseExpired
         );
 
@@ -289,11 +289,11 @@ impl<T: Config> Module<T> {
 
         let now = pallet_timestamp::Module::<T>::get();
         ensure!(
-            license.start_time.unwrap_or(now) <= now,
+            license.activation_time.unwrap_or(now) <= now,
             Error::<T>::ContractAgreementLicenseIsNotActive
         );
         ensure!(
-            now <= license.end_time.unwrap_or(now),
+            now <= license.expiration_time.unwrap_or(now),
             Error::<T>::ContractAgreementLicenseExpired
         );
 
@@ -379,16 +379,16 @@ impl<T: Config> Module<T> {
         creator: AccountIdOf<T>,
         parties: Vec<T::DeipAccountId>,
         hash: HashOf<T>,
-        start_time: Option<MomentOf<T>>,
-        end_time: Option<MomentOf<T>>,
+        activation_time: Option<MomentOf<T>>,
+        expiration_time: Option<MomentOf<T>>,
     ) -> DispatchResult {
         let contract = GeneralContract {
             id,
             creator,
             parties: parties.into_iter().map(|p| p.into()).collect(),
             hash,
-            start_time,
-            end_time,
+            activation_time,
+            expiration_time,
         };
 
         ContractAgreementMap::<T>::insert(
@@ -532,11 +532,11 @@ impl<T: Config> Module<T> {
     ) -> DispatchResult {
         let now = pallet_timestamp::Module::<T>::get();
         ensure!(
-            license.start_time.unwrap_or(now) <= now,
+            license.activation_time.unwrap_or(now) <= now,
             Error::<T>::ContractAgreementLicenseIsNotActive
         );
         ensure!(
-            now <= license.end_time.unwrap_or(now),
+            now <= license.expiration_time.unwrap_or(now),
             Error::<T>::ContractAgreementLicenseExpired
         );
 
