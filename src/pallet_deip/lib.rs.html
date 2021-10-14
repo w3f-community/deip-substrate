@@ -2066,7 +2066,7 @@
         <span class="doccomment">/// - `parties` - signatures from all parties must be collected in order</span>
         <span class="doccomment">///     to consider the contract as approved</span>
         <span class="doccomment">/// - `hash` - hash of contract agreement offchain metadata</span>
-        <span class="doccomment">/// - `start_time`/`end_time`</span>
+        <span class="doccomment">/// - `activation_time`/`expiration_time`</span>
         <span class="doccomment">/// - `terms` - specifies type of the contract agreement. For details see [`ContractAgreementTerms`].</span>
         <span class="attribute">#[<span class="ident">weight</span> <span class="op">=</span> <span class="number">10_000</span>]</span>
         <span class="kw">fn</span> <span class="ident">create_contract_agreement</span>(<span class="ident">origin</span>,
@@ -2074,12 +2074,12 @@
             <span class="ident">creator</span>: <span class="ident">T::DeipAccountId</span>,
             <span class="ident">parties</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T::DeipAccountId</span><span class="op">&gt;</span>,
             <span class="ident">hash</span>: <span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-            <span class="ident">start_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-            <span class="ident">end_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+            <span class="ident">activation_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+            <span class="ident">expiration_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
             <span class="ident">terms</span>: <span class="ident">ContractAgreementTermsOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
             <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ensure_signed</span>(<span class="ident">origin</span>)<span class="question-mark">?</span>;
-            <span class="self">Self</span><span class="ident">::create_contract_agreement_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">creator</span>.<span class="ident">into</span>(), <span class="ident">parties</span>, <span class="ident">hash</span>, <span class="ident">start_time</span>, <span class="ident">end_time</span>, <span class="ident">terms</span>)
+            <span class="self">Self</span><span class="ident">::create_contract_agreement_impl</span>(<span class="ident">account</span>, <span class="ident">id</span>, <span class="ident">creator</span>.<span class="ident">into</span>(), <span class="ident">parties</span>, <span class="ident">hash</span>, <span class="ident">activation_time</span>, <span class="ident">expiration_time</span>, <span class="ident">terms</span>)
         }
 
         <span class="doccomment">/// Allows a party to sign the contract agreement created earlier.</span>

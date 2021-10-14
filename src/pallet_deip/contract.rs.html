@@ -602,8 +602,8 @@
     <span class="ident">licenser</span>: <span class="ident">AccountId</span>,
     <span class="ident">licensee</span>: <span class="ident">AccountId</span>,
     <span class="ident">hash</span>: <span class="ident">Hash</span>,
-    <span class="ident">start_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Moment</span><span class="op">&gt;</span>,
-    <span class="ident">end_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Moment</span><span class="op">&gt;</span>,
+    <span class="ident">activation_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Moment</span><span class="op">&gt;</span>,
+    <span class="ident">expiration_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Moment</span><span class="op">&gt;</span>,
     <span class="ident">project_id</span>: <span class="ident">ProjectId</span>,
     <span class="ident">price</span>: <span class="ident">Asset</span>,
 }
@@ -626,8 +626,8 @@
     <span class="ident">creator</span>: <span class="ident">AccountId</span>,
     <span class="ident">parties</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AccountId</span><span class="op">&gt;</span>,
     <span class="ident">hash</span>: <span class="ident">Hash</span>,
-    <span class="ident">start_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Moment</span><span class="op">&gt;</span>,
-    <span class="ident">end_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Moment</span><span class="op">&gt;</span>,
+    <span class="ident">activation_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Moment</span><span class="op">&gt;</span>,
+    <span class="ident">expiration_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Moment</span><span class="op">&gt;</span>,
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Clone</span>, <span class="ident">RuntimeDebug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
@@ -649,8 +649,8 @@
         <span class="ident">creator</span>: <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">parties</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T::DeipAccountId</span><span class="op">&gt;</span>,
         <span class="ident">hash</span>: <span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">start_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">end_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">activation_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">expiration_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="ident">terms</span>: <span class="ident">TermsOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
         <span class="macro">ensure!</span>(<span class="ident">account</span> <span class="op">=</span><span class="op">=</span> <span class="ident">creator</span>, <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::NoPermission</span>);
@@ -666,21 +666,21 @@
         }
 
         <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">pallet_timestamp::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>();
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="op">=</span> <span class="ident">start_time</span> {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="op">=</span> <span class="ident">activation_time</span> {
             <span class="macro">ensure!</span>(
                 <span class="ident">now</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">s</span>,
                 <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment</span>
             );
         }
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">end_time</span> {
-            <span class="kw">let</span> <span class="ident">start_time</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">start_time</span> {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">expiration_time</span> {
+            <span class="kw">let</span> <span class="ident">activation_time</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">activation_time</span> {
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">now</span>,
                 <span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">s</span>,
             };
 
             <span class="macro">ensure!</span>(
-                <span class="ident">start_time</span> <span class="op">&lt;</span> <span class="ident">e</span>,
+                <span class="ident">activation_time</span> <span class="op">&lt;</span> <span class="ident">e</span>,
                 <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ContractAgreementEndTimeMustBeLaterStartTime</span>
             );
         }
@@ -691,10 +691,10 @@
         );
         <span class="kw">match</span> <span class="ident">terms</span> {
             <span class="ident">Terms::LicenseAgreement</span> { <span class="ident">source</span>, <span class="ident">price</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::create_project_license</span>(
-                <span class="ident">id</span>, <span class="ident">creator</span>, <span class="ident">parties</span>, <span class="ident">hash</span>, <span class="ident">start_time</span>, <span class="ident">end_time</span>, <span class="ident">source</span>, <span class="ident">price</span>,
+                <span class="ident">id</span>, <span class="ident">creator</span>, <span class="ident">parties</span>, <span class="ident">hash</span>, <span class="ident">activation_time</span>, <span class="ident">expiration_time</span>, <span class="ident">source</span>, <span class="ident">price</span>,
             ),
             <span class="ident">Terms::GeneralContractAgreement</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="self">Self</span><span class="ident">::create_general_contract</span>(<span class="ident">id</span>, <span class="ident">creator</span>, <span class="ident">parties</span>, <span class="ident">hash</span>, <span class="ident">start_time</span>, <span class="ident">end_time</span>)
+                <span class="self">Self</span><span class="ident">::create_general_contract</span>(<span class="ident">id</span>, <span class="ident">creator</span>, <span class="ident">parties</span>, <span class="ident">hash</span>, <span class="ident">activation_time</span>, <span class="ident">expiration_time</span>)
             }
         }
     }
@@ -704,8 +704,8 @@
         <span class="ident">creator</span>: <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         <span class="kw-2">mut</span> <span class="ident">parties</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T::DeipAccountId</span><span class="op">&gt;</span>,
         <span class="ident">hash</span>: <span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">start_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">end_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">activation_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">expiration_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="ident">project_id</span>: <span class="ident">ProjectId</span>,
         <span class="ident">price</span>: <span class="ident">DeipAssetOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
@@ -738,8 +738,8 @@
             <span class="ident">licenser</span>,
             <span class="ident">licensee</span>,
             <span class="ident">hash</span>,
-            <span class="ident">start_time</span>,
-            <span class="ident">end_time</span>,
+            <span class="ident">activation_time</span>,
+            <span class="ident">expiration_time</span>,
             <span class="ident">project_id</span>,
             <span class="ident">price</span>,
         };
@@ -813,11 +813,11 @@
 
         <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">pallet_timestamp::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>();
         <span class="macro">ensure!</span>(
-            <span class="ident">license</span>.<span class="ident">start_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>) <span class="op">&lt;</span><span class="op">=</span> <span class="ident">now</span>,
+            <span class="ident">license</span>.<span class="ident">activation_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>) <span class="op">&lt;</span><span class="op">=</span> <span class="ident">now</span>,
             <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ContractAgreementLicenseIsNotActive</span>
         );
         <span class="macro">ensure!</span>(
-            <span class="ident">now</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">license</span>.<span class="ident">end_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>),
+            <span class="ident">now</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">license</span>.<span class="ident">expiration_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>),
             <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ContractAgreementLicenseExpired</span>
         );
 
@@ -841,11 +841,11 @@
 
         <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">pallet_timestamp::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>();
         <span class="macro">ensure!</span>(
-            <span class="ident">license</span>.<span class="ident">start_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>) <span class="op">&lt;</span><span class="op">=</span> <span class="ident">now</span>,
+            <span class="ident">license</span>.<span class="ident">activation_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>) <span class="op">&lt;</span><span class="op">=</span> <span class="ident">now</span>,
             <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ContractAgreementLicenseIsNotActive</span>
         );
         <span class="macro">ensure!</span>(
-            <span class="ident">now</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">license</span>.<span class="ident">end_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>),
+            <span class="ident">now</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">license</span>.<span class="ident">expiration_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>),
             <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ContractAgreementLicenseExpired</span>
         );
 
@@ -931,16 +931,16 @@
         <span class="ident">creator</span>: <span class="ident">AccountIdOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">parties</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T::DeipAccountId</span><span class="op">&gt;</span>,
         <span class="ident">hash</span>: <span class="ident">HashOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">start_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">end_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">activation_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">expiration_time</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MomentOf</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
         <span class="kw">let</span> <span class="ident">contract</span> <span class="op">=</span> <span class="ident">GeneralContract</span> {
             <span class="ident">id</span>,
             <span class="ident">creator</span>,
             <span class="ident">parties</span>: <span class="ident">parties</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">into</span>()).<span class="ident">collect</span>(),
             <span class="ident">hash</span>,
-            <span class="ident">start_time</span>,
-            <span class="ident">end_time</span>,
+            <span class="ident">activation_time</span>,
+            <span class="ident">expiration_time</span>,
         };
 
         <span class="ident">ContractAgreementMap</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::insert</span>(
@@ -1084,11 +1084,11 @@
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DispatchResult</span> {
         <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">pallet_timestamp::Module</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::get</span>();
         <span class="macro">ensure!</span>(
-            <span class="ident">license</span>.<span class="ident">start_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>) <span class="op">&lt;</span><span class="op">=</span> <span class="ident">now</span>,
+            <span class="ident">license</span>.<span class="ident">activation_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>) <span class="op">&lt;</span><span class="op">=</span> <span class="ident">now</span>,
             <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ContractAgreementLicenseIsNotActive</span>
         );
         <span class="macro">ensure!</span>(
-            <span class="ident">now</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">license</span>.<span class="ident">end_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>),
+            <span class="ident">now</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">license</span>.<span class="ident">expiration_time</span>.<span class="ident">unwrap_or</span>(<span class="ident">now</span>),
             <span class="ident">Error</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::ContractAgreementLicenseExpired</span>
         );
 
