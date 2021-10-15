@@ -6,6 +6,23 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use sp_std::marker::PhantomData;
+use sp_std::fmt::Debug;
+use sp_std::mem;
+use sp_std::result;
+use sp_runtime::traits::MaybeSerializeDeserialize;
+use sp_runtime::traits::Saturating;
+use sp_runtime::traits::Zero;
+use codec::FullCodec;
+use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_runtime::transaction_validity::TransactionValidityError;
+use sp_runtime::traits::PostDispatchInfoOf;
+use sp_runtime::traits::DispatchInfoOf;
+use sp_runtime::transaction_validity::InvalidTransaction;
+use sp_runtime::DispatchError;
+use sp_runtime::RuntimeDebug;
+use frame_support::traits::TryDrop;
+use frame_support::traits::Imbalance;
 use sp_std::prelude::*;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
@@ -86,6 +103,8 @@ pub type DigestItem = generic::DigestItem<Hash>;
 pub type AssetId = compact_h160::H160;
 pub type AssetBalance = u64;
 pub type Moment = u64;
+
+pub type BandwidthPointsBalance = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -263,15 +282,228 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 1;
+    pub const TransactionByteFee: BandwidthPointsBalance = 1;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    // type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = BandwidthPointsAdapter<MyBandwidthPoints<AccountId>, ()>;
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = IdentityFee<Balance>;
+    type WeightToFee = IdentityFee<BandwidthPointsBalance>;
     type FeeMultiplierUpdate = ();
 }
+
+//=============================================
+pub struct MyBandwidthPoints<AccountId>(PhantomData<AccountId>);
+
+impl<AccountId> BandwidthPoints<AccountId> for MyBandwidthPoints<AccountId> {
+    type Balance = BandwidthPointsBalance;
+    type PositiveImbalance = self::PositiveImbalance<Self::Balance>;
+    type NegativeImbalance = self::NegativeImbalance<Self::Balance>;
+
+    fn decrease(
+        who: &AccountId,
+        value: Self::Balance,
+    ) -> Result<Self::NegativeImbalance, DispatchError> {
+        unimplemented!()
+    }
+}
+
+#[derive(RuntimeDebug, PartialEq, Eq)]
+pub struct PositiveImbalance<Balance>(Balance);
+
+impl<Balance> PositiveImbalance<Balance> {
+    /// Create a new positive imbalance from a balance.
+    pub fn new(amount: Balance) -> Self {
+        PositiveImbalance(amount)
+    }
+}
+
+/// Opaque, move-only struct with private fields that serves as a token denoting that
+/// funds have been destroyed without any equal and opposite accounting.
+#[derive(RuntimeDebug, PartialEq, Eq)]
+pub struct NegativeImbalance<Balance>(Balance);
+
+impl<Balance> NegativeImbalance<Balance> {
+    /// Create a new negative imbalance from a balance.
+    pub fn new(amount: Balance) -> Self {
+        NegativeImbalance(amount)
+    }
+}
+
+impl<Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default> TryDrop for PositiveImbalance<Balance> {
+    fn try_drop(self) -> result::Result<(), Self> {
+        self.drop_zero()
+    }
+}
+
+impl<Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default> Imbalance<Balance> for PositiveImbalance<Balance> {
+    type Opposite = NegativeImbalance<Balance>;
+
+    fn zero() -> Self {
+        Self(Zero::zero())
+    }
+
+    fn drop_zero(self) -> result::Result<(), Self> {
+        if self.0.is_zero() {
+            Ok(())
+        } else {
+            Err(self)
+        }
+    }
+
+    fn split(self, amount: Balance) -> (Self, Self) {
+        let first = self.0.min(amount);
+        let second = self.0 - first;
+
+        mem::forget(self);
+        (Self(first), Self(second))
+    }
+
+    fn merge(mut self, other: Self) -> Self {
+        self.0 = self.0.saturating_add(other.0);
+        mem::forget(other);
+
+        self
+    }
+
+    fn subsume(&mut self, other: Self) {
+        self.0 = self.0.saturating_add(other.0);
+        mem::forget(other);
+    }
+
+    fn offset(self, other: Self::Opposite) -> result::Result<Self, Self::Opposite> {
+        let (a, b) = (self.0, other.0);
+        mem::forget((self, other));
+
+        if a >= b {
+            Ok(Self(a - b))
+        } else {
+            Err(NegativeImbalance::new(b - a))
+        }
+    }
+
+    fn peek(&self) -> Balance {
+        self.0.clone()
+    }
+}
+
+impl<Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default> TryDrop for NegativeImbalance<Balance> {
+    fn try_drop(self) -> result::Result<(), Self> {
+        self.drop_zero()
+    }
+}
+
+impl<Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default> Imbalance<Balance> for NegativeImbalance<Balance> {
+    type Opposite = PositiveImbalance<Balance>;
+
+    fn zero() -> Self {
+        Self(Zero::zero())
+    }
+    fn drop_zero(self) -> result::Result<(), Self> {
+        if self.0.is_zero() {
+            Ok(())
+        } else {
+            Err(self)
+        }
+    }
+    fn split(self, amount: Balance) -> (Self, Self) {
+        let first = self.0.min(amount);
+        let second = self.0 - first;
+
+        mem::forget(self);
+        (Self(first), Self(second))
+    }
+    fn merge(mut self, other: Self) -> Self {
+        self.0 = self.0.saturating_add(other.0);
+        mem::forget(other);
+
+        self
+    }
+    fn subsume(&mut self, other: Self) {
+        self.0 = self.0.saturating_add(other.0);
+        mem::forget(other);
+    }
+    fn offset(self, other: Self::Opposite) -> result::Result<Self, Self::Opposite> {
+        let (a, b) = (self.0, other.0);
+        mem::forget((self, other));
+
+        if a >= b {
+            Ok(Self(a - b))
+        } else {
+            Err(PositiveImbalance::new(b - a))
+        }
+    }
+    fn peek(&self) -> Balance {
+        self.0.clone()
+    }
+}
+
+pub trait BandwidthPoints<AccountId> {
+    type Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default;
+    type PositiveImbalance: frame_support::traits::Imbalance<Self::Balance, Opposite = Self::NegativeImbalance>;
+    type NegativeImbalance: frame_support::traits::Imbalance<Self::Balance, Opposite = Self::PositiveImbalance>;
+
+    fn decrease(
+        who: &AccountId,
+        value: Self::Balance,
+    ) -> Result<Self::NegativeImbalance, DispatchError>;
+}
+
+type NegativeImbalanceOf<BP, Config> =
+	<BP as BandwidthPoints<<Config as frame_system::Config>::AccountId>>::NegativeImbalance;
+
+pub struct BandwidthPointsAdapter<BandwidthPoints, OnUnbalanced>(PhantomData<(BandwidthPoints, OnUnbalanced)>);
+
+impl<Config, BandwidthPoints, OnUnbalanced> pallet_transaction_payment::OnChargeTransaction<Config> for BandwidthPointsAdapter<BandwidthPoints, OnUnbalanced>
+where
+    Config: pallet_transaction_payment::Config,
+    BandwidthPoints: self::BandwidthPoints<<Config as frame_system::Config>::AccountId>,
+    OnUnbalanced: frame_support::traits::OnUnbalanced<NegativeImbalanceOf<BandwidthPoints, Config>>,
+{
+	type LiquidityInfo = Option<NegativeImbalanceOf<BandwidthPoints, Config>>;
+	type Balance = <BandwidthPoints as self::BandwidthPoints<<Config as frame_system::Config>::AccountId>>::Balance;
+
+	/// Withdraw the predicted fee from the transaction origin.
+	///
+	/// Note: The `fee` already includes the `tip`.
+	fn withdraw_fee(
+		who: &Config::AccountId,
+		_call: &Config::Call,
+		_info: &DispatchInfoOf<Config::Call>,
+		fee: Self::Balance,
+		tip: Self::Balance,
+	) -> Result<Self::LiquidityInfo, TransactionValidityError> {
+		if fee.is_zero() {
+			return Ok(None);
+		}
+
+        // tips aren't taken into account by this model
+        let fee = fee.saturating_sub(tip);
+
+		match BandwidthPoints::decrease(who, fee) {
+			Ok(imbalance) => Ok(Some(imbalance)),
+			Err(_) => Err(InvalidTransaction::Payment.into()),
+		}
+	}
+
+	/// Hand the fee and the tip over to the `[OnUnbalanced]` implementation.
+	/// Since the predicted fee might have been too high, parts of the fee may
+	/// be refunded.
+	///
+	/// Note: The `fee` already includes the `tip`.
+	fn correct_and_deposit_fee(
+		who: &Config::AccountId,
+		_dispatch_info: &DispatchInfoOf<Config::Call>,
+		_post_info: &PostDispatchInfoOf<Config::Call>,
+		corrected_fee: Self::Balance,
+		tip: Self::Balance,
+		already_withdrawn: Self::LiquidityInfo,
+	) -> Result<(), TransactionValidityError> {
+        todo!()
+    }
+}
+//=============================================
 
 impl pallet_sudo::Config for Runtime {
     type Event = Event;
@@ -660,18 +892,18 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, BandwidthPointsBalance>
         for Runtime {
         fn query_info(
             uxt: <Block as BlockT>::Extrinsic,
             len: u32,
-        ) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
+        ) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<BandwidthPointsBalance> {
             TransactionPayment::query_info(uxt, len)
         }
         fn query_fee_details(
             uxt: <Block as BlockT>::Extrinsic,
             len: u32,
-        ) -> pallet_transaction_payment::FeeDetails<Balance> {
+        ) -> pallet_transaction_payment::FeeDetails<BandwidthPointsBalance> {
             TransactionPayment::query_fee_details(uxt, len)
         }
     }
