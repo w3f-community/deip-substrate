@@ -61,7 +61,8 @@ impl Serialize for WrappedCall<Call> {
             | Call::Balances(_)
             | Call::Sudo(_)
             | Call::TemplateModule(_)
-            | Call::Multisig(_) => CallObject {
+            | Call::Multisig(_)
+            | Call::Bandwidth(_) => CallObject {
                 module: "unsupported_module",
                 call: "unsupported_call",
                 args: &UnsupportedCallArgs {},

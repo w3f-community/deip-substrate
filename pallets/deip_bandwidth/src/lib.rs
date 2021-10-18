@@ -41,33 +41,34 @@ use frame_support::traits::Imbalance;
 use frame_support::traits::Get;
 use frame_support::ensure;
 
+const NON_LOCAL: u8 = 102;
+
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
     use frame_support::pallet_prelude::*;
-    use frame_support::{
-        traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
-        transactional,
-    };
-    use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
-    use frame_system::{pallet_prelude::*, RawOrigin};
-    use sp_runtime::traits::{One, StaticLookup, Zero};
-    use sp_std::{prelude::*, vec};
+    use frame_system::{pallet_prelude::*};
     use codec::FullCodec;
-    use frame_support::{pallet_prelude::MaybeSerializeDeserialize, traits::Imbalance};
-    use sp_runtime::{DispatchError, traits::AtLeast32BitUnsigned};
+    use frame_support::pallet_prelude::MaybeSerializeDeserialize;
+    use sp_runtime::traits::AtLeast32BitUnsigned;
+    use sp_runtime::traits::{One, StaticLookup, Zero};
     use sp_std::fmt::Debug;
-
-    #[cfg(feature = "std")]
-    use frame_support::traits::GenesisBuild;
+    use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
 
     pub(super) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
     pub(super) type BandwidthBalanceOf<T> = <T as Config>::Balance;
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
         type Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default;
+
+        /// Value of bandwidth points that any account has by default
+        #[pallet::constant]
         type BaseBandwidth: Get<Self::Balance>;
+
+        /// Period (in blocks) to wait for full recover of bandwidth points
+        #[pallet::constant]
+        type Period: Get<Self::BlockNumber>;
     }
 
     #[doc(hidden)]
@@ -77,7 +78,49 @@ pub mod pallet {
 
     #[doc(hidden)]
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(n: T::BlockNumber) {
+            if !sp_io::offchain::is_validator() {
+                return;
+            }
+
+            if n % T::Period::get() != Zero::zero() {
+                return;
+            }
+
+            let call = Call::restore_bandwidth();
+            let _submit =
+                SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+        }
+    }
+
+    #[pallet::validate_unsigned]
+    impl<T: Config> ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
+
+        fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+            if !matches!(
+                source,
+                TransactionSource::Local | TransactionSource::InBlock
+            ) {
+                return InvalidTransaction::Custom(super::NON_LOCAL).into();
+            }
+
+            if let Call::restore_bandwidth() = call {
+                if BandwidthMap::<T>::iter_values().next().is_none() {
+                    return InvalidTransaction::Stale.into();
+                }
+
+                ValidTransaction::with_tag_prefix("DeipBandwidthOffchainWorker")
+                    .propagate(false)
+                    .longevity(5)
+                    .and_provides(())
+                    .build()
+            } else {
+                InvalidTransaction::Call.into()
+            }
+        }
+    }
 
     #[pallet::error]
     pub enum Error<T> {}
@@ -87,11 +130,22 @@ pub mod pallet {
         StorageMap<_, Identity, AccountIdOf<T>, BandwidthBalanceOf<T>, OptionQuery>;
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        #[pallet::weight(10_000)]
+        pub(super) fn restore_bandwidth(
+            origin: OriginFor<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_none(origin)?;
+
+            BandwidthMap::<T>::remove_all();
+
+            Ok(None.into())
+        }
+    }
 }
 
 impl<T: Config> Pallet<T> {
-    fn get_default_balance(who: &AccountIdOf<T>) -> BandwidthBalanceOf<T> {
+    fn get_default_balance(_who: &AccountIdOf<T>) -> BandwidthBalanceOf<T> {
         T::BaseBandwidth::get()
     }
 }

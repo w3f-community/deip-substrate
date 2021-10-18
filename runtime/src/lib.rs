@@ -525,11 +525,13 @@ impl pallet_deip_assets::Config for Runtime {
 
 parameter_types! {
     pub const BaseBandwidth: BandwidthPointsBalance = (ExtrinsicBaseWeight::get() * 4);
+    pub const BandwidthPeriod: BlockNumber = MINUTES;
 }
 
 impl pallet_deip_bandwidth::Config for Runtime {
     type Balance = BandwidthPointsBalance;
     type BaseBandwidth = BaseBandwidth;
+    type Period = BandwidthPeriod;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -556,7 +558,7 @@ construct_runtime!(
         Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
         Assets: pallet_assets::{Module, Storage, Event<T>},
         DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>, ValidateUnsigned},
-        Bandwidth: pallet_deip_bandwidth::{Module, Storage},
+        Bandwidth: pallet_deip_bandwidth::{Module, Storage, Call, ValidateUnsigned},
     }
 );
 
