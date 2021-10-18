@@ -352,5 +352,7 @@
         "0": "GeneralContract"
       }
     }
-  }
+  },
+  "BandwidthPointsBalance": "u64",
+  "BandwidthBalanceOf": "BandwidthPointsBalance"
 }

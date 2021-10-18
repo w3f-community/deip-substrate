@@ -57,6 +57,7 @@ pub use frame_support::{
 use pallet_transaction_payment::CurrencyAdapter;
 
 use pallet_deip::*;
+use pallet_deip_bandwidth::traits::BandwidthPoints;
 
 /// Constant values used within the runtime.
 pub mod constants;
@@ -287,168 +288,13 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     // type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
-    type OnChargeTransaction = BandwidthPointsAdapter<MyBandwidthPoints<AccountId>, ()>;
+    type OnChargeTransaction = BandwidthPointsAdapter<Bandwidth, ()>;
     type TransactionByteFee = TransactionByteFee;
     type WeightToFee = IdentityFee<BandwidthPointsBalance>;
     type FeeMultiplierUpdate = ();
 }
 
 //=============================================
-pub struct MyBandwidthPoints<AccountId>(PhantomData<AccountId>);
-
-impl<AccountId> BandwidthPoints<AccountId> for MyBandwidthPoints<AccountId> {
-    type Balance = BandwidthPointsBalance;
-    type PositiveImbalance = self::PositiveImbalance<Self::Balance>;
-    type NegativeImbalance = self::NegativeImbalance<Self::Balance>;
-
-    fn decrease(
-        who: &AccountId,
-        value: Self::Balance,
-    ) -> Result<Self::NegativeImbalance, DispatchError> {
-        unimplemented!()
-    }
-}
-
-#[derive(RuntimeDebug, PartialEq, Eq)]
-pub struct PositiveImbalance<Balance>(Balance);
-
-impl<Balance> PositiveImbalance<Balance> {
-    /// Create a new positive imbalance from a balance.
-    pub fn new(amount: Balance) -> Self {
-        PositiveImbalance(amount)
-    }
-}
-
-/// Opaque, move-only struct with private fields that serves as a token denoting that
-/// funds have been destroyed without any equal and opposite accounting.
-#[derive(RuntimeDebug, PartialEq, Eq)]
-pub struct NegativeImbalance<Balance>(Balance);
-
-impl<Balance> NegativeImbalance<Balance> {
-    /// Create a new negative imbalance from a balance.
-    pub fn new(amount: Balance) -> Self {
-        NegativeImbalance(amount)
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default> TryDrop for PositiveImbalance<Balance> {
-    fn try_drop(self) -> result::Result<(), Self> {
-        self.drop_zero()
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default> Imbalance<Balance> for PositiveImbalance<Balance> {
-    type Opposite = NegativeImbalance<Balance>;
-
-    fn zero() -> Self {
-        Self(Zero::zero())
-    }
-
-    fn drop_zero(self) -> result::Result<(), Self> {
-        if self.0.is_zero() {
-            Ok(())
-        } else {
-            Err(self)
-        }
-    }
-
-    fn split(self, amount: Balance) -> (Self, Self) {
-        let first = self.0.min(amount);
-        let second = self.0 - first;
-
-        mem::forget(self);
-        (Self(first), Self(second))
-    }
-
-    fn merge(mut self, other: Self) -> Self {
-        self.0 = self.0.saturating_add(other.0);
-        mem::forget(other);
-
-        self
-    }
-
-    fn subsume(&mut self, other: Self) {
-        self.0 = self.0.saturating_add(other.0);
-        mem::forget(other);
-    }
-
-    fn offset(self, other: Self::Opposite) -> result::Result<Self, Self::Opposite> {
-        let (a, b) = (self.0, other.0);
-        mem::forget((self, other));
-
-        if a >= b {
-            Ok(Self(a - b))
-        } else {
-            Err(NegativeImbalance::new(b - a))
-        }
-    }
-
-    fn peek(&self) -> Balance {
-        self.0.clone()
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default> TryDrop for NegativeImbalance<Balance> {
-    fn try_drop(self) -> result::Result<(), Self> {
-        self.drop_zero()
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default> Imbalance<Balance> for NegativeImbalance<Balance> {
-    type Opposite = PositiveImbalance<Balance>;
-
-    fn zero() -> Self {
-        Self(Zero::zero())
-    }
-    fn drop_zero(self) -> result::Result<(), Self> {
-        if self.0.is_zero() {
-            Ok(())
-        } else {
-            Err(self)
-        }
-    }
-    fn split(self, amount: Balance) -> (Self, Self) {
-        let first = self.0.min(amount);
-        let second = self.0 - first;
-
-        mem::forget(self);
-        (Self(first), Self(second))
-    }
-    fn merge(mut self, other: Self) -> Self {
-        self.0 = self.0.saturating_add(other.0);
-        mem::forget(other);
-
-        self
-    }
-    fn subsume(&mut self, other: Self) {
-        self.0 = self.0.saturating_add(other.0);
-        mem::forget(other);
-    }
-    fn offset(self, other: Self::Opposite) -> result::Result<Self, Self::Opposite> {
-        let (a, b) = (self.0, other.0);
-        mem::forget((self, other));
-
-        if a >= b {
-            Ok(Self(a - b))
-        } else {
-            Err(PositiveImbalance::new(b - a))
-        }
-    }
-    fn peek(&self) -> Balance {
-        self.0.clone()
-    }
-}
-
-pub trait BandwidthPoints<AccountId> {
-    type Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default;
-    type PositiveImbalance: frame_support::traits::Imbalance<Self::Balance, Opposite = Self::NegativeImbalance>;
-    type NegativeImbalance: frame_support::traits::Imbalance<Self::Balance, Opposite = Self::PositiveImbalance>;
-
-    fn decrease(
-        who: &AccountId,
-        value: Self::Balance,
-    ) -> Result<Self::NegativeImbalance, DispatchError>;
-}
 
 type NegativeImbalanceOf<BP, Config> =
 	<BP as BandwidthPoints<<Config as frame_system::Config>::AccountId>>::NegativeImbalance;
@@ -500,7 +346,8 @@ where
 		tip: Self::Balance,
 		already_withdrawn: Self::LiquidityInfo,
 	) -> Result<(), TransactionValidityError> {
-        todo!()
+        // todo!()
+        Ok(())
     }
 }
 //=============================================
@@ -676,6 +523,15 @@ impl pallet_deip_assets::Config for Runtime {
     type WipePeriod = WipePeriod;
 }
 
+parameter_types! {
+    pub const BaseBandwidth: BandwidthPointsBalance = (ExtrinsicBaseWeight::get() * 4);
+}
+
+impl pallet_deip_bandwidth::Config for Runtime {
+    type Balance = BandwidthPointsBalance;
+    type BaseBandwidth = BaseBandwidth;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -700,6 +556,7 @@ construct_runtime!(
         Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
         Assets: pallet_assets::{Module, Storage, Event<T>},
         DeipAssets: pallet_deip_assets::{Module, Storage, Call, Config<T>, ValidateUnsigned},
+        Bandwidth: pallet_deip_bandwidth::{Module, Storage},
     }
 );
 

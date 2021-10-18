@@ -3764,6 +3764,7 @@ dependencies = [
  "pallet-balances",
  "pallet-deip",
  "pallet-deip-assets",
+ "pallet-deip-bandwidth",
  "pallet-deip-dao",
  "pallet-deip-proposal",
  "pallet-grandpa",
@@ -4037,6 +4038,19 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-assets",
+ "parity-scale-codec",
+ "serde",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-bandwidth"
+version = "0.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
  "parity-scale-codec",
  "serde",
  "sp-io",
