@@ -56,7 +56,9 @@ pub struct DeipProposal<T: Config> {
     pub(super) state: ProposalState,
     /// Proposal author
     pub(super) author: T::AccountId,
-    pub(super) created_at: T::Moment
+    pub(super) created_at: T::Moment,
+    /// Created with context
+    pub created_ctx: CtxId<T::ExtrinsicExecCtx>,
 }
 
 /// Proposal state

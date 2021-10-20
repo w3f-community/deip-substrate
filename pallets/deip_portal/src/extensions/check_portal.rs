@@ -36,10 +36,10 @@ impl<T: Config> sp_std::fmt::Debug for CheckPortalExt<T> {
 }
 
 impl<T: Config + Send + Sync> SignedExtension for CheckPortalExt<T> where
-    T::Call: Dispatchable<Info=DispatchInfo> + Send + Sync
+    <T as frame_system::Config>::Call: Dispatchable<Info=DispatchInfo> + Send + Sync
 {
     type AccountId = T::AccountId;
-    type Call = T::Call;
+    type Call = <T as frame_system::Config>::Call;
     type AdditionalSigned = ();
     type Pre = T::PortalId;
     const IDENTIFIER: &'static str = "CheckPortalExt";

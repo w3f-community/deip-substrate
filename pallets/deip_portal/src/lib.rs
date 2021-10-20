@@ -27,6 +27,7 @@
 #[cfg(test)]
 mod tests;
 mod extensions;
+mod extrinsic_exec_ctx;
 
 
 #[doc(inline)]
@@ -49,7 +50,7 @@ pub mod pallet {
     use sp_std::collections::{btree_map::BTreeMap};
     use sp_std::iter::FromIterator;
     
-    use sp_runtime::{MultiSigner, traits::{Dispatchable, IdentifyAccount}};
+    use sp_runtime::{MultiSigner, traits::{Dispatchable, IdentifyAccount}, DispatchResultWithInfo};
     use frame_support::dispatch::DispatchResult;
     
     use pallet_deip_toolkit::storage_ops::StorageOpsTransaction;
@@ -67,9 +68,18 @@ pub mod pallet {
     /// Configuration trait
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        
         type PortalId: Member + Parameter + Default;
         type Portal;
         type PortalProvider: PortalProvider<Portal = Self::Portal>;
+        
+        type Call: Parameter +
+             Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo> +
+             GetDispatchInfo +
+             From<frame_system::pallet::Call<Self>> +
+             UnfilteredDispatchable<Origin = Self::Origin> +
+             frame_support::dispatch::Codec + 
+             IsSubType<Call<Self>>;
     }
     
     #[doc(hidden)]
@@ -100,11 +110,25 @@ pub mod pallet {
     }
     
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        #[pallet::weight(10_000)]
+        pub fn on_behalf(
+            origin: OriginFor<T>,
+            portal_id: T::PortalId,
+            call: Box<<T as Config>::Call>,
+        )
+            -> DispatchResultWithPostInfo
+        {
+            ctx_enter::<T>(portal_id);
+            let r = call.dispatch(origin);
+            ctx_exit::<T>();
+            r
+        }
+    }
     
     // ==== Storage ====:
     
-    type ExtrinsicIndex = u32;
+    pub type ExtrinsicIndex = u32;
     
     #[pallet::storage]
     pub(super) type PortalTag<T: Config> = StorageDoubleMap<_,
@@ -115,6 +139,19 @@ pub mod pallet {
         Vec<ExtrinsicIndex>,
         OptionQuery
     >;
+    
+    #[pallet::storage]
+    pub(super) type PortalCtx<T: Config> = StorageValue<_, T::PortalId>;
+    
+    pub fn ctx_enter<T: Config>(ctx: T::PortalId) {
+        PortalCtx::<T>::put(ctx);
+    }
+    pub fn ctx_exit<T: Config>() -> Option<T::PortalId> {
+        PortalCtx::<T>::take()
+    }
+    pub fn ctx_get<T: Config>() -> Option<T::PortalId> {
+        PortalCtx::<T>::get()
+    }
     
     use storage_ops::*;
     #[doc(no_inline)]

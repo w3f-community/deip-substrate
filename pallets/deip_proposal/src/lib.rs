@@ -72,6 +72,8 @@ pub mod pallet {
     /// Configuration trait
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_timestamp::Config + SendTransactionTypes<Call<Self>> {
+        /// Context of extrinsic currently being in execution
+        type ExtrinsicExecCtx: ExtrinsicExecCtx;
         /// Type represents events
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// Type represents particular call from batch-transaction 
