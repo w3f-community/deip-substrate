@@ -1329,6 +1329,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "deip-transaction-ctx"
+version = "0.1.0"
+dependencies = [
+ "frame-system",
+ "sp-std",
+]
+
+[[package]]
 name = "derive_more"
 version = "0.99.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4067,6 +4075,7 @@ dependencies = [
 name = "pallet-deip-portal"
 version = "3.0.0"
 dependencies = [
+ "deip-transaction-ctx",
  "frame-support",
  "frame-system",
  "pallet-deip-toolkit",
