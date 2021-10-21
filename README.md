@@ -1,7 +1,7 @@
 
 # DEIP Network
 
-DEIP Network is a Substrate-based intellectual property protocol for the Polkadot ecosystem. It is built as an application-specific blockchain that can provide end-to-end management of IP assets as NFTs and become a base asset for the entire DeFi stack. DEIP Network aims to become the major Web3 protocol for intellectual capital management and therefore aggregate various IP assets in the network.
+DEIP Network is a Substrate-based implementation of Creator Economy Protocol. It is built as an application-specific blockchain that can provide end-to-end management of IP assets as NFTs and become a base asset for the entire DeFi stack. DEIP Network aims to become the major Web3 protocol for intellectual capital management and therefore aggregate various IP assets in the network.
 
 # DEIP Constructor
 
