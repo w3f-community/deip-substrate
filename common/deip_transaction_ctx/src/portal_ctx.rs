@@ -2,13 +2,13 @@ use super::ExtrinsicExecCtxT;
 use super::ExtrinsicExecCtxId;
 // use super::ExtrinsicExecCtx;
 
-pub trait PortalCtxT: ExtrinsicExecCtxT {
-    type Call;
+pub trait PortalCtxT<LocalCall>: ExtrinsicExecCtxT {
+    type OverarchingCall: From<LocalCall>;
     type PortalId;
     
-    fn submit_transaction(call: Self::Call, ctx: ExtrinsicExecCtxId<Self>);
+    fn submit_transaction(call: LocalCall, ctx: ExtrinsicExecCtxId<Self>);
     
-    fn portal_id(&self) -> Self::PortalId;
+    fn portal_id() -> Self::PortalId;
 }
 
 // pub struct PortalCtx<T, U: ExtrinsicExecCtxT>(U, sp_std::marker::PhantomData<T>);
