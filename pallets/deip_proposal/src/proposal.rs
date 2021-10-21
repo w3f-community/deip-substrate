@@ -183,7 +183,8 @@ impl<T: Config> DeipProposal<T> {
             decisions,
             state: ProposalState::Pending,
             author,
-            created_at
+            created_at,
+            created_ctx: T::ExtrinsicExecCtx::current().id()
         };
         storage_ops.push_op(StorageOps::DepositEvent(Event::<T>::Proposed {
             author: proposal.author.clone(),

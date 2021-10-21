@@ -121,6 +121,9 @@ pub mod pallet {
                     continue
                 }
                 let call = Call::expire(id);
+                
+                T::PortalCtx::submit_transaction(call.into(), obj.created_ctx);
+                
                 let submit = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
                 if submit.is_err() {
                     debug!("{}", "error on submit unsigned transaction");
