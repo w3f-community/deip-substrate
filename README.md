@@ -3,6 +3,8 @@
 
 DEIP Network is a Substrate-based implementation of Creator Economy Protocol. It is built as an application-specific blockchain that can provide end-to-end management of IP assets as NFTs and become a base asset for the entire DeFi stack. DEIP Network aims to become the major Web3 protocol for intellectual capital management and therefore aggregate various IP assets in the network.
 
+https://www.youtube.com/watch?v=hmfaRN76XTY
+
 # DEIP Constructor
 
 Main aim of DEIP Constructor is to drive adoption of DEIP Network and help gather tokenised IP assets in the network. DEIP Constructor is a modular open-source framework, that allows to build IP-centric Web3 platform in weeks. DEIP Constructor has two modes to operate  1) no-code mode and 2) low-code mode.
