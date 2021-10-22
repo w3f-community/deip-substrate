@@ -954,7 +954,7 @@ decl_module! {
         /// - `hash` - hash of contract agreement offchain metadata
         /// - `activation_time`/`expiration_time`
         /// - `terms` - specifies type of the contract agreement. For details see [`ContractAgreementTerms`].
-        #[weight = 10_000]
+        #[weight = (10_000, Pays::No)]
         fn create_contract_agreement(origin,
             id: ContractAgreementId,
             creator: T::DeipAccountId,

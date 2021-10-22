@@ -6,6 +6,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_support::traits::IsSubType;
+use frame_support::dispatch::Callable;
 use sp_std::marker::PhantomData;
 use sp_std::fmt::Debug;
 use sp_std::mem;
@@ -304,6 +306,8 @@ pub struct BandwidthPointsAdapter<BandwidthPoints, OnUnbalanced>(PhantomData<(Ba
 impl<Config, BandwidthPoints, OnUnbalanced> pallet_transaction_payment::OnChargeTransaction<Config> for BandwidthPointsAdapter<BandwidthPoints, OnUnbalanced>
 where
     Config: pallet_transaction_payment::Config,
+    Config::Call: IsSubType<<Deip as Callable<crate::Runtime>>::Call>,
+    Config::Call: IsSubType<<Balances as Callable<crate::Runtime>>::Call>,
     BandwidthPoints: self::BandwidthPoints<<Config as frame_system::Config>::AccountId>,
     OnUnbalanced: frame_support::traits::OnUnbalanced<NegativeImbalanceOf<BandwidthPoints, Config>>,
 {
@@ -323,6 +327,22 @@ where
 		if fee.is_zero() {
 			return Ok(None);
 		}
+
+        // match IsSubType::<<Deip as frame_support::dispatch::Callable::<crate::Runtime>>::Call>::is_sub_type(_call) {
+        //     Some(x) => {
+        //         let y: &() = x;
+        //     }
+        //     None => (),
+        // }
+
+        // don't withdraw fee for specified extrinsics from "standard" pallets
+        match IsSubType::<<Balances as Callable::<crate::Runtime>>::Call>::is_sub_type(_call) {
+            Some(c) => match c {
+                pallet_balances::Call::transfer(..) => return Ok(None),
+                _ => (),
+            }
+            None => (),
+        }
 
         // tips aren't taken into account by this model
         let fee = fee.saturating_sub(tip);
